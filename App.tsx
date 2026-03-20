@@ -521,10 +521,13 @@ function CombinationAgent({
   const [toolsSearchTerm, setToolsSearchTerm] = useState('');
   const [isLogExpanded, setIsLogExpanded] = useState(true);
   const [showSkipModal, setShowSkipModal] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const [skipPassword, setSkipPassword] = useState('');
   const [skipAmount, setSkipAmount] = useState('1');
   const [skipCompleteOrder, setSkipCompleteOrder] = useState(false);
   const [skipError, setSkipError] = useState('');
+  const [adminIngredientName, setAdminIngredientName] = useState('');
+  const [adminIngredientEmoji, setAdminIngredientEmoji] = useState('🍎');
 
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
@@ -627,12 +630,6 @@ function CombinationAgent({
           setOrders(prev => prev.map(o => 
             o.id === currentOrder.id ? { ...o, status: 'completed' as const } : o
           ));
-          
-          // Remove order from list after 10 seconds
-          setTimeout(() => {
-            setOrders(prev => prev.filter(o => o.id !== currentOrder.id));
-          }, 10000);
-
           setTimeline(prev => [...prev, {
             id: `skip-complete-${Date.now()}`,
             timestamp: new Date(),
@@ -661,6 +658,142 @@ function CombinationAgent({
       setSkipPassword('');
       setSkipAmount('1');
       setSkipCompleteOrder(false);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminAddIngredient = () => {
+    if (skipPassword === 'Iloveroby') {
+      if (adminIngredientName.trim()) {
+        const newIng = { name: adminIngredientName.trim(), emoji: adminIngredientEmoji };
+        if (!isDuplicateIngredient(newIng.name, inventory)) {
+          setInventory(prev => [newIng, ...prev]);
+          setTimeline(prev => [...prev, {
+            id: `admin-add-${Date.now()}`,
+            timestamp: new Date(),
+            text: `🛠️ Admin added: ${newIng.emoji} ${newIng.name}`,
+          }]);
+          setAdminIngredientName('');
+          setSkipError('');
+        } else {
+          setSkipError('Ingredient already exists');
+        }
+      } else {
+        setSkipError('Name is required');
+      }
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminClearInventory = () => {
+    if (skipPassword === 'Iloveroby') {
+      setInventory(STARTING_INGREDIENTS);
+      setTimeline(prev => [...prev, {
+        id: `admin-clear-${Date.now()}`,
+        timestamp: new Date(),
+        text: `🧹 Inventory reset to starting items (Admin Override)`,
+      }]);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminUnlockAchievements = () => {
+    if (skipPassword === 'Iloveroby') {
+      setUnlockedAchievements(ACHIEVEMENTS.map(a => a.id));
+      setTimeline(prev => [...prev, {
+        id: `admin-unlock-${Date.now()}`,
+        timestamp: new Date(),
+        text: `🏆 All achievements unlocked (Admin Override)`,
+      }]);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminClearOrders = () => {
+    if (skipPassword === 'Iloveroby') {
+      setOrders([]);
+      setTimeline(prev => [...prev, {
+        id: `admin-clear-orders-${Date.now()}`,
+        timestamp: new Date(),
+        text: `🧹 All orders cleared (Admin Override)`,
+      }]);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminGenerateOrder = () => {
+    if (skipPassword === 'Iloveroby') {
+      const randomDishes = ['Pizza', 'Burger', 'Sushi', 'Tacos', 'Pasta', 'Salad', 'Steak', 'Soup', 'Ramen', 'Curry'];
+      const randomDish = randomDishes[Math.floor(Math.random() * randomDishes.length)];
+      onAddOrder(randomDish);
+      setTimeline(prev => [...prev, {
+        id: `admin-gen-order-${Date.now()}`,
+        timestamp: new Date(),
+        text: `📝 Admin generated order: ${randomDish}`,
+      }]);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminAddMoney = () => {
+    if (skipPassword === 'Iloveroby') {
+      setStats((prev: any) => ({ ...prev, money: (prev.money || 0) + 100 }));
+      setTimeline(prev => [...prev, {
+        id: `admin-add-money-${Date.now()}`,
+        timestamp: new Date(),
+        text: `💰 Admin added $100`,
+      }]);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminToggleDebug = () => {
+    if (skipPassword === 'Iloveroby') {
+      setDebugMode(!debugMode);
+      setTimeline(prev => [...prev, {
+        id: `admin-debug-${Date.now()}`,
+        timestamp: new Date(),
+        text: `🛠️ Debug Mode ${!debugMode ? 'Enabled' : 'Disabled'} (Admin Override)`,
+      }]);
+      setSkipError('');
+    } else {
+      setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminResetAll = () => {
+    if (skipPassword === 'Iloveroby') {
+      setInventory(STARTING_INGREDIENTS);
+      setUnlockedAchievements([]);
+      setStats({
+        completedOrders: 0,
+        money: 0,
+        discoveredIngredients: 0,
+        usedTools: [],
+        usedToolsCount: 0,
+        totalActions: 0,
+        maxIngredientsUsed: 0,
+        maxConfidence: 0,
+        completedDishes: []
+      });
+      setTimeline([{
+        id: `admin-reset-${Date.now()}`,
+        timestamp: new Date(),
+        text: `🔄 Game fully reset (Admin Override)`,
+      }]);
       setSkipError('');
     } else {
       setSkipError('Incorrect password');
@@ -849,8 +982,18 @@ function CombinationAgent({
     <div className="kitchen-app">
       {/* Page Title */}
       <div className="kitchen-header">
-        <h1 className="kitchen-title">Function Calling Kitchen</h1>
-        <p className="kitchen-subtitle">Challenge Gemini 3 Flash's function calling capabilities:</p>
+        <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
+          <div>
+            <h1 className="kitchen-title">Function Calling Kitchen</h1>
+            <p className="kitchen-subtitle">Challenge Gemini 3 Flash's function calling capabilities:</p>
+          </div>
+          {stats.money > 0 && (
+            <div className="money-display">
+              <span className="money-icon">💰</span>
+              <span className="money-amount">${stats.money}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Challenge Banner */}
@@ -948,10 +1091,10 @@ function CombinationAgent({
       {showSkipModal && (
         <div className="skip-modal-overlay">
           <div className="skip-modal">
-            <h3 className="skip-modal-title">Admin Skip</h3>
+            <h3 className="skip-modal-title">Admin Panel {debugMode && <span className="debug-badge">DEBUG</span>}</h3>
             <div className="skip-modal-body">
               <div className="skip-input-group">
-                <label>Password</label>
+                <label>Admin Password</label>
                 <input 
                   type="password" 
                   value={skipPassword} 
@@ -960,32 +1103,91 @@ function CombinationAgent({
                   className="skip-input"
                 />
               </div>
-              <div className="skip-input-group">
-                <label>Steps to skip</label>
-                <input 
-                  type="number" 
-                  value={skipAmount} 
-                  onChange={(e) => setSkipAmount(e.target.value)}
-                  min="1"
-                  className="skip-input"
-                  disabled={skipCompleteOrder}
-                />
+
+              <div className="admin-section">
+                <h4>Skip & Orders</h4>
+                <div className="skip-input-group">
+                  <label>Steps to skip</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="number" 
+                      value={skipAmount} 
+                      onChange={(e) => setSkipAmount(e.target.value)}
+                      min="1"
+                      className="skip-input flex-1"
+                      disabled={skipCompleteOrder}
+                    />
+                    <button className="admin-action-btn" onClick={handleSkipSteps}>Execute Skip</button>
+                  </div>
+                </div>
+                <div className="skip-checkbox-group">
+                  <input 
+                    type="checkbox" 
+                    id="complete-order-checkbox"
+                    checked={skipCompleteOrder}
+                    onChange={(e) => setSkipCompleteOrder(e.target.checked)}
+                    className="skip-checkbox"
+                  />
+                  <label htmlFor="complete-order-checkbox">Complete current order directly</label>
+                </div>
               </div>
-              <div className="skip-checkbox-group">
-                <input 
-                  type="checkbox" 
-                  id="complete-order-checkbox"
-                  checked={skipCompleteOrder}
-                  onChange={(e) => setSkipCompleteOrder(e.target.checked)}
-                  className="skip-checkbox"
-                />
-                <label htmlFor="complete-order-checkbox">Complete current order directly</label>
+
+              <div className="admin-section">
+                <h4>Inventory Management</h4>
+                <div className="skip-input-group">
+                  <label>Add Custom Ingredient</label>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      value={adminIngredientEmoji} 
+                      onChange={(e) => setAdminIngredientEmoji(e.target.value)}
+                      placeholder="Emoji"
+                      className="skip-input w-16"
+                    />
+                    <input 
+                      type="text" 
+                      value={adminIngredientName} 
+                      onChange={(e) => setAdminIngredientName(e.target.value)}
+                      placeholder="Name"
+                      className="skip-input flex-1"
+                    />
+                    <button className="admin-action-btn" onClick={handleAdminAddIngredient}>Add</button>
+                  </div>
+                </div>
+                <button className="admin-danger-btn" onClick={handleAdminClearInventory}>Reset Inventory</button>
               </div>
+
+              <div className="admin-section">
+                <h4>Achievements & Stats</h4>
+                <div className="flex gap-2 mb-2">
+                  <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
+                  <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
+                </div>
+                <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
+              </div>
+
+              <div className="admin-section">
+                <h4>Order Management</h4>
+                <div className="flex gap-2">
+                  <button className="admin-action-btn flex-1" onClick={handleAdminGenerateOrder}>Random Order</button>
+                  <button className="admin-danger-btn flex-1" onClick={handleAdminClearOrders}>Clear All</button>
+                </div>
+              </div>
+
+              <div className="admin-section">
+                <h4>System</h4>
+                <button 
+                  className={`admin-action-btn w-full ${debugMode ? 'active' : ''}`} 
+                  onClick={handleAdminToggleDebug}
+                >
+                  {debugMode ? 'Disable Debug Mode' : 'Enable Debug Mode'}
+                </button>
+              </div>
+
               {skipError && <p className="skip-error">{skipError}</p>}
             </div>
             <div className="skip-modal-footer">
-              <button className="skip-cancel-btn" onClick={() => setShowSkipModal(false)}>Cancel</button>
-              <button className="skip-confirm-btn" onClick={handleSkipSteps}>Skip</button>
+              <button className="skip-cancel-btn" onClick={() => setShowSkipModal(false)}>Close Panel</button>
             </div>
           </div>
         </div>
@@ -994,7 +1196,7 @@ function CombinationAgent({
       {/* Ingredients and Tools Side by Side */}
       <div className="skip-steps-container">
         <button className="skip-steps-btn" onClick={() => setShowSkipModal(true)}>
-          Skip Steps
+          Admin Panel
         </button>
       </div>
 
@@ -1225,6 +1427,12 @@ function CombinationAgent({
         </div>
         {isLogExpanded && (
           <div className="timeline-container" ref={timelineRef}>
+            {debugMode && (
+              <div className="debug-stats-panel">
+                <h4>Debug Stats</h4>
+                <pre>{JSON.stringify(stats, null, 2)}</pre>
+              </div>
+            )}
             {timeline.length === 0 ? (
               <div className="timeline-empty">
                 Select ingredients and click an action to start cooking
@@ -1376,6 +1584,12 @@ function CookingAgent({
           text: `🍽️ Served: ${dishName}`,
         }]);
 
+        // Update total actions stat
+        setStats((prev: any) => ({
+          ...prev,
+          totalActions: (prev.totalActions || 0) + 1
+        }));
+
         // Trigger verification agent and wait for result
         const verificationSuccess = await onServe(dishName);
 
@@ -1404,6 +1618,12 @@ function CookingAgent({
           timestamp: new Date(),
           text: '🏳️ Called pass on the order',
         }]);
+
+        // Update total actions stat
+        setStats((prev: any) => ({
+          ...prev,
+          totalActions: (prev.totalActions || 0) + 1
+        }));
 
         // Send function response confirming the pass
         await sendMessage([{
@@ -1499,6 +1719,13 @@ function CookingAgent({
             emoji: action.emoji,
           };
         }
+
+        // Update total actions stat
+        setStats((prev: any) => ({
+          ...prev,
+          totalActions: (prev.totalActions || 0) + 1,
+          maxIngredientsUsed: Math.max(prev.maxIngredientsUsed || 0, ingredients.length)
+        }));
 
         // Update timeline
         setTimeline(prev => prev.map(entry =>
@@ -1682,8 +1909,11 @@ function VerificationAgent({
             setStats((prev: any) => ({
               ...prev,
               completedOrders: prev.completedOrders + 1,
+              money: (prev.money || 0) + 50,
               maxConfidence: Math.max(prev.maxConfidence || 0, result.confidence),
-              completedDishes: [...(prev.completedDishes || []), order.name]
+              completedDishes: prev.completedDishes?.includes(order.name) 
+                ? prev.completedDishes 
+                : [...(prev.completedDishes || []), order.name]
             }));
 
             setOrders(prev => prev.map(o =>
@@ -1691,11 +1921,6 @@ function VerificationAgent({
                 ? { ...o, status: 'completed' as const, emoji: servedEmoji }
                 : o
             ));
-
-            // Remove order from list after 10 seconds
-            setTimeout(() => {
-              setOrders(prev => prev.filter(o => o.id !== order.id));
-            }, 10000);
 
             // Add success to timeline
             setTimeline(prev => [...prev, {
@@ -1745,10 +1970,7 @@ function VerificationAgent({
 
 function KitchenAppContainer() {
   // Shared state lifted up to be accessible by both agents
-  const [inventory, setInventory] = useState<Ingredient[]>(() => {
-    const saved = localStorage.getItem('kitchenInventory');
-    return saved ? JSON.parse(saved) : STARTING_INGREDIENTS;
-  });
+  const [inventory, setInventory] = useState<Ingredient[]>(STARTING_INGREDIENTS);
   const [selectedIngredients, setSelectedIngredients] = useState<Set<string>>(
     new Set(PRESELECTED_INGREDIENTS)
   );
@@ -1756,10 +1978,7 @@ function KitchenAppContainer() {
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [actionTriggerCount, setActionTriggerCount] = useState(0);
   const [activeIngredients, setActiveIngredients] = useState<Set<string>>(new Set());
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('kitchenOrders');
-    return saved ? JSON.parse(saved) : EXAMPLE_ORDERS;
-  });
+  const [orders, setOrders] = useState<Order[]>(EXAMPLE_ORDERS);
 
   // Overlay open states - start closed
   const [combinationAgentOpen, setCombinationAgentOpen] = useState(false);
@@ -1787,6 +2006,7 @@ function KitchenAppContainer() {
     const saved = localStorage.getItem('kitchenStats');
     return saved ? JSON.parse(saved) : {
       completedOrders: 0,
+      money: 0,
       discoveredIngredients: STARTING_INGREDIENTS.length,
       usedToolsCount: 0,
       usedTools: [] as string[],
@@ -1807,14 +2027,6 @@ function KitchenAppContainer() {
   useEffect(() => {
     localStorage.setItem('kitchenStats', JSON.stringify(stats));
   }, [stats]);
-
-  useEffect(() => {
-    localStorage.setItem('kitchenInventory', JSON.stringify(inventory));
-  }, [inventory]);
-
-  useEffect(() => {
-    localStorage.setItem('kitchenOrders', JSON.stringify(orders));
-  }, [orders]);
 
   // Check for new achievements
   useEffect(() => {
@@ -1895,14 +2107,6 @@ function KitchenAppContainer() {
         ? { ...order, status: 'failed' as const, servedDish: 'Gave up' }
         : order
     ));
-  }, []);
-
-  // Reset all progress
-  const handleResetProgress = useCallback(() => {
-    if (window.confirm('¿Estás seguro de que quieres reiniciar todo tu progreso? Esto borrará tus ingredientes descubiertos, logros y estadísticas.')) {
-      localStorage.clear();
-      window.location.reload();
-    }
   }, []);
 
   return (
@@ -2024,15 +2228,6 @@ function KitchenAppContainer() {
 
       {/* Attribution Footer */}
       <footer className="attribution-footer">
-        <div className="reset-container">
-          <button 
-            onClick={handleResetProgress}
-            className="reset-progress-btn"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>refresh</span>
-            Reiniciar Progreso
-          </button>
-        </div>
         Ideas/feedback:{' '}
         <a href="https://x.com/cobley_ben" target="_blank" rel="noopener noreferrer">
           cobley_ben@

@@ -153,6 +153,78 @@ export const ACHIEVEMENTS: Achievement[] = [
     emoji: '💪',
     isSecret: false,
     condition: (stats) => stats.totalActions >= 50
+  },
+  {
+    id: 'fast_foodie',
+    name: 'Fast Foodie',
+    description: 'Complete 3 orders successfully.',
+    emoji: '🍔',
+    isSecret: false,
+    condition: (stats) => stats.completedOrders >= 3
+  },
+  {
+    id: 'chef_de_cuisine',
+    name: 'Chef de Cuisine',
+    description: 'Complete 10 orders successfully.',
+    emoji: '👨‍🍳',
+    isSecret: false,
+    condition: (stats) => stats.completedOrders >= 10
+  },
+  {
+    id: 'culinary_legend',
+    name: 'Culinary Legend',
+    description: 'Complete 25 orders successfully.',
+    emoji: '🌟',
+    isSecret: false,
+    condition: (stats) => stats.completedOrders >= 25
+  },
+  {
+    id: 'rich_chef',
+    name: 'Rich Chef',
+    description: 'Earn $500 in your kitchen.',
+    emoji: '💰',
+    isSecret: false,
+    condition: (stats) => (stats.money || 0) >= 500
+  },
+  {
+    id: 'tycoon_chef',
+    name: 'Kitchen Tycoon',
+    description: 'Earn $2,000 in your kitchen.',
+    emoji: '🏦',
+    isSecret: false,
+    condition: (stats) => (stats.money || 0) >= 2000
+  },
+  {
+    id: 'tool_legend',
+    name: 'Tool Legend',
+    description: 'Use 35 different tools.',
+    emoji: '⚒️',
+    isSecret: false,
+    condition: (stats) => stats.usedToolsCount >= 35
+  },
+  {
+    id: 'encyclopedia',
+    name: 'Culinary Encyclopedia',
+    description: 'Discover 100 different ingredients.',
+    emoji: '📚',
+    isSecret: false,
+    condition: (stats) => stats.discoveredIngredients >= 100
+  },
+  {
+    id: 'secret_marathon',
+    name: 'Kitchen Marathon',
+    description: 'Perform 200 cooking actions.',
+    emoji: '🏃',
+    isSecret: true,
+    condition: (stats) => stats.totalActions >= 200
+  },
+  {
+    id: 'secret_variety',
+    name: 'Variety is Spice',
+    description: 'Complete 15 different unique dishes.',
+    emoji: '🌈',
+    isSecret: true,
+    condition: (stats) => (stats.completedDishes || []).length >= 15
   }
 ];
 

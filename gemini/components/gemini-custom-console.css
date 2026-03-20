@@ -42,12 +42,18 @@
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  padding: 12px;
+  background: #fffde7;
+  border-top: 2px solid #1a1a1a;
 }
 
 .function-buttons span {
   white-space: nowrap;
-  font-weight: 500;
-  color: var(--Neutral-90);
+  font-weight: 700;
+  color: #1a1a1a;
+  font-family: monospace;
+  text-transform: uppercase;
+  font-size: 12px;
 }
 
 .function-buttons .button-group {
@@ -60,52 +66,53 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid transparent;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 0px;
+  border: 2px solid #1a1a1a;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
+  font-family: monospace;
+  text-transform: uppercase;
 }
 
 .function-buttons button .material-symbols-outlined {
-  font-size: 18px;
+  font-size: 16px;
   color: inherit;
 }
 
 .function-buttons button:hover:not(:disabled) {
-  background-color: var(--Blue-800);
-  border-color: var(--Blue-500);
-  color: var(--Blue-500);
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0px #1a1a1a;
 }
 
 .function-buttons button.run-function-button {
-  background-color: var(--Blue-500);
+  background-color: #34A853;
   color: white;
 }
 
-.function-buttons button.run-function-button.clicked {
-  background-color: var(--Blue-500);
+.function-buttons button.run-function-button:hover {
+  background-color: #2d9249;
 }
 
 .function-buttons button.reject-function-button {
-  background-color: var(--Neutral-20);
-  color: var(--Neutral-90);
+  background-color: #EA4335;
+  color: white;
 }
 
-.function-buttons button.reject-function-button.clicked {
-  background-color: var(--Neutral-30);
+.function-buttons button.reject-function-button:hover {
+  background-color: #d33c2f;
 }
 
 .function-buttons button:disabled {
-  background-color: var(--Neutral-20);
+  background-color: #e0e0e0;
+  border-color: #999;
+  color: #999;
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.function-buttons button:disabled.clicked {
-  background-color: var(--Blue-500);
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .function-status-text {

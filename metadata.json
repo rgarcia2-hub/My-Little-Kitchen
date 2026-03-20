@@ -1,8 +1,8 @@
 {
-  "description": "Gemini 3 Flash controls 100 tools in a simulated kitchen.",
+  "description": "A simulated kitchen where Gemini 3 Flash controls 100 tools. Features achievements and a recipe book for completed orders.",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ],
-  "name": "Function Call Kitchen"
+  "name": "My Little Kitchen"
 }
