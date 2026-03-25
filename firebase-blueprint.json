@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Ingredient": {
+      "title": "Ingredient",
+      "description": "A single ingredient in the inventory",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "emoji": { "type": "string" }
+      },
+      "required": ["name", "emoji"]
+    },
+    "RecipeStep": {
+      "title": "Recipe Step",
+      "description": "A single step in a completed recipe",
+      "type": "object",
+      "properties": {
+        "tool": { "type": "string" },
+        "ingredients": { "type": "array", "items": { "type": "string" } },
+        "result": { "type": "string" }
+      },
+      "required": ["tool", "ingredients", "result"]
+    },
+    "CompletedRecipe": {
+      "title": "Completed Recipe",
+      "description": "A recipe successfully completed by the user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderName": { "type": "string" },
+        "dishName": { "type": "string" },
+        "emoji": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "steps": { "type": "array", "items": { "$ref": "RecipeStep" } }
+      },
+      "required": ["id", "orderName", "dishName", "emoji", "timestamp", "steps"]
+    },
+    "GameState": {
+      "title": "Game State",
+      "description": "The complete progress of a user in the game",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The user's unique ID" },
+        "money": { "type": "integer", "description": "Current balance" },
+        "inventory": { "type": "array", "items": { "$ref": "Ingredient" } },
+        "completedRecipes": { "type": "array", "items": { "$ref": "CompletedRecipe" } },
+        "unlockedAchievements": { "type": "array", "items": { "type": "string" } },
+        "purchasedUpgrades": { "type": "array", "items": { "type": "string" } },
+        "stats": { "type": "object" },
+        "tutorialStep": { "type": "integer" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "money", "inventory", "completedRecipes", "unlockedAchievements", "stats", "tutorialStep", "lastUpdated"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Public and private user information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "displayName"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile information"
+    },
+    "/game_states/{uid}": {
+      "schema": "GameState",
+      "description": "Stores the game progress for a specific user"
+    }
+  }
+}

@@ -4,7 +4,7 @@
 */
 
 /**
- * 100 Tools Kitchen App - Constants and Types
+ * My Little Kitchen App - Constants and Types
  */
 
 import { Type } from '@google/genai';
@@ -29,18 +29,7 @@ export interface CombinationResult {
   emoji: string;
 }
 
-export interface TimelineEntry {
-  id: string;
-  timestamp: Date;
-  // Text from model response (shown above/below action)
-  text?: string;
-  // Action from function call
-  action?: string;
-  ingredients?: string[];
-  result?: Ingredient | null;  // null when loading
-}
-
-export type OrderDifficulty = 'easy' | 'intermediate' | 'difficult';
+export type OrderDifficulty = 'easy' | 'intermediate' | 'difficult' | 'nightmare';
 
 export interface Order {
   id: string;
@@ -64,6 +53,19 @@ export interface RecipeStep {
   description: string;
 }
 
+export interface CompletedRecipe {
+  id: string;
+  orderName: string;
+  dishName: string;
+  emoji: string;
+  timestamp: string;
+  steps: {
+    tool: string;
+    ingredients: string[];
+    result: string;
+  }[];
+}
+
 export interface Achievement {
   id: string;
   name: string;
@@ -72,6 +74,106 @@ export interface Achievement {
   isSecret: boolean;
   condition: (stats: any) => boolean;
 }
+
+export interface Upgrade {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  cost: number;
+  effect: string;
+}
+
+export const UPGRADES: Upgrade[] = [
+  {
+    id: 'faster_ai',
+    name: 'Turbo Chef AI',
+    description: 'Reduces the delay between AI cooking steps by 50%.',
+    emoji: '⚡',
+    cost: 200,
+    effect: 'speed_boost'
+  },
+  {
+    id: 'better_prices',
+    name: 'Gourmet Marketing',
+    description: 'Increases the money earned per completed order by 50%.',
+    emoji: '📈',
+    cost: 500,
+    effect: 'price_boost'
+  },
+  {
+    id: 'extra_slots',
+    name: 'Kitchen Expansion',
+    description: 'Allows you to have up to 5 active orders at once.',
+    emoji: '🏗️',
+    cost: 1000,
+    effect: 'slot_boost'
+  },
+  {
+    id: 'confidence_boost',
+    name: 'AI Culinary School',
+    description: 'Gives the AI a permanent +0.1 confidence boost on all dishes.',
+    emoji: '🎓',
+    cost: 1500,
+    effect: 'confidence_boost'
+  },
+  {
+    id: 'master_tools',
+    name: 'Industrial Equipment',
+    description: 'Reduces the chance of "Kitchen Fire" (allows more ingredients safely).',
+    emoji: '🏭',
+    cost: 2500,
+    effect: 'safety_boost'
+  },
+  {
+    id: 'cryo_freezer',
+    name: 'Cryo-Freezer',
+    description: 'Increases the safety limit for simultaneous ingredients by 2.',
+    emoji: '🧊',
+    cost: 3500,
+    effect: 'safety_boost_plus'
+  },
+  {
+    id: 'molecular_kit',
+    name: 'Molecular Kit',
+    description: 'Increases AI confidence by an additional +0.2.',
+    emoji: '🧪',
+    cost: 5000,
+    effect: 'confidence_boost_plus'
+  },
+  {
+    id: 'golden_whisk',
+    name: 'Golden Whisk',
+    description: 'All orders grant 2x money.',
+    emoji: '🔱',
+    cost: 8000,
+    effect: 'money_multiplier'
+  },
+  {
+    id: 'auto_plating',
+    name: 'Auto-Plating System',
+    description: 'Automatically serves dishes if AI confidence is above 0.9.',
+    emoji: '🤖',
+    cost: 10000,
+    effect: 'auto_serve'
+  },
+  {
+    id: 'time_dilation',
+    name: 'Time Dilation Field',
+    description: 'Reduces AI cooking delay by an additional 25%.',
+    emoji: '⏳',
+    cost: 12000,
+    effect: 'speed_boost_ultra'
+  },
+  {
+    id: 'fusion_reactor',
+    name: 'Fusion Reactor',
+    description: 'Reduces "Kitchen Fire" chance to 0% regardless of ingredients.',
+    emoji: '⚛️',
+    cost: 15000,
+    effect: 'zero_fire_risk'
+  }
+];
 
 export const ACHIEVEMENTS: Achievement[] = [
   {
@@ -225,20 +327,94 @@ export const ACHIEVEMENTS: Achievement[] = [
     emoji: '🌈',
     isSecret: true,
     condition: (stats) => (stats.completedDishes || []).length >= 15
+  },
+  {
+    id: 'nightmare_survivor',
+    name: 'Nightmare Survivor',
+    description: 'Complete a Nightmare difficulty order!',
+    emoji: '💀',
+    isSecret: false,
+    condition: (stats) => (stats.completedNightmareOrders || 0) >= 1
+  },
+  {
+    id: 'billionaire_chef',
+    name: 'Billionaire Chef',
+    description: 'Earn $10,000 in your kitchen.',
+    emoji: '💎',
+    isSecret: false,
+    condition: (stats) => (stats.money || 0) >= 10000
+  },
+  {
+    id: 'safety_first',
+    name: 'Safety First',
+    description: 'Purchase the Cryo-Freezer upgrade.',
+    emoji: '🛡️',
+    isSecret: true,
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('cryo_freezer')
+  },
+  {
+    id: 'nightmare_master',
+    name: 'Nightmare Master',
+    description: 'Complete 5 Nightmare difficulty orders!',
+    emoji: '🔥',
+    isSecret: false,
+    condition: (stats) => (stats.completedNightmareOrders || 0) >= 5
+  },
+  {
+    id: 'fusion_unlocked',
+    name: 'Nuclear Chef',
+    description: 'Purchase the Fusion Reactor upgrade.',
+    emoji: '⚛️',
+    isSecret: true,
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('fusion_reactor')
+  },
+  {
+    id: 'speed_demon',
+    name: 'Speed Demon',
+    description: 'Purchase the Time Dilation Field.',
+    emoji: '🚀',
+    isSecret: false,
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('time_dilation')
   }
 ];
 
 export const EXAMPLE_ORDERS: Order[] = [
   { id: 'order-1', name: 'Fried Eggs', emoji: '🍳', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-6', name: 'Avocado Toast', emoji: '🥑', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-13', name: 'Buttered Toast', emoji: '🍞', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-14', name: 'Simple Salad', emoji: '🥗', difficulty: 'easy', status: 'not_started' },
   { id: 'order-4', name: 'Lemon Sponge Cake', emoji: '🍰', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-2', name: 'Tonkotsu Ramen', emoji: '🍜', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-7', name: 'Spicy Tuna Roll', emoji: '🍣', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-15', name: 'Eggs Benedict', emoji: '🥚', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-16', name: 'Chicken Tikka Masala', emoji: '🍛', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-5', name: 'Lasagna', emoji: '🍝', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-3', name: 'Itek Tim', emoji: '🍲', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-8', name: 'Beef Wellington', emoji: '🥩', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-9', name: 'Peking Duck', emoji: '🦆', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-17', name: 'Chocolate Soufflé', emoji: '🍫', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-18', name: 'Lobster Thermidor', emoji: '🦞', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-10', name: '12-Course Tasting Menu', emoji: '🍽️', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-11', name: 'Molecular Truffle Sphere', emoji: '🔮', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-12', name: 'Intergalactic Star-Soup', emoji: '🌌', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-19', name: 'The Singularity Cake', emoji: '🕳️', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-20', name: 'Quantum Soup', emoji: '⚛️', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-21', name: 'Phoenix Down Omelette', emoji: '🔥', difficulty: 'nightmare', status: 'not_started' },
 ];
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/** Get a random difficulty based on weighted probabilities */
+export function getRandomDifficulty(): OrderDifficulty {
+  const rand = Math.random();
+  // Easy: 60%, Intermediate: 20%, Difficult: 15%, Nightmare: 5%
+  if (rand < 0.60) return 'easy';
+  if (rand < 0.80) return 'intermediate';
+  if (rand < 0.95) return 'difficult';
+  return 'nightmare';
+}
 
 /** Sanitize action name for function declarations: "deep fry" → "deep_fry" */
 export function sanitizeName(name: string): string {
@@ -436,7 +612,7 @@ export const VERIFICATION_RESPONSE_SCHEMA = {
 // Recipe Steps Configuration
 // ============================================================================
 
-export const STEPS_SYSTEM_INSTRUCTION = `You are a master chef. Given a dish name and a list of available tools and ingredients, 
+export const STEPS_SYSTEM_INSTRUCTION = `You are a master chef. Given a dish name, its difficulty, and a list of available tools and ingredients, 
 provide a concise, visual list of steps to prepare the dish IN THE GAME.
 
 Rules for the game:
@@ -444,6 +620,11 @@ Rules for the game:
 2. Each combination produces a NEW ingredient.
 3. You repeat this until you have the final dish.
 4. The final step is ALWAYS to use the 'serve' tool on the final dish.
+
+DIFFICULTY GUIDANCE:
+- 'easy' or 'intermediate': Provide very specific, clear steps. Mention exact ingredients and tools.
+- 'difficult': Provide more abstract steps. Use broader terms for ingredients or tools (e.g., 'a heat source' instead of 'stove', 'some greens' instead of 'lettuce').
+- 'nightmare': Provide extremely vague, cryptic steps. Omit some intermediate steps or use riddles/metaphors. The player should have to experiment to find the exact path.
 
 Available Tools:
 ${COOKING_ACTIONS.map(a => a.displayName).join(', ')}

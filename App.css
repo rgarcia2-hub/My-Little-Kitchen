@@ -33,6 +33,10 @@
   --Red-400: #ff9c7a;
   --Red-500: #ff4600;
   --Red-800: #571a0f;
+  --bg-primary: white;
+  --border-color: #1a1a1a;
+  --accent-color: #1a1a1a;
+  --font-display: monospace;
   scrollbar-color: var(--Neutral-30) var(--Neutral-5);
   scrollbar-width: thin;
   --font-family: monospace;
@@ -50,7 +54,693 @@ body {
 }
 
 /* ============================================================================
-   100 Tools Kitchen App Styles
+   Auth Screen Styles (Game Theme)
+   ============================================================================ */
+
+.auth-container.game-theme {
+  background: #e4e3e0;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5000;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.auth-checkered-bg {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(45deg, #dcdbdb 25%, transparent 25%), 
+    linear-gradient(-45deg, #dcdbdb 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #dcdbdb 75%), 
+    linear-gradient(-45deg, transparent 75%, #dcdbdb 75%);
+  background-size: 40px 40px;
+  background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+  opacity: 0.3;
+  z-index: -1;
+}
+
+.brutalist-card {
+  background: #fff;
+  border: 2px solid #141414;
+  box-shadow: 12px 12px 0px #141414;
+  width: 100%;
+  max-width: 850px;
+  min-height: 500px;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-split {
+  display: flex;
+  width: 100%;
+}
+
+.auth-form-side {
+  flex: 1.2;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-header-badge {
+  display: inline-block;
+  background: #141414;
+  color: #00ff00;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+  width: fit-content;
+}
+
+.auth-title {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  letter-spacing: -1px;
+  color: #141414;
+}
+
+.auth-subtitle {
+  font-size: 12px;
+  color: #666;
+  margin: 0 0 32px 0;
+  font-weight: 500;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brutalist-input {
+  display: flex;
+  align-items: center;
+  border: 2px solid #141414 !important;
+  padding: 0 12px;
+  height: 48px;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.brutalist-input .auth-input-icon {
+  color: #141414;
+  margin-right: 12px;
+  opacity: 0.7;
+}
+
+.brutalist-input input {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 14px !important;
+  color: #141414;
+  width: 100%;
+}
+
+.brutalist-input:focus-within {
+  background: #f8f8f8;
+  box-shadow: 4px 4px 0px #141414;
+}
+
+.password-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: #141414;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
+.brutalist-btn {
+  background: #141414;
+  color: #fff;
+  border: none;
+  height: 52px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 4px 4px 0px #444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.brutalist-btn:hover:not(:disabled) {
+  background: #333;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #141414;
+}
+
+.brutalist-btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #141414;
+}
+
+.brutalist-btn.secondary {
+  background: #fff;
+  color: #141414;
+  border: 2px solid #141414;
+  box-shadow: 4px 4px 0px #141414;
+}
+
+.brutalist-btn.secondary:hover:not(:disabled) {
+  background: #f0f0f0;
+  box-shadow: 6px 6px 0px #141414;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  margin: 12px 0;
+  gap: 12px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #141414;
+  opacity: 0.2;
+}
+
+.auth-divider span {
+  font-size: 10px;
+  font-weight: 700;
+  color: #999;
+  letter-spacing: 1px;
+}
+
+.google-auth-btn {
+  height: 48px;
+}
+
+.google-auth-btn img {
+  width: 20px;
+  height: 20px;
+}
+
+.auth-switch {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  color: #141414 !important;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.brutalist-info {
+  flex: 0.8;
+  background: #141414 !important;
+  color: #fff !important;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 2px solid #141414;
+}
+
+.terminal-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.brutalist-info h3 {
+  font-size: 20px;
+  margin: 0 0 16px 0;
+  letter-spacing: 2px;
+  color: #00ff00;
+}
+
+.brutalist-info p {
+  font-size: 11px;
+  line-height: 1.8;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 32px;
+}
+
+.auth-info-decoration {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.brutalist-square {
+  width: 50px;
+  height: 50px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  transition: all 0.3s ease;
+}
+
+.brutalist-square:hover {
+  background: #333;
+  border-color: #00ff00;
+  transform: translateY(-4px);
+}
+
+.checkered-stripe-mini {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: repeating-linear-gradient(
+    45deg,
+    #333 0px, #333 10px,
+    #141414 10px, #141414 20px
+  );
+}
+
+.auth-switch button {
+  color: #000 !important;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ============================================================================
+   Account & Settings Styles
+   ============================================================================ */
+
+.account-info-card {
+  background: #f8f9fa;
+  border: 2px solid #1a1a1a;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.account-avatar-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+  border: 2px solid #1a1a1a;
+  object-fit: cover;
+}
+
+.account-details h5 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.account-details p {
+  margin: 0;
+  font-size: 11px;
+  color: #666;
+}
+
+.account-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.account-stat-item {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.stat-label {
+  display: block;
+  font-size: 9px;
+  color: #999;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.logout-btn-brutalist {
+  margin-top: 12px;
+  background: #ff4600;
+  color: white;
+  border: 2px solid #1a1a1a;
+  padding: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.1s ease;
+}
+
+.logout-btn-brutalist:hover {
+  background: #d43d00;
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px #1a1a1a;
+}
+
+.user-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: white;
+  border: 2px solid #1a1a1a;
+  border-radius: 0px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.user-profile-btn:hover {
+  background: #f5f5f5;
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0px #1a1a1a;
+}
+
+.user-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #1a1a1a;
+}
+
+.logout-btn {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  color: #ff4600;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logout-btn:hover {
+  background: #fff5f5;
+}
+
+/* ============================================================================
+   Error Boundary Styles
+   ============================================================================ */
+
+.error-boundary {
+  padding: 40px;
+  text-align: center;
+  background: #fff5f5;
+  border: 4px solid #ff4600;
+  margin: 20px;
+  box-shadow: 8px 8px 0px #ff4600;
+}
+
+.error-boundary h2 {
+  color: #ff4600;
+  margin-top: 0;
+}
+
+.error-details {
+  background: white;
+  padding: 16px;
+  border: 1px solid #ffc9c9;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+  text-align: left;
+  overflow: auto;
+  max-height: 200px;
+  margin: 20px 0;
+}
+
+.retry-btn {
+  background: #ff4600;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.recipe-book-section {
+  background: #fff9f0 !important;
+  border-color: #d4a373 !important;
+}
+
+.recipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, min-max(250px, 1fr));
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.recipe-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recipe-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: #d4a373;
+}
+
+.recipe-emoji {
+  font-size: 32px;
+  background: #f8f9fa;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.recipe-info {
+  flex: 1;
+}
+
+.recipe-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: #212529;
+}
+
+.recipe-dish {
+  font-size: 13px;
+  color: #6c757d;
+  margin: 0 0 4px 0;
+}
+
+.recipe-date {
+  font-size: 11px;
+  color: #adb5bd;
+  margin: 0;
+}
+
+.recipe-steps-mini {
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recipe-step-mini {
+  font-size: 11px;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.step-tool {
+  font-weight: 700;
+  color: #d4a373;
+}
+
+.step-ingredients {
+  color: #6c757d;
+}
+
+.step-arrow {
+  color: #adb5bd;
+}
+
+.step-result {
+  font-weight: 600;
+  color: #212529;
+}
+
+.empty-recipes {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  border: 2px dashed #dee2e6;
+}
+
+/* ============================================================================
+   Tutorial Styles
+   ============================================================================ */
+
+.tutorial-overlay {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  width: 90%;
+  max-width: 500px;
+  pointer-events: none;
+}
+
+.tutorial-content {
+  background: #1a1a1a;
+  color: white;
+  padding: 16px 20px;
+  border: 4px solid #ffc107;
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+  position: relative;
+}
+
+.tutorial-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tutorial-badge {
+  background: #ffc107;
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+
+.tutorial-close {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.tutorial-close:hover {
+  color: white;
+}
+
+.tutorial-text {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+  font-weight: 500;
+}
+
+.tutorial-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tutorial-step-indicator {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 600;
+}
+
+.tutorial-highlight {
+  position: relative;
+  z-index: 1001;
+  box-shadow: 0 0 0 4px #ffc107, 0 0 20px rgba(255, 193, 7, 0.5) !important;
+  animation: highlight-pulse 1.5s infinite;
+  border-color: #ffc107 !important;
+}
+
+@keyframes highlight-pulse {
+  0% { box-shadow: 0 0 0 4px #ffc107, 0 0 20px rgba(255, 193, 7, 0.5); }
+  50% { box-shadow: 0 0 0 8px #ffc107, 0 0 40px rgba(255, 193, 7, 0.8); }
+  100% { box-shadow: 0 0 0 4px #ffc107, 0 0 20px rgba(255, 193, 7, 0.5); }
+}
+
+/* Ensure highlighted elements are above any potential overlays */
+.tutorial-highlight {
+  pointer-events: auto !important;
+}
+
+/* ============================================================================
+   My little Kitchen App Styles
    ============================================================================ */
 
 .app-container {
@@ -125,6 +815,149 @@ body {
 }
 
 /* Page Title */
+.kitchen-header {
+  padding: 12px 0;
+  border-bottom: 2px solid #1a1a1a;
+  margin-bottom: 24px;
+}
+
+/* User Profile Button Top Right */
+.user-profile-btn-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  border: 2px solid #1a1a1a;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 4px 4px 0px #1a1a1a;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+.user-profile-btn-top:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #1a1a1a;
+}
+
+.user-profile-btn-top:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #1a1a1a;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #1a1a1a;
+  object-fit: cover;
+}
+
+.user-name-text {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Account Info Card */
+.account-info-card {
+  background: #f5f5f5;
+  border: 2px solid #1a1a1a;
+  padding: 16px;
+  margin-top: 8px;
+  box-shadow: 4px 4px 0px #1a1a1a;
+}
+
+.account-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px dashed #1a1a1a;
+}
+
+.account-avatar-large {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #1a1a1a;
+  object-fit: cover;
+}
+
+.account-details h5 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.account-details p {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.account-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.account-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #888;
+  font-weight: bold;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: bold;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.logout-btn-brutalist {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #ff4444;
+  color: white;
+  border: 2px solid #1a1a1a;
+  padding: 10px;
+  cursor: pointer;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.2s ease;
+  box-shadow: 4px 4px 0px #1a1a1a;
+}
+
+.logout-btn-brutalist:hover {
+  background: #cc0000;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #1a1a1a;
+}
+
+.logout-btn-brutalist:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #1a1a1a;
+}
+
 .kitchen-title {
   font-size: 28px;
   font-weight: 600;
@@ -1150,6 +1983,19 @@ body {
   box-shadow: 0px 0px 0px #1a1a1a;
 }
 
+.money-display-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff9c4;
+  border: 2px solid #1a1a1a;
+  padding: 6px 12px;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 4px 4px 0px #1a1a1a;
+  transition: all 0.1s ease;
+}
+
 .view-achievements-btn .count-badge {
   background: #1a1a1a;
   color: white;
@@ -1344,6 +2190,16 @@ body {
   z-index: 2000;
   backdrop-filter: blur(4px);
   padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.recipe-steps-overlay.pinned {
+  background: transparent;
+  backdrop-filter: none;
+  pointer-events: none;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 80px 40px 20px 20px;
 }
 
 .recipe-steps-modal {
@@ -1356,6 +2212,20 @@ body {
   flex-direction: column;
   box-shadow: 20px 20px 0 rgba(0, 0, 0, 0.3);
   animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: auto;
+  transition: all 0.3s ease;
+}
+
+.recipe-steps-overlay.pinned .recipe-steps-modal {
+  max-width: 350px;
+  max-height: 60vh;
+  box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.2);
+  opacity: 0.95;
+}
+
+.recipe-steps-overlay.pinned .recipe-steps-modal:hover {
+  opacity: 1;
+  transform: scale(1.02);
 }
 
 .recipe-steps-header {
@@ -1366,6 +2236,33 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+}
+
+.recipe-steps-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.recipe-steps-pin {
+  background: transparent;
+  color: white;
+  border: 2px solid white;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recipe-steps-pin:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.recipe-steps-pin.active {
+  background: white;
+  color: var(--accent-color);
 }
 
 .recipe-steps-title {
@@ -1727,6 +2624,21 @@ body {
   border: 1px solid #ef9a9a;
 }
 
+.order-difficulty.difficulty-nightmare {
+  background: #212121;
+  color: #ff5252;
+  border: 1px solid #ff5252;
+  font-weight: 800;
+  text-transform: uppercase;
+  animation: nightmare-pulse 1.5s infinite;
+}
+
+@keyframes nightmare-pulse {
+  0% { box-shadow: 0 0 0px #ff5252; }
+  50% { box-shadow: 0 0 10px #ff5252; }
+  100% { box-shadow: 0 0 0px #ff5252; }
+}
+
 /* Order buttons - base style */
 .order-button {
   margin-top: 8px;
@@ -1919,6 +2831,111 @@ body {
 
 .kitchen-app ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
+}
+
+/* ============================================================================
+   Upgrades Section
+   ============================================================================ */
+
+.upgrades-section {
+  background: #f0f4f8;
+  border-color: #2c3e50;
+}
+
+.upgrades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.upgrade-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  border: 2px solid #1a1a1a;
+  padding: 12px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.upgrade-item.purchased {
+  background: #e8f5e9;
+  border-color: #2e7d32;
+  opacity: 0.9;
+}
+
+.upgrade-item.affordable:not(.purchased) {
+  border-color: #1a1a1a;
+  box-shadow: 4px 4px 0px #1a1a1a;
+}
+
+.upgrade-item.expensive:not(.purchased) {
+  opacity: 0.7;
+  background: #f5f5f5;
+}
+
+.upgrade-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.upgrade-info {
+  flex: 1;
+}
+
+.upgrade-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+}
+
+.upgrade-description {
+  font-size: 11px;
+  color: #666;
+  margin: 2px 0 4px 0;
+  line-height: 1.2;
+}
+
+.upgrade-cost {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.buy-upgrade-btn {
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: monospace;
+  transition: all 0.1s ease;
+}
+
+.buy-upgrade-btn:hover:not(:disabled) {
+  background: #333;
+  transform: scale(1.05);
+}
+
+.buy-upgrade-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.money-display.small {
+  padding: 4px 12px;
+  font-size: 14px;
+  box-shadow: 2px 2px 0px #1a1a1a;
 }
 
 /* ============================================================================

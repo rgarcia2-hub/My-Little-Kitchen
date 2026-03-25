@@ -19,8 +19,8 @@
  * limitations under the License.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Lightbulb } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Lightbulb, LogOut } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -28,13 +28,14 @@ import { Content, FunctionCall } from '@google/genai';
 import {
   Ingredient,
   KitchenAction,
-  TimelineEntry,
   CombinationResult,
   Order,
   VerificationResult,
   RecipeStep,
   Achievement,
   ACHIEVEMENTS,
+  Upgrade,
+  UPGRADES,
   COOKING_ACTIONS,
   STARTING_INGREDIENTS,
   PRESELECTED_INGREDIENTS,
@@ -47,7 +48,53 @@ import {
   STEPS_RESPONSE_SCHEMA,
   generateCookingTools,
   buildCookingAgentSystemInstruction,
+  getRandomDifficulty,
+  CompletedRecipe,
 } from './constants';
+
+import { onAuthStateChanged, User, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp } from "firebase/firestore";
+import { auth, db } from "./src/firebase";
+import AuthScreen from "./src/components/AuthScreen";
+import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
+
+// ============================================================================
+// Error Boundary Component
+// ============================================================================
+
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-boundary">
+          <h2>Oops! Something went wrong.</h2>
+          <p>The kitchen encountered a technical issue. Don't worry, your progress should be safe!</p>
+          <div className="error-details">
+            {this.state.error?.message || "Unknown error"}
+          </div>
+          <button className="retry-btn" onClick={() => window.location.reload()}>
+            Reload Kitchen
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 // ============================================================================
 // Ingredient Normalization Helper
@@ -78,6 +125,78 @@ function isDuplicateIngredient(name: string, inventory: Ingredient[]): boolean {
 }
 
 // ============================================================================
+// Tutorial Overlay Component
+// ============================================================================
+
+interface TutorialStep {
+  id: number;
+  text: string;
+  highlightId?: string; // ID of the element to highlight
+  targetType?: 'order' | 'ingredient' | 'action';
+  targetName?: string;
+}
+
+const TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    id: 1,
+    text: "¡Bienvenido a My Little Kitchen! Vamos a aprender a cocinar. Primero, acepta un pedido. Haz clic en 'Start' en el pedido de 'Fried Eggs'.",
+    highlightId: 'order-1',
+    targetType: 'order',
+    targetName: 'Fried Eggs'
+  },
+  {
+    id: 2,
+    text: "¡Genial! Ahora selecciona un ingrediente. Vamos a cocinar unos huevos. Selecciona 'eggs'.",
+    highlightId: 'eggs',
+    targetType: 'ingredient',
+    targetName: 'eggs'
+  },
+  {
+    id: 3,
+    text: "Ahora usa una herramienta para cocinarlos. Haz clic en 'fry'.",
+    highlightId: 'fry',
+    targetType: 'action',
+    targetName: 'fry'
+  },
+  {
+    id: 4,
+    text: "¡Perfecto! Has cocinado 'Fried Eggs'. Ahora selecciónalos en tu inventario.",
+    highlightId: 'Fried Eggs',
+    targetType: 'ingredient',
+    targetName: 'Fried Eggs'
+  },
+  {
+    id: 5,
+    text: "Finalmente, haz clic en 'serve' para completar el pedido y entregárselo al cliente.",
+    highlightId: 'serve',
+    targetType: 'action',
+    targetName: 'serve'
+  }
+];
+
+interface TutorialOverlayProps {
+  step: TutorialStep;
+  onClose: () => void;
+}
+
+function TutorialOverlay({ step, onClose }: TutorialOverlayProps) {
+  return (
+    <div className="tutorial-overlay">
+      <div className="tutorial-content">
+        <div className="tutorial-header">
+          <span className="tutorial-badge">TUTORIAL</span>
+          <button className="tutorial-close" onClick={onClose}>✕</button>
+        </div>
+        <p className="tutorial-text">{step.text}</p>
+        <div className="tutorial-footer">
+          <span className="tutorial-step-indicator">Paso {step.id} de {TUTORIAL_STEPS.length}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
 // Ingredient Tile Component
 // ============================================================================
 
@@ -86,13 +205,14 @@ interface IngredientTileProps {
   isSelected: boolean;
   isActive: boolean;
   isDisabled: boolean;
+  isHighlighted?: boolean;
   onClick: () => void;
 }
 
-function IngredientTile({ ingredient, isSelected, isActive, isDisabled, onClick }: IngredientTileProps) {
+function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighlighted, onClick }: IngredientTileProps) {
   return (
     <button
-      className={`ingredient-tile ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''}`}
+      className={`ingredient-tile ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''} ${isHighlighted ? 'tutorial-highlight' : ''}`}
       onClick={onClick}
       title={isSelected ? `Click to deselect ${ingredient.name}` : `Click to select ${ingredient.name}`}
       data-ingredient={ingredient.name}
@@ -112,13 +232,14 @@ interface ActionTileProps {
   action: KitchenAction;
   isActive: boolean;
   isDisabled: boolean;
+  isHighlighted?: boolean;
   onClick: () => void;
 }
 
-function ActionTile({ action, isActive, isDisabled, onClick }: ActionTileProps) {
+function ActionTile({ action, isActive, isDisabled, isHighlighted, onClick }: ActionTileProps) {
   return (
     <button
-      className={`action-tile ${isActive ? 'active' : ''}`}
+      className={`action-tile ${isActive ? 'active' : ''} ${isHighlighted ? 'tutorial-highlight' : ''}`}
       onClick={onClick}
       disabled={isDisabled}
       title={isDisabled ? "Select ingredients first to use this tool" : `Click to ${action.name} selected ingredients`}
@@ -131,74 +252,19 @@ function ActionTile({ action, isActive, isDisabled, onClick }: ActionTileProps) 
 }
 
 // ============================================================================
-// Timeline Item Component
-// ============================================================================
-
-interface TimelineItemProps {
-  entry: TimelineEntry;
-}
-
-function TimelineItem({ entry }: TimelineItemProps) {
-  const hasAction = entry.action && entry.ingredients;
-  const hasText = entry.text;
-  const isLoading = hasAction && entry.result === null;
-
-  // Text-only entry
-  if (hasText && !hasAction) {
-    return (
-      <div className="timeline-item timeline-text-only">
-        <div className="timeline-text-content">
-          {entry.text}
-        </div>
-      </div>
-    );
-  }
-
-  // Action entry (possibly with text)
-  return (
-    <div className={`timeline-item ${isLoading ? 'loading' : ''}`}>
-      {hasText && (
-        <div className="timeline-text-content">
-          {entry.text}
-        </div>
-      )}
-      {hasAction && (
-        <>
-          <div className="timeline-action">
-            <span className="action-name">{entry.action}(</span>
-            <span className="action-args">{entry.ingredients?.join(', ')}</span>
-            <span className="action-name">)</span>
-          </div>
-          <div className="timeline-result">
-            <span className="timeline-result-arrow">↳</span>
-            {isLoading ? (
-              <span className="spinner">⏳</span>
-            ) : (
-              <>
-                <span className="result-emoji">{entry.result!.emoji}</span>
-                <span className="result-name">{entry.result!.name}</span>
-              </>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
 // Order Card Component
 // ============================================================================
 
 interface OrderCardProps {
   order: Order;
   isDisabled: boolean;
+  isHighlighted?: boolean;
   onPickUp: (orderId: string) => void;
   onCookWithGemini: (orderName: string) => void;
   onOpenVerificationAgent?: () => void;
 }
 
-function OrderCard({ order, isDisabled, onPickUp, onCookWithGemini, onOpenVerificationAgent }: OrderCardProps) {
+function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent }: OrderCardProps) {
   const statusClass = order.status === 'completed' ? 'completed' :
     order.status === 'failed' ? 'failed' :
       order.status === 'in_progress' ? 'in-progress' : 'not-started';
@@ -206,7 +272,7 @@ function OrderCard({ order, isDisabled, onPickUp, onCookWithGemini, onOpenVerifi
   const difficultyClass = order.difficulty ? `difficulty-${order.difficulty}` : '';
 
   return (
-    <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''}`}>
+    <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''}`}>
       {order.difficulty && (
         <div className={`order-difficulty ${difficultyClass}`}>
           {order.difficulty}
@@ -371,18 +437,34 @@ interface RecipeStepsDisplayProps {
   onClose: () => void;
   isLoading: boolean;
   orderName: string;
+  difficulty?: string;
+  isPinned: boolean;
+  onPinToggle: () => void;
 }
 
-function RecipeStepsDisplay({ steps, onClose, isLoading, orderName }: RecipeStepsDisplayProps) {
+function RecipeStepsDisplay({ steps, onClose, isLoading, orderName, difficulty, isPinned, onPinToggle }: RecipeStepsDisplayProps) {
+  const canPin = difficulty !== 'difficult' && difficulty !== 'nightmare';
+
   return (
-    <div className="recipe-steps-overlay">
+    <div className={`recipe-steps-overlay ${isPinned ? 'pinned' : ''}`}>
       <div className="recipe-steps-modal">
         <div className="recipe-steps-header">
           <div className="recipe-steps-header-text">
             <h3 className="recipe-steps-title">Cooking Guide: {orderName}</h3>
             <p className="recipe-steps-subtitle">Follow these steps using the tools and ingredients below</p>
           </div>
-          <button onClick={onClose} className="recipe-steps-close">✕</button>
+          <div className="recipe-steps-header-actions">
+            {canPin && (
+              <button 
+                onClick={onPinToggle} 
+                className={`recipe-steps-pin ${isPinned ? 'active' : ''}`}
+                title={isPinned ? "Unpin recipe" : "Pin recipe to screen"}
+              >
+                <span className="material-symbols-outlined">{isPinned ? 'keep_off' : 'keep'}</span>
+              </button>
+            )}
+            <button onClick={onClose} className="recipe-steps-close">✕</button>
+          </div>
         </div>
         <div className="recipe-steps-body">
           {isLoading ? (
@@ -429,9 +511,11 @@ function RecipeStepsDisplay({ steps, onClose, isLoading, orderName }: RecipeStep
             </div>
           )}
         </div>
-        <div className="recipe-steps-footer">
-          <button onClick={onClose} className="recipe-steps-done">Got it!</button>
-        </div>
+        {!isPinned && (
+          <div className="recipe-steps-footer">
+            <button onClick={onClose} className="recipe-steps-done">Got it!</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -444,8 +528,6 @@ function RecipeStepsDisplay({ steps, onClose, isLoading, orderName }: RecipeStep
 interface CombinationAgentProps {
   inventory: Ingredient[];
   setInventory: React.Dispatch<React.SetStateAction<Ingredient[]>>;
-  timeline: TimelineEntry[];
-  setTimeline: React.Dispatch<React.SetStateAction<TimelineEntry[]>>;
   selectedIngredients: Set<string>;
   setSelectedIngredients: React.Dispatch<React.SetStateAction<Set<string>>>;
   activeAction: string | null;
@@ -466,7 +548,6 @@ interface CombinationAgentProps {
   isCookingAgentOpen: boolean;
   isAlchemyAgentOpen: boolean;
   isJudgeAgentOpen: boolean;
-  onGetSteps: (orderName: string) => void;
   setActionTriggerCount: React.Dispatch<React.SetStateAction<number>>;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   unlockedAchievements: string[];
@@ -477,13 +558,51 @@ interface CombinationAgentProps {
   setRecentAchievement: React.Dispatch<React.SetStateAction<Achievement | null>>;
   isAchievementsExpanded: boolean;
   setIsAchievementsExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  isUpgradesExpanded: boolean;
+  setIsUpgradesExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  onBuyUpgrade: (upgrade: Upgrade) => void;
+  tutorialStep: number;
+  setTutorialStep: React.Dispatch<React.SetStateAction<number>>;
+  isRecipeBookExpanded: boolean;
+  setIsRecipeBookExpanded: React.Dispatch<React.SetStateAction<boolean>>;
+  completedRecipes: CompletedRecipe[];
+  setCompletedRecipes: React.Dispatch<React.SetStateAction<CompletedRecipe[]>>;
+  setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
+  user: User;
+}
+
+function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
+  upgrade: Upgrade; 
+  isPurchased: boolean; 
+  canAfford: boolean;
+  onBuy: () => void;
+}) {
+  return (
+    <div className={`upgrade-item ${isPurchased ? 'purchased' : canAfford ? 'affordable' : 'expensive'}`}>
+      <div className="upgrade-icon">{upgrade.emoji}</div>
+      <div className="upgrade-info">
+        <div className="upgrade-name">{upgrade.name}</div>
+        <div className="upgrade-description">{upgrade.description}</div>
+        <div className="upgrade-cost">
+          {isPurchased ? 'PURCHASED' : `Cost: $${upgrade.cost}`}
+        </div>
+      </div>
+      {!isPurchased && (
+        <button 
+          className="buy-upgrade-btn" 
+          onClick={onBuy}
+          disabled={!canAfford}
+        >
+          Buy
+        </button>
+      )}
+    </div>
+  );
 }
 
 function CombinationAgent({
   inventory,
   setInventory,
-  timeline,
-  setTimeline,
   selectedIngredients,
   setSelectedIngredients,
   activeAction,
@@ -504,7 +623,6 @@ function CombinationAgent({
   isCookingAgentOpen,
   isAlchemyAgentOpen,
   isJudgeAgentOpen,
-  onGetSteps,
   setActionTriggerCount,
   setOrders,
   unlockedAchievements,
@@ -515,28 +633,39 @@ function CombinationAgent({
   setRecentAchievement,
   isAchievementsExpanded,
   setIsAchievementsExpanded,
+  isUpgradesExpanded,
+  setIsUpgradesExpanded,
+  onBuyUpgrade,
+  tutorialStep,
+  setTutorialStep,
+  isRecipeBookExpanded,
+  setIsRecipeBookExpanded,
+  completedRecipes,
+  setCompletedRecipes,
+  setCurrentOrderSteps,
+  user,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [toolsSearchTerm, setToolsSearchTerm] = useState('');
-  const [isLogExpanded, setIsLogExpanded] = useState(true);
   const [showSkipModal, setShowSkipModal] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const [skipPassword, setSkipPassword] = useState('');
   const [skipAmount, setSkipAmount] = useState('1');
   const [skipCompleteOrder, setSkipCompleteOrder] = useState(false);
   const [skipError, setSkipError] = useState('');
   const [adminIngredientName, setAdminIngredientName] = useState('');
   const [adminIngredientEmoji, setAdminIngredientEmoji] = useState('🍎');
 
+  const isAdminUser = user.email === 'robert.garcia.alsina2012@gmail.com';
+
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
   const [showRecipeSteps, setShowRecipeSteps] = useState(false);
+  const [isRecipePinned, setIsRecipePinned] = useState(false);
 
   // Refs for auto-scroll
   const ingredientsRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<HTMLDivElement>(null);
   const hasScrolledRef = useRef(false);
   const prevInventoryLengthRef = useRef(inventory.length);
 
@@ -554,6 +683,12 @@ function CombinationAgent({
 
   // Toggle ingredient selection
   const toggleIngredient = useCallback((name: string) => {
+    if (tutorialStep === 2 && name === 'eggs') {
+      setTutorialStep(3);
+    } else if (tutorialStep === 4 && name === 'Fried Eggs') {
+      setTutorialStep(5);
+    }
+
     setSelectedIngredients(prev => {
       const next = new Set(prev);
       if (next.has(name)) {
@@ -570,6 +705,30 @@ function CombinationAgent({
     action: KitchenAction,
     ingredientNames: string[]
   ): Promise<Ingredient | null> => {
+    // Apply safety_boost upgrade logic for "Kitchen Fire"
+    if (stats.purchasedUpgrades?.includes('fusion_reactor')) {
+      // Fusion Reactor eliminates fire risk
+    } else {
+      let safetyLimit = stats.purchasedUpgrades?.includes('master_tools') ? 8 : 5;
+      if (stats.purchasedUpgrades?.includes('cryo_freezer')) {
+        safetyLimit += 2;
+      }
+
+      if (ingredientNames.length >= safetyLimit) {
+        let fireChance = stats.purchasedUpgrades?.includes('master_tools') ? 0.1 : 0.5;
+        if (stats.purchasedUpgrades?.includes('cryo_freezer')) {
+          fireChance *= 0.5; // Even safer
+        }
+        
+        if (Math.random() < fireChance) {
+          return {
+            name: 'Kitchen Fire',
+            emoji: '🔥'
+          };
+        }
+      }
+    }
+
     try {
       const prompt = `Action: ${action.displayName}\nIngredients: ${ingredientNames.join(', ')}\n\nWhat is the result of this cooking action?`;
 
@@ -599,12 +758,12 @@ function CombinationAgent({
     };
   }, [executeCombination, onExecuteActionRef]);
 
-  const fetchRecipeSteps = async (orderName: string) => {
+  const fetchRecipeSteps = async (orderName: string, difficulty: string = 'easy') => {
     setIsFetchingSteps(true);
     setShowRecipeSteps(true);
     setRecipeSteps([]);
     try {
-      const prompt = `Provide steps to cook ${orderName} in the game.`;
+      const prompt = `Provide steps to cook ${orderName} in the game. The difficulty is ${difficulty}.`;
       const response = await client.generateContent(model, [{ role: 'user', parts: [{ text: prompt }] }], {
         systemInstruction: STEPS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
@@ -623,18 +782,61 @@ function CombinationAgent({
   };
 
   const handleSkipSteps = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       if (skipCompleteOrder) {
         const currentOrder = orders.find(o => o.status === 'in_progress');
         if (currentOrder) {
-          setOrders(prev => prev.map(o => 
-            o.id === currentOrder.id ? { ...o, status: 'completed' as const } : o
-          ));
-          setTimeline(prev => [...prev, {
-            id: `skip-complete-${Date.now()}`,
-            timestamp: new Date(),
-            text: `✨ Order "${currentOrder.name}" completed directly (Admin Override)`,
-          }]);
+          // Reward based on difficulty (Admin gets full reward)
+          let baseReward = 50;
+          if (currentOrder.difficulty === 'intermediate') baseReward = 100;
+          else if (currentOrder.difficulty === 'difficult') baseReward = 250;
+          else if (currentOrder.difficulty === 'nightmare') baseReward = 1000;
+
+          setStats((prev: any) => ({
+            ...prev,
+            completedOrders: prev.completedOrders + 1,
+            completedNightmareOrders: currentOrder.difficulty === 'nightmare' 
+              ? (prev.completedNightmareOrders || 0) + 1 
+              : (prev.completedNightmareOrders || 0),
+            money: (prev.money || 0) + baseReward,
+          }));
+
+          // Add to Recipe Book
+          setCompletedRecipes(prev => {
+            if (prev.some(r => r.orderName === currentOrder.name)) return prev;
+            
+            const newRecipe: CompletedRecipe = {
+              id: `recipe-${Date.now()}`,
+              orderName: currentOrder.name,
+              dishName: currentOrder.name, // Admin skip uses order name as dish name
+              emoji: '⭐', // Admin star
+              timestamp: new Date().toISOString(),
+              steps: [{ tool: 'Admin Panel', ingredients: ['Magic'], result: currentOrder.name }]
+            };
+            return [newRecipe, ...prev];
+          });
+
+          // Clear steps
+          setCurrentOrderSteps([]);
+
+          setOrders(prev => {
+            const updatedOrders = prev.map(o => 
+              o.id === currentOrder.id ? { ...o, status: 'completed' as const } : o
+            );
+
+            // Add a new random order (same logic as VerificationAgent)
+            const difficulty = getRandomDifficulty();
+            const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
+            const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
+            
+            const newOrder: Order = {
+              ...randomTemplate,
+              id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              status: 'not_started'
+            };
+
+            return [...updatedOrders, newOrder];
+          });
         } else {
           setSkipError('No order in progress to complete');
           return;
@@ -643,11 +845,6 @@ function CombinationAgent({
         const amount = parseInt(skipAmount, 10);
         if (!isNaN(amount) && amount > 0) {
           setActionTriggerCount(prev => prev + amount);
-          setTimeline(prev => [...prev, {
-            id: `skip-${Date.now()}`,
-            timestamp: new Date(),
-            text: `⏩ Skipped ${amount} steps (Admin Override)`,
-          }]);
         } else {
           setSkipError('Invalid amount');
           return;
@@ -655,26 +852,20 @@ function CombinationAgent({
       }
       
       setShowSkipModal(false);
-      setSkipPassword('');
       setSkipAmount('1');
       setSkipCompleteOrder(false);
       setSkipError('');
     } else {
-      setSkipError('Incorrect password');
+      setSkipError('Unauthorized');
     }
   };
 
   const handleAdminAddIngredient = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       if (adminIngredientName.trim()) {
         const newIng = { name: adminIngredientName.trim(), emoji: adminIngredientEmoji };
         if (!isDuplicateIngredient(newIng.name, inventory)) {
           setInventory(prev => [newIng, ...prev]);
-          setTimeline(prev => [...prev, {
-            id: `admin-add-${Date.now()}`,
-            timestamp: new Date(),
-            text: `🛠️ Admin added: ${newIng.emoji} ${newIng.name}`,
-          }]);
           setAdminIngredientName('');
           setSkipError('');
         } else {
@@ -689,57 +880,45 @@ function CombinationAgent({
   };
 
   const handleAdminClearInventory = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       setInventory(STARTING_INGREDIENTS);
-      setTimeline(prev => [...prev, {
-        id: `admin-clear-${Date.now()}`,
-        timestamp: new Date(),
-        text: `🧹 Inventory reset to starting items (Admin Override)`,
-      }]);
       setSkipError('');
     } else {
-      setSkipError('Incorrect password');
+      setSkipError('Unauthorized');
     }
   };
 
   const handleAdminUnlockAchievements = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       setUnlockedAchievements(ACHIEVEMENTS.map(a => a.id));
-      setTimeline(prev => [...prev, {
-        id: `admin-unlock-${Date.now()}`,
-        timestamp: new Date(),
-        text: `🏆 All achievements unlocked (Admin Override)`,
-      }]);
       setSkipError('');
     } else {
-      setSkipError('Incorrect password');
+      setSkipError('Unauthorized');
     }
   };
 
   const handleAdminClearOrders = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       setOrders([]);
-      setTimeline(prev => [...prev, {
-        id: `admin-clear-orders-${Date.now()}`,
-        timestamp: new Date(),
-        text: `🧹 All orders cleared (Admin Override)`,
-      }]);
       setSkipError('');
     } else {
-      setSkipError('Incorrect password');
+      setSkipError('Unauthorized');
     }
   };
 
   const handleAdminGenerateOrder = () => {
-    if (skipPassword === 'Iloveroby') {
-      const randomDishes = ['Pizza', 'Burger', 'Sushi', 'Tacos', 'Pasta', 'Salad', 'Steak', 'Soup', 'Ramen', 'Curry'];
-      const randomDish = randomDishes[Math.floor(Math.random() * randomDishes.length)];
-      onAddOrder(randomDish);
-      setTimeline(prev => [...prev, {
-        id: `admin-gen-order-${Date.now()}`,
-        timestamp: new Date(),
-        text: `📝 Admin generated order: ${randomDish}`,
-      }]);
+    if (isAdminUser) {
+      const difficulty = getRandomDifficulty();
+      const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
+      const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
+      
+      const newOrder: Order = {
+        ...randomTemplate,
+        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        status: 'not_started'
+      };
+
+      setOrders(prev => [...prev, newOrder]);
       setSkipError('');
     } else {
       setSkipError('Incorrect password');
@@ -747,41 +926,31 @@ function CombinationAgent({
   };
 
   const handleAdminAddMoney = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       setStats((prev: any) => ({ ...prev, money: (prev.money || 0) + 100 }));
-      setTimeline(prev => [...prev, {
-        id: `admin-add-money-${Date.now()}`,
-        timestamp: new Date(),
-        text: `💰 Admin added $100`,
-      }]);
       setSkipError('');
     } else {
-      setSkipError('Incorrect password');
+      setSkipError('Unauthorized');
     }
   };
 
   const handleAdminToggleDebug = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       setDebugMode(!debugMode);
-      setTimeline(prev => [...prev, {
-        id: `admin-debug-${Date.now()}`,
-        timestamp: new Date(),
-        text: `🛠️ Debug Mode ${!debugMode ? 'Enabled' : 'Disabled'} (Admin Override)`,
-      }]);
       setSkipError('');
     } else {
-      setSkipError('Incorrect password');
+      setSkipError('Unauthorized');
     }
   };
 
   const handleAdminResetAll = () => {
-    if (skipPassword === 'Iloveroby') {
+    if (isAdminUser) {
       setInventory(STARTING_INGREDIENTS);
       setUnlockedAchievements([]);
       setStats({
         completedOrders: 0,
         money: 0,
-        discoveredIngredients: 0,
+        discoveredIngredients: STARTING_INGREDIENTS.length,
         usedTools: [],
         usedToolsCount: 0,
         totalActions: 0,
@@ -789,15 +958,19 @@ function CombinationAgent({
         maxConfidence: 0,
         completedDishes: []
       });
-      setTimeline([{
-        id: `admin-reset-${Date.now()}`,
-        timestamp: new Date(),
-        text: `🔄 Game fully reset (Admin Override)`,
-      }]);
+      setCompletedRecipes([]);
       setSkipError('');
     } else {
       setSkipError('Incorrect password');
     }
+  };
+
+  const restartTutorial = () => {
+    setTutorialStep(1);
+    localStorage.removeItem('tutorialCompleted');
+    // Also clear some state to make it feel fresh
+    setInventory(STARTING_INGREDIENTS);
+    setSelectedIngredients(new Set());
   };
 
   // Manual execution (UI click)
@@ -811,38 +984,24 @@ function CombinationAgent({
 
     // Handle serve action specially - only triggers verification, no combination
     if (action.name === 'serve') {
+      if (tutorialStep === 5 && ingredientNames[0] === 'Fried Eggs') {
+        setTutorialStep(0);
+        localStorage.setItem('tutorialCompleted', 'true');
+      }
+
       // Serve takes only the first selected ingredient as the dish name
       const dishName = ingredientNames[0];
-
-      // Add serve to timeline
-      setTimeline(prev => [...prev, {
-        id: `serve-${Date.now()}`,
-        type: 'text' as const,
-        action: '',
-        ingredients: [],
-        result: null,
-        text: `🍽️ Served: ${dishName}`,
-        timestamp: new Date(),
-      }]);
 
       // Trigger verification agent
       onServe(dishName);
       return;
     }
 
-    // Regular cooking actions - use combination agent
-    const timelineId = `${Date.now()}`;
-
-    // Add loading placeholder to timeline
-    const loadingEntry: TimelineEntry = {
-      id: timelineId,
-      timestamp: new Date(),
-      action: action.name,
-      ingredients: ingredientNames,
-      result: null,
-    };
-    setTimeline(prev => [...prev, loadingEntry]);
     setActiveAction(action.name);
+
+    if (tutorialStep === 3 && action.name === 'fry' && ingredientNames.includes('eggs')) {
+      setTutorialStep(4);
+    }
 
     const newIngredient = await executeCombination(action, ingredientNames);
 
@@ -853,12 +1012,12 @@ function CombinationAgent({
     }));
 
     if (newIngredient) {
-      // Update timeline with result
-      setTimeline(prev => prev.map(entry =>
-        entry.id === timelineId
-          ? { ...entry, result: newIngredient }
-          : entry
-      ));
+      // Add to current order steps
+      setCurrentOrderSteps(prev => [...prev, {
+        tool: action.displayName,
+        ingredients: ingredientNames,
+        result: newIngredient.name
+      }]);
 
       // Update stats for discovered ingredients
       if (!isDuplicateIngredient(newIngredient.name, inventory)) {
@@ -869,7 +1028,7 @@ function CombinationAgent({
       }
 
       // Update stats for used tools
-      if (!stats.usedTools.includes(action.name)) {
+      if (!(stats.usedTools || []).includes(action.name)) {
         setStats((prev: any) => ({
           ...prev,
           usedTools: [...prev.usedTools, action.name],
@@ -894,24 +1053,10 @@ function CombinationAgent({
         }
         return [newIngredient, ...prev];
       });
-    } else {
-      // Update timeline with error
-      setTimeline(prev => prev.map(entry =>
-        entry.id === timelineId
-          ? { ...entry, result: { name: 'error', emoji: '❌' } }
-          : entry
-      ));
     }
 
     setActiveAction(null);
-  }, [selectedIngredients, executeCombination, setTimeline, setActiveAction, setSelectedIngredients, setInventory, onServe]);
-
-  // Auto-scroll timeline when new item added
-  useEffect(() => {
-    if (timelineRef.current) {
-      timelineRef.current.scrollLeft = timelineRef.current.scrollWidth;
-    }
-  }, [timeline.length]);
+  }, [selectedIngredients, executeCombination, setActiveAction, setSelectedIngredients, setInventory, onServe]);
 
   // Auto-scroll ingredients and tools sections on first load to show length
   useEffect(() => {
@@ -982,23 +1127,35 @@ function CombinationAgent({
     <div className="kitchen-app">
       {/* Page Title */}
       <div className="kitchen-header">
-        <div className="flex justify-between items-center w-full max-w-7xl mx-auto">
+        <div className="flex justify-between items-center w-full max-w-7xl mx-auto relative">
           <div>
-            <h1 className="kitchen-title">Function Calling Kitchen</h1>
-            <p className="kitchen-subtitle">Challenge Gemini 3 Flash's function calling capabilities:</p>
+            <h1 className="kitchen-title">My little Kitchen</h1>
           </div>
-          {stats.money > 0 && (
-            <div className="money-display">
-              <span className="money-icon">💰</span>
-              <span className="money-amount">${stats.money}</span>
-            </div>
-          )}
+          
+          <div className="settings-container">
+            <button 
+              className="user-profile-btn-top"
+              onClick={() => {
+                setShowSkipModal(true);
+              }}
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="Profile" className="user-avatar" referrerPolicy="no-referrer" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px]">
+                  {user.displayName?.[0] || user.email?.[0] || '?'}
+                </div>
+              )}
+              <span className="user-name-text">{user.displayName || 'Chef'}</span>
+              <span className="emoji">⚙️</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Challenge Banner */}
       <div className="challenge-banner">
-        <div className="challenge-title">🧑‍🍳 ULTIMATE FUNCTION CALLING CHALLENGE! 🧑‍🍳</div>
+        <div className="challenge-title">🧑‍🍳 KITCHEN TUTORIAL 🧑‍🍳</div>
         <div className="challenge-subtitle">Sequence tasks from 100 tools and 100 ingredients to prepare a meal</div>
         
         <div className="how-to-play">
@@ -1014,15 +1171,130 @@ function CombinationAgent({
 
       {/* Achievements Top Bar */}
       <div className="achievements-top-bar">
-        <button 
-          className={`view-achievements-btn ${isAchievementsExpanded ? 'active' : ''}`}
-          onClick={() => setIsAchievementsExpanded(!isAchievementsExpanded)}
-        >
-          <span className="emoji">🏆</span>
-          <span>{isAchievementsExpanded ? 'Hide Achievements' : 'View Achievements'}</span>
-          <span className="count-badge">{unlockedAchievements.length}/{ACHIEVEMENTS.length}</span>
-        </button>
+        <div className="flex flex-wrap w-full items-center justify-between">
+          <div className="flex gap-4 flex-wrap items-center">
+            <button 
+              className={`view-achievements-btn ${isAchievementsExpanded ? 'active' : ''}`}
+              onClick={() => {
+                setIsAchievementsExpanded(!isAchievementsExpanded);
+                if (!isAchievementsExpanded) setIsUpgradesExpanded(false);
+              }}
+            >
+              <span className="emoji">🏆</span>
+              <span>{isAchievementsExpanded ? 'Hide Achievements' : 'View Achievements'}</span>
+              <span className="count-badge">{unlockedAchievements.length}/{ACHIEVEMENTS.length}</span>
+            </button>
+            <button 
+              className={`view-achievements-btn ${isUpgradesExpanded ? 'active' : ''}`}
+              onClick={() => {
+                setIsUpgradesExpanded(!isUpgradesExpanded);
+                if (!isUpgradesExpanded) {
+                  setIsAchievementsExpanded(false);
+                  setIsRecipeBookExpanded(false);
+                }
+              }}
+            >
+              <span className="emoji">🚀</span>
+              <span>{isUpgradesExpanded ? 'Hide Upgrades' : 'View Upgrades'}</span>
+              <span className="count-badge">{(stats.purchasedUpgrades || []).length}/{UPGRADES.length}</span>
+            </button>
+            <button 
+              className={`view-achievements-btn ${isRecipeBookExpanded ? 'active' : ''}`}
+              onClick={() => {
+                setIsRecipeBookExpanded(!isRecipeBookExpanded);
+                if (!isRecipeBookExpanded) {
+                  setIsAchievementsExpanded(false);
+                  setIsUpgradesExpanded(false);
+                }
+              }}
+            >
+              <span className="emoji">📖</span>
+              <span>{isRecipeBookExpanded ? 'Hide Recipes' : 'Recipe Book'}</span>
+              <span className="count-badge">{completedRecipes.length}</span>
+            </button>
+          </div>
+
+          {stats.money > 0 && (
+            <div className="money-display-bar">
+              <span className="money-icon">💰</span>
+              <span className="money-amount">Dinero: ${stats.money}</span>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Recipe Book Section (Conditional Render) */}
+      {isRecipeBookExpanded && (
+        <section className="kitchen-section achievements-section expanded recipe-book-section">
+          <div className="section-header">
+            <div className="section-header-text">
+              <h2 className="section-title">Recipe Book</h2>
+              <p className="section-subtitle">A collection of your successful culinary creations</p>
+            </div>
+            <button className="close-achievements" onClick={() => setIsRecipeBookExpanded(false)}>✕</button>
+          </div>
+          <div className="recipes-grid">
+            {completedRecipes.length === 0 ? (
+              <div className="empty-recipes">
+                <p>You haven't completed any orders yet. Cook and serve dishes to fill your recipe book!</p>
+              </div>
+            ) : (
+              completedRecipes.map(recipe => (
+                <div key={recipe.id} className="recipe-card">
+                  <div className="recipe-emoji">{recipe.emoji}</div>
+                  <div className="recipe-info">
+                    <h3 className="recipe-name">{recipe.orderName}</h3>
+                    <p className="recipe-dish">Served as: {recipe.dishName}</p>
+                    {recipe.steps && recipe.steps.length > 0 && (
+                      <div className="recipe-steps-mini">
+                        {recipe.steps.map((step, idx) => (
+                          <div key={idx} className="recipe-step-mini">
+                            <span className="step-tool">{step.tool}</span>
+                            <span className="step-ingredients">({step.ingredients.join(', ')})</span>
+                            <span className="step-arrow">→</span>
+                            <span className="step-result">{step.result}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="recipe-date">{new Date(recipe.timestamp).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Upgrades Section (Conditional Render) */}
+      {isUpgradesExpanded && (
+        <section className="kitchen-section achievements-section expanded upgrades-section">
+          <div className="section-header">
+            <div className="section-header-text">
+              <h2 className="section-title">Kitchen Upgrades</h2>
+              <p className="section-subtitle">Invest your earnings to improve your kitchen's efficiency</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="money-display small">
+                <span className="money-icon">💰</span>
+                <span className="money-amount">${stats.money}</span>
+              </div>
+              <button className="close-achievements" onClick={() => setIsUpgradesExpanded(false)}>✕</button>
+            </div>
+          </div>
+          <div className="upgrades-grid">
+            {UPGRADES.map(upgrade => (
+              <UpgradeItem 
+                key={upgrade.id} 
+                upgrade={upgrade} 
+                isPurchased={(stats.purchasedUpgrades || []).includes(upgrade.id)}
+                canAfford={(stats.money || 0) >= upgrade.cost}
+                onBuy={() => onBuyUpgrade(upgrade)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Achievements Section (Conditional Render) */}
       {isAchievementsExpanded && (
@@ -1039,7 +1311,7 @@ function CombinationAgent({
               <AchievementItem 
                 key={achievement.id} 
                 achievement={achievement} 
-                isUnlocked={unlockedAchievements.includes(achievement.id)} 
+                isUnlocked={(unlockedAchievements || []).includes(achievement.id)} 
               />
             ))}
           </div>
@@ -1056,7 +1328,7 @@ function CombinationAgent({
           {currentOrder && (
             <button
               className="hint-button"
-              onClick={() => fetchRecipeSteps(currentOrder.name)}
+              onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
               title={`Get steps for ${currentOrder.name}`}
               disabled={isCooking || isFetchingSteps}
             >
@@ -1075,6 +1347,7 @@ function CombinationAgent({
                     key={order.id}
                     order={order}
                     isDisabled={hasInProgressOrder && order.status === 'not_started'}
+                    isHighlighted={tutorialStep === 1 && order.name === 'Fried Eggs'}
                     onPickUp={onPickUp}
                     onCookWithGemini={onCookWithGemini}
                     onOpenVerificationAgent={onOpenVerificationAgent}
@@ -1087,102 +1360,146 @@ function CombinationAgent({
         </div>
       </section>
 
-      {/* Skip Steps Modal */}
+      {/* Settings & Account Modal */}
       {showSkipModal && (
         <div className="skip-modal-overlay">
           <div className="skip-modal">
-            <h3 className="skip-modal-title">Admin Panel {debugMode && <span className="debug-badge">DEBUG</span>}</h3>
+            <h3 className="skip-modal-title">Settings & Account {debugMode && <span className="debug-badge">DEBUG</span>}</h3>
             <div className="skip-modal-body">
-              <div className="skip-input-group">
-                <label>Admin Password</label>
-                <input 
-                  type="password" 
-                  value={skipPassword} 
-                  onChange={(e) => setSkipPassword(e.target.value)}
-                  placeholder="Enter password..."
-                  className="skip-input"
-                />
-              </div>
-
+              
               <div className="admin-section">
-                <h4>Skip & Orders</h4>
-                <div className="skip-input-group">
-                  <label>Steps to skip</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="number" 
-                      value={skipAmount} 
-                      onChange={(e) => setSkipAmount(e.target.value)}
-                      min="1"
-                      className="skip-input flex-1"
-                      disabled={skipCompleteOrder}
-                    />
-                    <button className="admin-action-btn" onClick={handleSkipSteps}>Execute Skip</button>
+                <h4>Account</h4>
+                <div className="account-info-card">
+                  <div className="account-header">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="Profile" className="account-avatar-large" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="w-12 h-12 bg-black text-white flex items-center justify-center font-bold text-xl">
+                        {user.displayName?.[0] || user.email?.[0] || '?'}
+                      </div>
+                    )}
+                    <div className="account-details">
+                      <h5>{user.displayName || 'Chef'}</h5>
+                      <p>{user.email}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="skip-checkbox-group">
-                  <input 
-                    type="checkbox" 
-                    id="complete-order-checkbox"
-                    checked={skipCompleteOrder}
-                    onChange={(e) => setSkipCompleteOrder(e.target.checked)}
-                    className="skip-checkbox"
-                  />
-                  <label htmlFor="complete-order-checkbox">Complete current order directly</label>
-                </div>
-              </div>
-
-              <div className="admin-section">
-                <h4>Inventory Management</h4>
-                <div className="skip-input-group">
-                  <label>Add Custom Ingredient</label>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={adminIngredientEmoji} 
-                      onChange={(e) => setAdminIngredientEmoji(e.target.value)}
-                      placeholder="Emoji"
-                      className="skip-input w-16"
-                    />
-                    <input 
-                      type="text" 
-                      value={adminIngredientName} 
-                      onChange={(e) => setAdminIngredientName(e.target.value)}
-                      placeholder="Name"
-                      className="skip-input flex-1"
-                    />
-                    <button className="admin-action-btn" onClick={handleAdminAddIngredient}>Add</button>
+                  
+                  <div className="account-stats-grid">
+                    <div className="account-stat-item">
+                      <span className="stat-label">Balance</span>
+                      <span className="stat-value">${stats.money}</span>
+                    </div>
+                    <div className="account-stat-item">
+                      <span className="stat-label">Achievements</span>
+                      <span className="stat-value">{unlockedAchievements.length}</span>
+                    </div>
                   </div>
-                </div>
-                <button className="admin-danger-btn" onClick={handleAdminClearInventory}>Reset Inventory</button>
-              </div>
 
-              <div className="admin-section">
-                <h4>Achievements & Stats</h4>
-                <div className="flex gap-2 mb-2">
-                  <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
-                  <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
-                </div>
-                <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
-              </div>
-
-              <div className="admin-section">
-                <h4>Order Management</h4>
-                <div className="flex gap-2">
-                  <button className="admin-action-btn flex-1" onClick={handleAdminGenerateOrder}>Random Order</button>
-                  <button className="admin-danger-btn flex-1" onClick={handleAdminClearOrders}>Clear All</button>
+                  <button className="logout-btn-brutalist" onClick={() => signOut(auth)}>
+                    <LogOut size={18} />
+                    <span>Terminate Session</span>
+                  </button>
                 </div>
               </div>
 
               <div className="admin-section">
-                <h4>System</h4>
+                <h4>Tutorial</h4>
                 <button 
-                  className={`admin-action-btn w-full ${debugMode ? 'active' : ''}`} 
-                  onClick={handleAdminToggleDebug}
+                  className="admin-action-btn w-full"
+                  onClick={() => {
+                    setTutorialStep(1);
+                    localStorage.removeItem('tutorialCompleted');
+                    setShowSkipModal(false);
+                  }}
                 >
-                  {debugMode ? 'Disable Debug Mode' : 'Enable Debug Mode'}
+                  <span className="emoji">🎓</span>
+                  <span>Restart Tutorial</span>
                 </button>
               </div>
+
+              {isAdminUser && (
+                <>
+                  <div className="admin-section">
+                    <h4>Admin: Skip & Orders</h4>
+                    <div className="skip-input-group">
+                      <label>Steps to skip</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          value={skipAmount} 
+                          onChange={(e) => setSkipAmount(e.target.value)}
+                          min="1"
+                          className="skip-input flex-1"
+                          disabled={skipCompleteOrder}
+                        />
+                        <button className="admin-action-btn" onClick={handleSkipSteps}>Execute Skip</button>
+                      </div>
+                    </div>
+                    <div className="skip-checkbox-group">
+                      <input 
+                        type="checkbox" 
+                        id="complete-order-checkbox"
+                        checked={skipCompleteOrder}
+                        onChange={(e) => setSkipCompleteOrder(e.target.checked)}
+                        className="skip-checkbox"
+                      />
+                      <label htmlFor="complete-order-checkbox">Complete current order directly</label>
+                    </div>
+                  </div>
+
+                  <div className="admin-section">
+                    <h4>Admin: Inventory Management</h4>
+                    <div className="skip-input-group">
+                      <label>Add Custom Ingredient</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={adminIngredientEmoji} 
+                          onChange={(e) => setAdminIngredientEmoji(e.target.value)}
+                          placeholder="Emoji"
+                          className="skip-input w-16"
+                        />
+                        <input 
+                          type="text" 
+                          value={adminIngredientName} 
+                          onChange={(e) => setAdminIngredientName(e.target.value)}
+                          placeholder="Name"
+                          className="skip-input flex-1"
+                        />
+                        <button className="admin-action-btn" onClick={handleAdminAddIngredient}>Add</button>
+                      </div>
+                    </div>
+                    <button className="admin-danger-btn" onClick={handleAdminClearInventory}>Reset Inventory</button>
+                  </div>
+
+                  <div className="admin-section">
+                    <h4>Admin: Achievements & Stats</h4>
+                    <div className="flex gap-2 mb-2">
+                      <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
+                      <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
+                    </div>
+                    <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
+                  </div>
+
+                  <div className="admin-section">
+                    <h4>Admin: Order Management</h4>
+                    <div className="flex gap-2">
+                      <button className="admin-action-btn flex-1" onClick={handleAdminGenerateOrder}>Random Order</button>
+                      <button className="admin-danger-btn flex-1" onClick={handleAdminClearOrders}>Clear All</button>
+                    </div>
+                  </div>
+
+                  <div className="admin-section">
+                    <h4>Admin: System</h4>
+                    <button 
+                      className={`admin-action-btn w-full ${debugMode ? 'active' : ''}`} 
+                      onClick={handleAdminToggleDebug}
+                    >
+                      {debugMode ? 'Disable Debug Mode' : 'Enable Debug Mode'}
+                    </button>
+                  </div>
+                </>
+              )}
 
               {skipError && <p className="skip-error">{skipError}</p>}
             </div>
@@ -1192,13 +1509,6 @@ function CombinationAgent({
           </div>
         </div>
       )}
-
-      {/* Ingredients and Tools Side by Side */}
-      <div className="skip-steps-container">
-        <button className="skip-steps-btn" onClick={() => setShowSkipModal(true)}>
-          Admin Panel
-        </button>
-      </div>
 
       <div className="ingredients-tools-row">
         {/* Ingredients Section */}
@@ -1243,6 +1553,10 @@ function CombinationAgent({
                     isSelected={selectedIngredients.has(ingredient.name)}
                     isActive={false}
                     isDisabled={!currentOrder}
+                    isHighlighted={
+                      (tutorialStep === 2 && ingredient.name === 'eggs') ||
+                      (tutorialStep === 4 && ingredient.name === 'Fried Eggs')
+                    }
                     onClick={() => toggleIngredient(ingredient.name)}
                   />
                 ))
@@ -1326,6 +1640,10 @@ function CombinationAgent({
                   action={action}
                   isActive={false}
                   isDisabled={isDisabled}
+                  isHighlighted={
+                    (tutorialStep === 3 && action.name === 'fry') ||
+                    (tutorialStep === 5 && action.name === 'serve')
+                  }
                   onClick={() => executeAction(action)}
                 />
               );
@@ -1409,43 +1727,6 @@ function CombinationAgent({
         </div>
       </section>
 
-      {/* Timeline Section */}
-      <section className="kitchen-section timeline-section">
-        <div 
-          className="section-header cursor-pointer select-none hover:bg-gray-50 transition-colors" 
-          onClick={() => setIsLogExpanded(!isLogExpanded)}
-        >
-          <div className="section-header-text">
-            <h2 className="section-title flex items-center gap-2">
-              Kitchen Log
-              <span className={`material-symbols-outlined transition-transform duration-200 ${isLogExpanded ? 'rotate-180' : ''}`}>
-                expand_more
-              </span>
-            </h2>
-            <p className="section-subtitle">Chat history showing all cooking actions and results</p>
-          </div>
-        </div>
-        {isLogExpanded && (
-          <div className="timeline-container" ref={timelineRef}>
-            {debugMode && (
-              <div className="debug-stats-panel">
-                <h4>Debug Stats</h4>
-                <pre>{JSON.stringify(stats, null, 2)}</pre>
-              </div>
-            )}
-            {timeline.length === 0 ? (
-              <div className="timeline-empty">
-                Select ingredients and click an action to start cooking
-              </div>
-            ) : (
-              timeline.map(entry => (
-                <TimelineItem key={entry.id} entry={entry} />
-              ))
-            )}
-          </div>
-        )}
-      </section>
-
       {/* Achievement Toast */}
       {recentAchievement && (
         <AchievementToast
@@ -1458,9 +1739,15 @@ function CombinationAgent({
       {showRecipeSteps && currentOrder && (
         <RecipeStepsDisplay 
           steps={recipeSteps} 
-          onClose={() => setShowRecipeSteps(false)} 
+          onClose={() => {
+            setShowRecipeSteps(false);
+            setIsRecipePinned(false);
+          }} 
           isLoading={isFetchingSteps}
           orderName={currentOrder.name}
+          difficulty={currentOrder.difficulty}
+          isPinned={isRecipePinned}
+          onPinToggle={() => setIsRecipePinned(!isRecipePinned)}
         />
       )}
     </div>
@@ -1474,7 +1761,6 @@ function CombinationAgent({
 interface CookingAgentProps {
   inventory: Ingredient[];
   setInventory: React.Dispatch<React.SetStateAction<Ingredient[]>>;
-  setTimeline: React.Dispatch<React.SetStateAction<TimelineEntry[]>>;
   setActiveAction: React.Dispatch<React.SetStateAction<string | null>>;
   setActionTriggerCount: React.Dispatch<React.SetStateAction<number>>;
   setActiveIngredients: React.Dispatch<React.SetStateAction<Set<string>>>;
@@ -1489,7 +1775,6 @@ interface CookingAgentProps {
 function CookingAgent({
   inventory,
   setInventory,
-  setTimeline,
   setActiveAction,
   setActionTriggerCount,
   setActiveIngredients,
@@ -1534,19 +1819,6 @@ function CookingAgent({
         if (hasFunctionCalls) {
           // Store text to merge with function call entry
           pendingTextRef.current = text;
-        } else {
-        // Text-only response, add as standalone entry
-          setTimeline(prev => {
-          // Check if we already have this text (avoid duplicates)
-            const hasText = prev.some(e => e.text === text && !e.action);
-            if (hasText) return prev;
-
-            return [...prev, {
-              id: `text-${Date.now()}-${Math.random()}`,
-              timestamp: new Date(),
-              text: text,
-            }];
-          });
         }
       }
     };
@@ -1556,7 +1828,7 @@ function CookingAgent({
     return () => {
       (client as any).off('log', handleLog);
     };
-  }, [client, setTimeline]);
+  }, [client]);
 
   // Handle approved function calls from the Cooking Agent
   useEffect(() => {
@@ -1576,13 +1848,6 @@ function CookingAgent({
       if (actionName === 'serve') {
         const dishName = args.dish || 'dish';
         console.log(`🍽️ Serving: ${dishName}`);
-
-        // Add serve to timeline
-        setTimeline(prev => [...prev, {
-          id: `serve-${Date.now()}`,
-          timestamp: new Date(),
-          text: `🍽️ Served: ${dishName}`,
-        }]);
 
         // Update total actions stat
         setStats((prev: any) => ({
@@ -1612,13 +1877,6 @@ function CookingAgent({
         // Notify parent to mark the current order as failed
         onPass();
 
-        // Add pass to timeline
-        setTimeline(prev => [...prev, {
-          id: `pass-${Date.now()}`,
-          timestamp: new Date(),
-          text: '🏳️ Called pass on the order',
-        }]);
-
         // Update total actions stat
         setStats((prev: any) => ({
           ...prev,
@@ -1637,7 +1895,6 @@ function CookingAgent({
 
       // Handle cooking actions
       const requestedIngredients = args.ingredients || [];
-      const timelineId = `cooking-${Date.now()}`;
 
       // Find the action
       const action = COOKING_ACTIONS.find(a => a.name === actionName);
@@ -1691,20 +1948,19 @@ function CookingAgent({
       const pendingText = pendingTextRef.current;
       pendingTextRef.current = null; // Clear pending text
 
-      const loadingEntry: TimelineEntry = {
-        id: timelineId,
-        timestamp: new Date(),
-        text: pendingText || undefined,
-        action: actionName,
-        ingredients: ingredients,
-        result: null,
-      };
-      setTimeline(prev => [...prev, loadingEntry]);
       setActiveAction(actionName);
       setActionTriggerCount(prev => prev + 1);
       setActiveIngredients(new Set(ingredients));
 
       try {
+        // Apply faster_ai and time_dilation upgrade delay
+        const baseDelay = 1500;
+        let speedMultiplier = stats.purchasedUpgrades?.includes('faster_ai') ? 0.5 : 1;
+        if (stats.purchasedUpgrades?.includes('time_dilation')) {
+          speedMultiplier *= 0.75; // Additional 25% reduction
+        }
+        await new Promise(resolve => setTimeout(resolve, baseDelay * speedMultiplier));
+
         // Call the Combination Agent via the shared ref
         let newIngredient: Ingredient | null = null;
 
@@ -1727,13 +1983,6 @@ function CookingAgent({
           maxIngredientsUsed: Math.max(prev.maxIngredientsUsed || 0, ingredients.length)
         }));
 
-        // Update timeline
-        setTimeline(prev => prev.map(entry =>
-          entry.id === timelineId
-            ? { ...entry, result: newIngredient }
-            : entry
-        ));
-
         // Add to inventory (at the beginning for recently used items at top)
         // But skip if this ingredient already exists (duplicate check)
         // Update stats for discovered ingredients
@@ -1745,7 +1994,7 @@ function CookingAgent({
         }
 
         // Update stats for used tools
-        if (!stats.usedTools.includes(action.name)) {
+        if (!(stats.usedTools || []).includes(action.name)) {
           setStats((prev: any) => ({
             ...prev,
             usedTools: [...prev.usedTools, action.name],
@@ -1776,11 +2025,6 @@ function CookingAgent({
 
       } catch (error) {
         console.error('Error handling cooking action:', error);
-        setTimeline(prev => prev.map(entry =>
-          entry.id === timelineId
-            ? { ...entry, result: { name: 'error', emoji: '❌' } }
-            : entry
-        ));
 
         // Send error response
         await sendMessage([{
@@ -1800,7 +2044,7 @@ function CookingAgent({
     return () => {
       (client as any).off('approvedfunctioncalls', handleApprovedFunctionCalls);
     };
-  }, [client, sendMessage, setTimeline, setActiveAction, setActionTriggerCount, setActiveIngredients, setInventory, executeCombinationRef, onServe, onPass, inventory]);
+  }, [client, sendMessage, setActiveAction, setActionTriggerCount, setActiveIngredients, setInventory, executeCombinationRef, onServe, onPass, inventory]);
 
   // Expose sendMessage function via ref for external triggering
   useEffect(() => {
@@ -1824,20 +2068,24 @@ interface VerificationAgentProps {
   orders: Order[];
   inventory: Ingredient[];
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
-  setTimeline: React.Dispatch<React.SetStateAction<TimelineEntry[]>>;
   verifyServedDishRef: React.MutableRefObject<((servedDishName: string) => Promise<boolean>) | null>;
   stats: any;
   setStats: React.Dispatch<React.SetStateAction<any>>;
+  currentOrderSteps: {tool: string, ingredients: string[], result: string}[];
+  setCompletedRecipes: React.Dispatch<React.SetStateAction<CompletedRecipe[]>>;
+  setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
 }
 
 function VerificationAgent({
   orders,
   inventory,
   setOrders,
-  setTimeline,
   verifyServedDishRef,
   stats,
   setStats,
+  currentOrderSteps,
+  setCompletedRecipes,
+  setCurrentOrderSteps,
 }: VerificationAgentProps) {
   const { generateContent, setConfig } = useGeminiAPIContext();
 
@@ -1874,15 +2122,6 @@ function VerificationAgent({
 
       if (inProgressOrders.length === 0) {
         // No active order - return success without running verification
-        setTimeline(prev => [...prev, {
-          id: `verify-noorder-${Date.now()}`,
-          type: 'text' as const,
-          action: '',
-          ingredients: [],
-          result: null,
-          text: `✅ Served "${servedDishName}" (no active order)`,
-          timestamp: new Date(),
-        }]);
         return true; // Success, but no order to verify against
       }
 
@@ -1899,39 +2138,92 @@ function VerificationAgent({
           const text = response?.text || '{}';
           const result: VerificationResult = JSON.parse(text);
 
-          if (result.matches && result.confidence > 0.7) {
+          // Apply confidence_boost upgrade
+          let confidenceBonus = stats.purchasedUpgrades?.includes('confidence_boost') ? 0.1 : 0;
+          if (stats.purchasedUpgrades?.includes('molecular_kit')) {
+            confidenceBonus += 0.2;
+          }
+          const totalConfidence = result.confidence + confidenceBonus;
+
+          if (result.matches && totalConfidence > 0.7) {
+            // Apply auto_plating bonus: if confidence is high, treat as perfect
+            const finalConfidence = (stats.purchasedUpgrades?.includes('auto_plating') && totalConfidence > 0.85) 
+              ? 1.0 
+              : totalConfidence;
+
             // Look up the emoji from inventory for the served dish
             const servedIngredient = findIngredientInInventory(servedDishName, inventoryRef.current);
             const servedEmoji = servedIngredient?.emoji || '✅';
 
             // Match found! Update order to completed with the served dish's emoji
             // Update stats for completed orders and max confidence
+            // Apply better_prices upgrade
+            let priceMultiplier = stats.purchasedUpgrades?.includes('better_prices') ? 1.5 : 1;
+            if (stats.purchasedUpgrades?.includes('golden_whisk')) {
+              priceMultiplier *= 2;
+            }
+
+            // Reward based on difficulty
+            let baseReward = 50;
+            if (order.difficulty === 'intermediate') baseReward = 100;
+            else if (order.difficulty === 'difficult') baseReward = 250;
+            else if (order.difficulty === 'nightmare') baseReward = 1000;
+
+            const reward = Math.round(baseReward * priceMultiplier);
+
+            // Save recipe
+            setCompletedRecipes(prev => {
+              // Avoid duplicates for the same order name
+              if (prev.some(r => r.orderName === order.name)) return prev;
+              
+              const newRecipe: CompletedRecipe = {
+                id: `recipe-${Date.now()}`,
+                orderName: order.name,
+                dishName: servedDishName,
+                emoji: servedEmoji,
+                timestamp: new Date().toISOString(),
+                steps: [...currentOrderSteps]
+              };
+              return [newRecipe, ...prev];
+            });
+
+            // Clear steps for next order
+            setCurrentOrderSteps([]);
+
             setStats((prev: any) => ({
               ...prev,
               completedOrders: prev.completedOrders + 1,
-              money: (prev.money || 0) + 50,
-              maxConfidence: Math.max(prev.maxConfidence || 0, result.confidence),
+              completedNightmareOrders: order.difficulty === 'nightmare' 
+                ? (prev.completedNightmareOrders || 0) + 1 
+                : (prev.completedNightmareOrders || 0),
+              money: (prev.money || 0) + reward,
+              maxConfidence: Math.max(prev.maxConfidence || 0, finalConfidence),
               completedDishes: prev.completedDishes?.includes(order.name) 
                 ? prev.completedDishes 
                 : [...(prev.completedDishes || []), order.name]
             }));
 
-            setOrders(prev => prev.map(o =>
-              o.id === order.id
-                ? { ...o, status: 'completed' as const, emoji: servedEmoji }
-                : o
-            ));
+            setOrders(prev => {
+              const updatedOrders = prev.map(o =>
+                o.id === order.id
+                  ? { ...o, status: 'completed' as const, emoji: servedEmoji }
+                  : o
+              );
 
-            // Add success to timeline
-            setTimeline(prev => [...prev, {
-              id: `verify-${Date.now()}`,
-              type: 'text' as const,
-              action: '',
-              ingredients: [],
-              result: null,
-              text: `✅ Correct!`,
-              timestamp: new Date(),
-            }]);
+              // Add a new random order
+              const difficulty = getRandomDifficulty();
+              const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
+              // Pick a random one from the pool
+              const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
+              
+              const newOrder: Order = {
+                ...randomTemplate,
+                id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                status: 'not_started'
+              };
+
+              return [...updatedOrders, newOrder];
+            });
 
             return true; // Found a match, return success
           }
@@ -1941,24 +2233,13 @@ function VerificationAgent({
       }
 
       // No match found - keep order in_progress so model can try again
-      // Add failure to timeline
-      setTimeline(prev => [...prev, {
-        id: `verify-fail-${Date.now()}`,
-        type: 'text' as const,
-        action: '',
-        ingredients: [],
-        result: null,
-        text: `❌ Incorrect: "${servedDishName}" doesn't match "${inProgressOrders[0].name}"`,
-        timestamp: new Date(),
-      }]);
-
       return false; // No match found, but order stays active
     };
 
     return () => {
       verifyServedDishRef.current = null;
     };
-  }, [generateContent, setOrders, setTimeline, verifyServedDishRef]);
+  }, [generateContent, setOrders, verifyServedDishRef]);
 
   // This component doesn't render anything
   return null;
@@ -1968,17 +2249,23 @@ function VerificationAgent({
 // Kitchen App Container (Shared State)
 // ============================================================================
 
-function KitchenAppContainer() {
+function KitchenAppContainer({ user }: { user: User }) {
+  // Tutorial State
+  const [tutorialStep, setTutorialStep] = useState<number>(1);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
   // Shared state lifted up to be accessible by both agents
   const [inventory, setInventory] = useState<Ingredient[]>(STARTING_INGREDIENTS);
   const [selectedIngredients, setSelectedIngredients] = useState<Set<string>>(
     new Set(PRESELECTED_INGREDIENTS)
   );
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [activeAction, setActiveAction] = useState<string | null>(null);
   const [actionTriggerCount, setActionTriggerCount] = useState(0);
   const [activeIngredients, setActiveIngredients] = useState<Set<string>>(new Set());
-  const [orders, setOrders] = useState<Order[]>(EXAMPLE_ORDERS);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    // Start with only easy orders
+    return EXAMPLE_ORDERS.filter(o => o.difficulty === 'easy');
+  });
 
   // Overlay open states - start closed
   const [combinationAgentOpen, setCombinationAgentOpen] = useState(false);
@@ -1998,45 +2285,133 @@ function KitchenAppContainer() {
   const verifyServedDishRef = useRef<((servedDishName: string) => Promise<boolean>) | null>(null);
 
   // Achievement State
-  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(() => {
-    const saved = localStorage.getItem('unlockedAchievements');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [stats, setStats] = useState(() => {
-    const saved = localStorage.getItem('kitchenStats');
-    return saved ? JSON.parse(saved) : {
-      completedOrders: 0,
-      money: 0,
-      discoveredIngredients: STARTING_INGREDIENTS.length,
-      usedToolsCount: 0,
-      usedTools: [] as string[],
-      maxConfidence: 0,
-      maxIngredientsUsed: 0,
-      completedDishes: [] as string[],
-      totalActions: 0
-    };
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
+  const [stats, setStats] = useState({
+    completedOrders: 0,
+    money: 0,
+    discoveredIngredients: STARTING_INGREDIENTS.length,
+    usedToolsCount: 0,
+    usedTools: [] as string[],
+    maxConfidence: 0,
+    maxIngredientsUsed: 0,
+    completedDishes: [] as string[],
+    completedNightmareOrders: 0,
+    totalActions: 0,
+    purchasedUpgrades: [] as string[]
   });
   const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
   const [isAchievementsExpanded, setIsAchievementsExpanded] = useState(false);
+  const [isUpgradesExpanded, setIsUpgradesExpanded] = useState(false);
+  const [isRecipeBookExpanded, setIsRecipeBookExpanded] = useState(false);
+  const [completedRecipes, setCompletedRecipes] = useState<CompletedRecipe[]>([]);
+  const [currentOrderSteps, setCurrentOrderSteps] = useState<{tool: string, ingredients: string[], result: string}[]>([]);
 
-  // Persistence for achievements and stats
+  // 1. Load data from Firestore on mount
   useEffect(() => {
-    localStorage.setItem('unlockedAchievements', JSON.stringify(unlockedAchievements));
-  }, [unlockedAchievements]);
+    if (!user) return;
 
+    const gameStateRef = doc(db, 'game_states', user.uid);
+    
+    // Initial load
+    const loadInitialData = async () => {
+      try {
+        // Test connection
+        await getDocFromServer(doc(db, 'test', 'connection')).catch((err) => {
+          console.warn("Connection test failed (expected if rules deny):", err.message);
+        });
+        
+        const docSnap = await getDoc(gameStateRef).catch(err => handleFirestoreError(err, OperationType.GET, `game_states/${user.uid}`));
+        if (docSnap && docSnap.exists()) {
+          const data = docSnap.data();
+          setStats(data.stats || stats);
+          setUnlockedAchievements(data.unlockedAchievements || []);
+          setCompletedRecipes(data.completedRecipes || []);
+          setTutorialStep(data.tutorialStep ?? 1);
+          // If they have saved inventory, we could load it too, but starting fresh with ingredients is usually better for game balance unless we save the whole state
+          if (data.inventory) setInventory(data.inventory);
+        } else {
+          // Initialize new game state in Firestore
+          await setDoc(gameStateRef, {
+            uid: user.uid,
+            money: 0,
+            inventory: STARTING_INGREDIENTS,
+            completedRecipes: [],
+            unlockedAchievements: [],
+            purchasedUpgrades: [],
+            stats: stats,
+            tutorialStep: 1,
+            lastUpdated: Timestamp.now()
+          }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
+        }
+        setIsDataLoaded(true);
+      } catch (error) {
+        console.error("Error loading game state:", error);
+        setIsDataLoaded(true); // Proceed anyway to avoid getting stuck
+      }
+    };
+
+    loadInitialData();
+
+    // 2. Real-time sync (optional, but good for multi-device)
+    const unsubscribe = onSnapshot(gameStateRef, (doc) => {
+      if (doc.exists() && !isCooking) { // Avoid overwriting while cooking
+        const data = doc.data();
+        // We only sync stats and achievements from remote to local if they changed significantly
+        // This is a simple implementation; a more robust one would use a version counter
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `game_states/${user.uid}`);
+    });
+
+    return () => unsubscribe();
+  }, [user.uid]);
+
+  // 3. Save data to Firestore when it changes
   useEffect(() => {
-    localStorage.setItem('kitchenStats', JSON.stringify(stats));
-  }, [stats]);
+    if (!user || !isDataLoaded) return;
+
+    const saveTimeout = setTimeout(async () => {
+      try {
+        const gameStateRef = doc(db, 'game_states', user.uid);
+        await setDoc(gameStateRef, {
+          uid: user.uid,
+          money: stats.money,
+          inventory: inventory,
+          completedRecipes: completedRecipes,
+          unlockedAchievements: unlockedAchievements,
+          purchasedUpgrades: stats.purchasedUpgrades,
+          stats: stats,
+          tutorialStep: tutorialStep,
+          lastUpdated: Timestamp.now()
+        }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
+      } catch (error) {
+        console.error("Error saving game state:", error);
+      }
+    }, 2000); // Debounce saves
+
+    return () => clearTimeout(saveTimeout);
+  }, [stats, unlockedAchievements, completedRecipes, tutorialStep, inventory, user.uid, isDataLoaded]);
 
   // Check for new achievements
   useEffect(() => {
     ACHIEVEMENTS.forEach(achievement => {
-      if (!unlockedAchievements.includes(achievement.id) && achievement.condition(stats)) {
+      if (!(unlockedAchievements || []).includes(achievement.id) && achievement.condition(stats)) {
         setUnlockedAchievements(prev => [...prev, achievement.id]);
         setRecentAchievement(achievement);
       }
     });
   }, [stats, unlockedAchievements]);
+
+  // Upgrade Logic
+  const buyUpgrade = useCallback((upgrade: Upgrade) => {
+    if ((stats.money || 0) >= upgrade.cost && !(stats.purchasedUpgrades || []).includes(upgrade.id)) {
+      setStats((prev: any) => ({
+        ...prev,
+        money: prev.money - upgrade.cost,
+        purchasedUpgrades: [...(prev.purchasedUpgrades || []), upgrade.id]
+      }));
+    }
+  }, [stats.money, stats.purchasedUpgrades]);
 
   // Callback for "Cook with Gemini" button - also opens Cooking Agent overlay (except on mobile)
   const handleCookWithGemini = useCallback((orderName: string) => {
@@ -2087,18 +2462,36 @@ function KitchenAppContainer() {
 
   // Callback for picking up an order (changes to in_progress)
   const handlePickUp = useCallback((orderId: string) => {
-    setOrders(prev => prev.map(order => {
-      // The order being picked up becomes in_progress
-      if (order.id === orderId) {
-        return { ...order, status: 'in_progress' as const };
+    // Clear steps when picking up a new order
+    setCurrentOrderSteps([]);
+
+    if (tutorialStep === 1) {
+      const order = orders.find(o => o.id === orderId);
+      if (order?.name === 'Fried Eggs') {
+        setTutorialStep(2);
       }
-      // Any other in_progress order gets reset to not_started
-      if (order.status === 'in_progress') {
-        return { ...order, status: 'not_started' as const };
+    }
+
+    setOrders(prev => {
+      const inProgressOrders = prev.filter(o => o.status === 'in_progress');
+      const maxSlots = stats.purchasedUpgrades?.includes('extra_slots') ? 5 : 1;
+      
+      let newOrders = [...prev];
+      
+      // If we're at the limit, reset the oldest in_progress order
+      if (inProgressOrders.length >= maxSlots) {
+        const oldestInProgress = inProgressOrders[0];
+        newOrders = newOrders.map(o => 
+          o.id === oldestInProgress.id ? { ...o, status: 'not_started' as const } : o
+        );
       }
-      return order;
-    }));
-  }, []);
+
+      // Set the selected order to in_progress
+      return newOrders.map(order => 
+        order.id === orderId ? { ...order, status: 'in_progress' as const } : order
+      );
+    });
+  }, [stats.purchasedUpgrades]);
 
   // Callback for passing on an order (marks it as failed)
   const handlePass = useCallback(() => {
@@ -2111,13 +2504,22 @@ function KitchenAppContainer() {
 
   return (
     <div className="app-container">
+      {/* Tutorial Overlay */}
+      {tutorialStep > 0 && tutorialStep <= TUTORIAL_STEPS.length && (
+        <TutorialOverlay 
+          step={TUTORIAL_STEPS[tutorialStep - 1]} 
+          onClose={() => {
+            setTutorialStep(0);
+            localStorage.setItem('tutorialCompleted', 'true');
+          }} 
+        />
+      )}
+
       {/* Combination Agent (Layer 1) - for manual cooking */}
       <GeminiAPIProvider>
         <CombinationAgent
           inventory={inventory}
           setInventory={setInventory}
-          timeline={timeline}
-          setTimeline={setTimeline}
           selectedIngredients={selectedIngredients}
           setSelectedIngredients={setSelectedIngredients}
           activeAction={activeAction}
@@ -2148,13 +2550,6 @@ function KitchenAppContainer() {
             setCombinationAgentOpen(false);
             setCookingAgentOpen(false);
           }}
-          onGetSteps={(orderName) => {
-            if (sendCookingMessageRef.current) {
-              sendCookingMessageRef.current(`Tell me the steps to cook ${orderName}. Don't start cooking yet, just list the steps.`);
-              // Open cooking agent to see the response
-              setCookingAgentOpen(true);
-            }
-          }}
           isCooking={isCooking}
           isCookingAgentOpen={cookingAgentOpen}
           isAlchemyAgentOpen={combinationAgentOpen}
@@ -2167,6 +2562,17 @@ function KitchenAppContainer() {
           setRecentAchievement={setRecentAchievement}
           isAchievementsExpanded={isAchievementsExpanded}
           setIsAchievementsExpanded={setIsAchievementsExpanded}
+          isUpgradesExpanded={isUpgradesExpanded}
+          setIsUpgradesExpanded={setIsUpgradesExpanded}
+          onBuyUpgrade={buyUpgrade}
+          tutorialStep={tutorialStep}
+          setTutorialStep={setTutorialStep}
+          isRecipeBookExpanded={isRecipeBookExpanded}
+          setIsRecipeBookExpanded={setIsRecipeBookExpanded}
+          completedRecipes={completedRecipes}
+          setCompletedRecipes={setCompletedRecipes}
+          setCurrentOrderSteps={setCurrentOrderSteps}
+          user={user}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
@@ -2183,7 +2589,6 @@ function KitchenAppContainer() {
         <CookingAgent
           inventory={inventory}
           setInventory={setInventory}
-          setTimeline={setTimeline}
           setActiveAction={setActiveAction}
           setActionTriggerCount={setActionTriggerCount}
           setActiveIngredients={setActiveIngredients}
@@ -2211,10 +2616,12 @@ function KitchenAppContainer() {
           orders={orders}
           inventory={inventory}
           setOrders={setOrders}
-          setTimeline={setTimeline}
           verifyServedDishRef={verifyServedDishRef}
           stats={stats}
           setStats={setStats}
+          currentOrderSteps={currentOrderSteps}
+          setCompletedRecipes={setCompletedRecipes}
+          setCurrentOrderSteps={setCurrentOrderSteps}
         />
         <GeminiDebug
           agentName="Judge Agent"
@@ -2242,7 +2649,37 @@ function KitchenAppContainer() {
 // ============================================================================
 
 function App() {
-  return <KitchenAppContainer />;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-[#f5f5f5]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-[#1f94ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="font-bold text-[#1a1a1a] uppercase tracking-widest">Loading Kitchen...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      {!user ? (
+        <AuthScreen onAuthSuccess={(u) => setUser(u)} />
+      ) : (
+        <KitchenAppContainer user={user} />
+      )}
+    </ErrorBoundary>
+  );
 }
 
 export default App;
