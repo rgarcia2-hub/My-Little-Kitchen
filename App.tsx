@@ -20,7 +20,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Lightbulb, LogOut } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2 } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -681,6 +681,43 @@ function CombinationAgent({
     });
   }, [setConfig]);
 
+  // Load Ko-fi Widget
+  useEffect(() => {
+    if (stats.proPlan) return;
+    
+    const script = document.createElement('script');
+    script.src = 'https://storage.ko-fi.com/cdn/widget/Widget_2.js';
+    script.async = true;
+    script.onload = () => {
+      // @ts-ignore
+      if (window.kofiwidget2) {
+        try {
+          // @ts-ignore
+          window.kofiwidget2.init('Unlock it on ko-fi', '#f57373', 'X8X51WOFNJ');
+          // @ts-ignore
+          const widget = window.kofiwidget2.getHTML();
+          const container = document.getElementById('kofi-widget-container');
+          if (container) {
+            container.innerHTML = widget;
+          }
+        } catch (e) {
+          console.error("Ko-fi widget error:", e);
+        }
+      }
+    };
+    document.body.appendChild(script);
+    return () => {
+      try {
+        document.body.removeChild(script);
+      } catch (e) {}
+    };
+  }, [stats.proPlan]);
+
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(user.uid);
+    alert("ID copied! Paste it in the Ko-fi message.");
+  };
+
   // Toggle ingredient selection
   const toggleIngredient = useCallback((name: string) => {
     if (tutorialStep === 2 && name === 'eggs') {
@@ -1154,18 +1191,53 @@ function CombinationAgent({
       </div>
 
       {/* Challenge Banner */}
-      <div className="challenge-banner">
-        <div className="challenge-title">🧑‍🍳 KITCHEN TUTORIAL 🧑‍🍳</div>
-        <div className="challenge-subtitle">Sequence tasks from 100 tools and 100 ingredients to prepare a meal</div>
+      <div className="challenge-banner-brutalist">
+        <div className="challenge-header-rail">
+          <span className="rail-text">KITCHEN PROTOCOL v1.0</span>
+          <span className="rail-text">SYSTEM READY</span>
+          <span className="rail-text">EST. 2024</span>
+        </div>
         
-        <div className="how-to-play">
-          <div className="how-to-step"><span>1</span> Start an order</div>
-          <div className="how-to-arrow">→</div>
-          <div className="how-to-step"><span>2</span> Select ingredients</div>
-          <div className="how-to-arrow">→</div>
-          <div className="how-to-step"><span>3</span> Use a tool</div>
-          <div className="how-to-arrow">→</div>
-          <div className="how-to-step"><span>4</span> Serve the result!</div>
+        <div className="challenge-content-grid">
+          <div className="challenge-main-info">
+            <div className="challenge-badge">TUTORIAL PHASE</div>
+            <h1 className="challenge-title-massive">KITCHEN<br/>TUTORIAL</h1>
+            <p className="challenge-subtitle-refined">
+              Sequence tasks from 100 tools and 100 ingredients to prepare a meal.
+              Master the workflow to unlock advanced culinary agents.
+            </p>
+          </div>
+          
+          <div className="challenge-steps-container">
+            <div className="how-to-step-brutalist">
+              <span className="step-number">01</span>
+              <div className="step-info">
+                <span className="step-label">INITIATE</span>
+                <span className="step-text">Start an order</span>
+              </div>
+            </div>
+            <div className="how-to-step-brutalist">
+              <span className="step-number">02</span>
+              <div className="step-info">
+                <span className="step-label">RESOURCES</span>
+                <span className="step-text">Select ingredients</span>
+              </div>
+            </div>
+            <div className="how-to-step-brutalist">
+              <span className="step-number">03</span>
+              <div className="step-info">
+                <span className="step-label">PROCESS</span>
+                <span className="step-text">Use a tool</span>
+              </div>
+            </div>
+            <div className="how-to-step-brutalist">
+              <span className="step-number">04</span>
+              <div className="step-info">
+                <span className="step-label">EXECUTE</span>
+                <span className="step-text">Serve the result!</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1653,31 +1725,77 @@ function CombinationAgent({
       </div>
 
       {/* Agents Section */}
-      <section className="kitchen-section agents-section">
-        <div className="section-header">
-          <div className="section-header-text">
-            <h2 className="section-title">Agents</h2>
-            <p className="section-subtitle">Three specialized Gemini 3 Flash agents</p>
+      <section className="agents-section-os">
+        <div className="os-header">
+          <div className="os-title-group">
+            <span className="os-badge">System Module</span>
+            <h2 className="os-title">Culinary Agents</h2>
+          </div>
+          <div className="os-status">
+            <div className="status-dot"></div>
+            <span>SYSTEM_ACTIVE</span>
           </div>
         </div>
-        <div className="agents-grid">
-          {/* Cooking Agent - Double Width */}
-          <div className="agent-card agent-card-wide">
-            <div className="agent-card-header">
-              <span className="agent-emoji">🧑‍🍳</span>
-              <span className="agent-name">Cooking Agent</span>
+
+        {!stats.proPlan && (
+          <div className="os-paywall">
+            <div className="os-paywall-grid" />
+            <div className="os-paywall-scanline" />
+            
+            <div className="os-lock-icon">🔒</div>
+            <h3 className="os-paywall-title">Clearance Required</h3>
+            <p className="os-paywall-text">
+              Advanced AI Agents are restricted to PRO users. 
+              Initialize Kitchen OS v1.0 to bypass security.
+            </p>
+            
+            <div className="os-kofi-container">
+              <div className="flex flex-col items-center gap-3 w-full">
+                <span className="text-[9px] text-[#00ff00] animate-pulse uppercase font-bold">
+                  ⚠️ COPY AUTH_ID BELOW BEFORE PAYING ⚠️
+                </span>
+                <div id="kofi-widget-container" className="flex justify-center">
+                  {/* Widget will be injected here */}
+                  <a 
+                    href="https://ko-fi.com/X8X51WOFNJ" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="bg-[#f57373] text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    <Coffee size={18} />
+                    Unlock it on ko-fi
+                  </a>
+                </div>
+              </div>
             </div>
-            <p className="agent-description">Orchestrates cooking using available tools and ingredients</p>
-            <div className="agent-actions">
+
+            <button 
+              onClick={handleCopyId}
+              className="os-copy-id"
+            >
+              [ COPY AUTH_ID: {user.uid.substring(0, 8)}... ]
+            </button>
+          </div>
+        )}
+
+        <div className="agents-grid-os">
+          {/* Cooking Agent - Double Width */}
+          <div className="agent-card-os wide">
+            <div className="os-card-header">
+              <span className="os-agent-emoji">🧑‍🍳</span>
+              <span className="os-agent-name">Cooking Agent</span>
+            </div>
+            <p className="os-agent-desc">Orchestrates cooking using available tools and ingredients</p>
+            <div className="os-agent-actions">
               <button
-                className="agent-cook-button"
+                className="os-btn os-btn-primary"
                 onClick={() => currentOrder && onCookWithGemini(currentOrder.name)}
                 disabled={!currentOrder || isCooking}
               >
                 {isCooking ? 'Cooking...' : currentOrder ? `Start cooking '${currentOrder.name}'` : 'Start an order'}
               </button>
               <button
-                className="agent-view-button"
+                className="os-btn"
                 onClick={onOpenCookingAgent}
                 disabled={isCookingAgentOpen}
               >
@@ -1688,15 +1806,15 @@ function CombinationAgent({
           </div>
 
           {/* Alchemy Agent */}
-          <div className="agent-card">
-            <div className="agent-card-header">
-              <span className="agent-emoji">🧑‍🔬</span>
-              <span className="agent-name">Alchemy Agent</span>
+          <div className="agent-card-os">
+            <div className="os-card-header">
+              <span className="os-agent-emoji">🧑‍🔬</span>
+              <span className="os-agent-name">Alchemy Agent</span>
             </div>
-            <p className="agent-description">Determines results of cooking actions</p>
-            <div className="agent-actions">
+            <p className="os-agent-desc">Determines results of cooking actions</p>
+            <div className="os-agent-actions">
               <button
-                className="agent-view-button"
+                className="os-btn"
                 onClick={onOpenCombinationAgent}
                 disabled={isAlchemyAgentOpen}
               >
@@ -1707,15 +1825,15 @@ function CombinationAgent({
           </div>
 
           {/* Judge Agent */}
-          <div className="agent-card">
-            <div className="agent-card-header">
-              <span className="agent-emoji">🧑‍⚖️</span>
-              <span className="agent-name">Judge Agent</span>
+          <div className="agent-card-os">
+            <div className="os-card-header">
+              <span className="os-agent-emoji">🧑‍⚖️</span>
+              <span className="os-agent-name">Judge Agent</span>
             </div>
-            <p className="agent-description">Verifies if served dishes match orders</p>
-            <div className="agent-actions">
+            <p className="os-agent-desc">Verifies if served dishes match orders</p>
+            <div className="os-agent-actions">
               <button
-                className="agent-view-button"
+                className="os-btn"
                 onClick={onOpenVerificationAgent}
                 disabled={isJudgeAgentOpen}
               >
@@ -2297,7 +2415,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     completedDishes: [] as string[],
     completedNightmareOrders: 0,
     totalActions: 0,
-    purchasedUpgrades: [] as string[]
+    purchasedUpgrades: [] as string[],
+    proPlan: false
   });
   const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
   const [isAchievementsExpanded, setIsAchievementsExpanded] = useState(false);

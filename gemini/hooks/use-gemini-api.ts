@@ -38,7 +38,7 @@ import { createLoggerStore, LoggerStore } from "../../lib/create-logger-store";
  *    - Copy the src/ folder into AI Studio
  *    - AI Studio automatically provides the API key via process.env.API_KEY
  */
-declare const process: { env?: { API_KEY?: string } } | undefined;
+declare const process: { env?: { API_KEY?: string; GEMINI_API_KEY?: string } } | undefined;
 
 function getApiKey(): string {
   // Try Vite environment first (local development)
@@ -46,7 +46,12 @@ function getApiKey(): string {
     return (import.meta as any).env.VITE_GEMINI_API_KEY;
   }
 
-  // Try AI Studio environment
+  // Try AI Studio environment (GEMINI_API_KEY is the standard)
+  if (typeof process !== 'undefined' && process?.env?.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+
+  // Fallback to API_KEY
   if (typeof process !== 'undefined' && process?.env?.API_KEY) {
     return process.env.API_KEY;
   }

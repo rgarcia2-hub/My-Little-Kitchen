@@ -1,5 +1,5 @@
 {
-  "description": "A simulated kitchen where Gemini 3 Flash controls 100 tools. Features achievements and a recipe book for completed orders.",
+  "description": "A simulated kitchen where Gemini 3 Flash controls 100 tools. Features achievements, a recipe book, and a Pro Plan to unlock specialized AI agents.",
   "requestFramePermissions": [
     "camera",
     "microphone"
