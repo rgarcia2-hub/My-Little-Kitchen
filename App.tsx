@@ -746,28 +746,37 @@ function CombinationAgent({
     if (stats.purchasedUpgrades?.includes('fusion_reactor')) {
       // Fusion Reactor eliminates fire risk
     } else {
-      let safetyLimit = stats.purchasedUpgrades?.includes('master_tools') ? 8 : 5;
+      // Base 12% chance as requested by user
+      let fireChance = 0.12; 
+      
+      // Upgrades reduce the risk
+      if (stats.purchasedUpgrades?.includes('master_tools')) {
+        fireChance *= 0.5; 
+      }
       if (stats.purchasedUpgrades?.includes('cryo_freezer')) {
-        safetyLimit += 2;
+        fireChance *= 0.5;
       }
 
-      if (ingredientNames.length >= safetyLimit) {
-        let fireChance = stats.purchasedUpgrades?.includes('master_tools') ? 0.1 : 0.5;
-        if (stats.purchasedUpgrades?.includes('cryo_freezer')) {
-          fireChance *= 0.5; // Even safer
-        }
-        
-        if (Math.random() < fireChance) {
-          return {
-            name: 'Kitchen Fire',
-            emoji: '🔥'
-          };
-        }
+      if (Math.random() < fireChance) {
+        return {
+          name: 'Kitchen Fire',
+          emoji: '🔥'
+        };
       }
     }
 
     try {
-      const prompt = `Action: ${action.displayName}\nIngredients: ${ingredientNames.join(', ')}\n\nWhat is the result of this cooking action?`;
+      const currentOrder = orders.find(o => o.status === 'in_progress');
+      
+      // Build a context string from the current recipe steps if they exist
+      let recipeContext = "";
+      if (recipeSteps.length > 0) {
+        recipeContext = "\n\nCURRENT RECIPE GUIDE STEPS:\n" + 
+          recipeSteps.map((s, i) => `Step ${i+1}: ${s.ingredients.join(' + ')} using ${s.tool} -> ${s.result}`).join('\n') +
+          "\n\nCRITICAL: If the current action and ingredients match one of the steps above, you MUST return the EXACT 'result' name specified in that step.";
+      }
+
+      const prompt = `Action: ${action.displayName}\nIngredients: ${ingredientNames.join(', ')}\n\nWhat is the result of this cooking action?${currentOrder ? ` The player is currently trying to cook: ${currentOrder.name}.` : ''}${recipeContext}`;
 
       const contents: Content[] = [
         { role: 'user', parts: [{ text: prompt }] }
@@ -785,7 +794,7 @@ function CombinationAgent({
       console.error('Error in combination:', error);
       return null;
     }
-  }, [generateContent]);
+  }, [generateContent, recipeSteps, orders]);
 
   // Expose the execution function to Cooking Agent via ref
   useEffect(() => {
@@ -1590,7 +1599,28 @@ function CombinationAgent({
               <h2 className="section-title">Ingredients</h2>
               <p className="section-subtitle">Select ingredients to use as function arguments</p>
             </div>
-            <span className="section-count">count: {inventory.length}</span>
+            <div className="section-header-right">
+              <button 
+                className="reset-basics-button" 
+                onClick={() => {
+                  if (window.confirm("Restore the 100 starting ingredients? Your discovered items will be kept.")) {
+                    setInventory(prev => {
+                      const merged = [...STARTING_INGREDIENTS];
+                      prev.forEach(ing => {
+                        if (!merged.some(m => m.name.toLowerCase() === ing.name.toLowerCase())) {
+                          merged.push(ing);
+                        }
+                      });
+                      return merged;
+                    });
+                  }
+                }}
+                title="Restore the 100 starting ingredients"
+              >
+                Reset to Basics
+              </button>
+              <span className="section-count">count: {inventory.length}</span>
+            </div>
           </div>
           <div className="ingredients-search-container">
             <input
@@ -2246,7 +2276,7 @@ function VerificationAgent({
       // Check each pending order for a match
       for (const order of inProgressOrders) {
         try {
-          const prompt = `Order: "${order.name}"\nServed dish: "${servedDishName}"\n\nDoes this served dish match the order?`;
+          const prompt = `Order: "${order.name}"\nServed dish: "${servedDishName}"\n\nDoes this served dish match the order? Be lenient and use semantic matching. If it's a very similar dish or a common variation, it should match.`;
 
           const contents: Content[] = [
             { role: 'user', parts: [{ text: prompt }] }
@@ -2442,12 +2472,31 @@ function KitchenAppContainer({ user }: { user: User }) {
         const docSnap = await getDoc(gameStateRef).catch(err => handleFirestoreError(err, OperationType.GET, `game_states/${user.uid}`));
         if (docSnap && docSnap.exists()) {
           const data = docSnap.data();
-          setStats(data.stats || stats);
+          const loadedStats = data.stats || stats;
+          
+          // Force Pro Plan for admin email
+          if (user.email === 'robert.garcia.alsina2012@gmail.com') {
+            setStats({ ...loadedStats, proPlan: true });
+          } else {
+            setStats(loadedStats);
+          }
+          
           setUnlockedAchievements(data.unlockedAchievements || []);
           setCompletedRecipes(data.completedRecipes || []);
           setTutorialStep(data.tutorialStep ?? 1);
-          // If they have saved inventory, we could load it too, but starting fresh with ingredients is usually better for game balance unless we save the whole state
-          if (data.inventory) setInventory(data.inventory);
+          
+          // Ensure STARTING_INGREDIENTS are always available, plus any discovered ones
+          if (data.inventory) {
+            const merged = [...STARTING_INGREDIENTS];
+            data.inventory.forEach((ing: any) => {
+              if (!merged.some(m => m.name.toLowerCase() === ing.name.toLowerCase())) {
+                merged.push(ing);
+              }
+            });
+            setInventory(merged);
+          } else {
+            setInventory(STARTING_INGREDIENTS);
+          }
         } else {
           // Initialize new game state in Firestore
           await setDoc(gameStateRef, {
@@ -2457,7 +2506,7 @@ function KitchenAppContainer({ user }: { user: User }) {
             completedRecipes: [],
             unlockedAchievements: [],
             purchasedUpgrades: [],
-            stats: stats,
+            stats: user.email === 'robert.garcia.alsina2012@gmail.com' ? { ...stats, proPlan: true } : stats,
             tutorialStep: 1,
             lastUpdated: Timestamp.now()
           }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
@@ -2755,8 +2804,8 @@ function KitchenAppContainer({ user }: { user: User }) {
       {/* Attribution Footer */}
       <footer className="attribution-footer">
         Ideas/feedback:{' '}
-        <a href="https://x.com/cobley_ben" target="_blank" rel="noopener noreferrer">
-          cobley_ben@
+        <a href="https://x.com/SoyCookie010" target="_blank" rel="noopener noreferrer">
+          ItsCookie@
         </a>
       </footer>
     </div>

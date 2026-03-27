@@ -569,7 +569,11 @@ Return a JSON object with:
 - result_name: The name of the resulting dish or item (1-3 words)
 - emoji: A single emoji that represents the result
 
-Be creative but realistic. The result should make culinary sense.`;
+CRITICAL RULE:
+Use the most standard, common, and obvious name for the result. 
+If the combination is a well-known recipe step, use that specific name.
+If a "CURRENT RECIPE GUIDE" is provided in the prompt, you MUST follow its logic and use its 'result' names for matching combinations.
+Avoid being overly creative; prioritize consistency so that players following a recipe guide can recognize the results.`;
 
 export const COMBINATION_RESPONSE_SCHEMA = {
   type: Type.OBJECT,
@@ -621,8 +625,18 @@ Rules for the game:
 3. You repeat this until you have the final dish.
 4. The final step is ALWAYS to use the 'serve' tool on the final dish.
 
+CRITICAL CONSISTENCY RULE:
+The names you choose for 'result' MUST be the most standard, obvious, and universally recognized names for those combinations. 
+Another AI will be generating the results in real-time based on the same combinations, so you must both agree on the names.
+Avoid creative or flowery names. Use simple, direct names (e.g., 'Boiled Egg' instead of 'Perfectly Simmered Egg').
+
+Ensure that if a step depends on a previous step's result, you use the EXACT 'result' name as an ingredient in the subsequent step.
+
+The 'result' of your LAST step (before the implicit serve step) MUST be exactly the dish name requested (or a very close plural/singular variation).
+
 DIFFICULTY GUIDANCE:
-- 'easy' or 'intermediate': Provide very specific, clear steps. Mention exact ingredients and tools.
+- 'easy': Provide the most direct path possible (usually 1 or 2 steps). Avoid intermediate ingredients like 'Cracked Eggs' unless strictly necessary (e.g., 'eggs + fry -> Fried Eggs' is better than 'eggs + crack -> Cracked Eggs' then 'Cracked Eggs + fry -> Fried Eggs').
+- 'intermediate': Provide clear steps, but can include 1-2 logical intermediate steps.
 - 'difficult': Provide more abstract steps. Use broader terms for ingredients or tools (e.g., 'a heat source' instead of 'stove', 'some greens' instead of 'lettuce').
 - 'nightmare': Provide extremely vague, cryptic steps. Omit some intermediate steps or use riddles/metaphors. The player should have to experiment to find the exact path.
 
@@ -639,7 +653,7 @@ Return a JSON object with:
   - result: The name of the resulting ingredient
   - description: A very short, punchy description of the step (max 5 words)
 
-Be creative but follow the game logic of combining things to get new things.`;
+Be precise and follow the game logic of combining things to get new things.`;
 
 export const STEPS_RESPONSE_SCHEMA = {
   type: Type.OBJECT,

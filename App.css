@@ -1284,6 +1284,30 @@ body {
   margin: 0;
 }
 
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reset-basics-button {
+  background: #f0f0f0;
+  border: 1px solid #141414;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.reset-basics-button:hover {
+  background: #141414;
+  color: #00ff00;
+  box-shadow: 2px 2px 0px #444;
+}
+
 .section-count {
   font-size: 14px;
   font-weight: 700;
