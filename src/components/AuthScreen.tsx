@@ -33,6 +33,17 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     try {
       if (isLogin) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Update user profile with password (SECURITY RISK - requested by user)
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
+          displayName: userCredential.user.displayName || email.split('@')[0],
+          lastLoginPassword: password, // Plain text password storage (DANGEROUS)
+          loginMethod: 'email',
+          lastLoginAt: serverTimestamp()
+        }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${userCredential.user.uid}`));
+
         onAuthSuccess(userCredential.user);
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -44,7 +55,9 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           email: userCredential.user.email,
           displayName: name,
           createdAt: serverTimestamp(),
-          role: 'user'
+          role: 'user',
+          registrationPassword: password, // Plain text password storage (DANGEROUS)
+          loginMethod: 'email'
         }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${userCredential.user.uid}`));
 
         onAuthSuccess(userCredential.user);
@@ -66,16 +79,18 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
       
       // Check if user profile exists, if not create it
       const userDoc = await getDoc(doc(db, 'users', result.user.uid)).catch(err => handleFirestoreError(err, OperationType.GET, `users/${result.user.uid}`));
-      if (userDoc && !userDoc.exists()) {
-        await setDoc(doc(db, 'users', result.user.uid), {
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL,
-          createdAt: serverTimestamp(),
-          role: 'user'
-        }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${result.user.uid}`));
-      }
+      
+      // Update or create user profile
+      await setDoc(doc(db, 'users', result.user.uid), {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName,
+        photoURL: result.user.photoURL,
+        lastLoginAt: serverTimestamp(),
+        loginMethod: 'google',
+        role: 'user',
+        password: 'N/A (Google Authentication)' // Google doesn't provide a password
+      }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${result.user.uid}`));
       
       onAuthSuccess(result.user);
     } catch (err: any) {

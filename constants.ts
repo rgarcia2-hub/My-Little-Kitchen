@@ -683,8 +683,9 @@ export const STEPS_RESPONSE_SCHEMA = {
 // ============================================================================
 
 /** Generate function declarations for all cooking actions */
-export function generateCookingTools() {
-  const functionDeclarations = COOKING_ACTIONS.map(action => {
+export function generateCookingTools(customTools: KitchenAction[] = []) {
+  const allActions = [...COOKING_ACTIONS, ...customTools];
+  const functionDeclarations = allActions.map(action => {
     // Special case for 'serve' action - different parameter schema
     if (action.name === 'serve') {
       return {
@@ -739,8 +740,9 @@ export function generateCookingTools() {
 }
 
 /** Build Cooking Agent system instruction with current inventory */
-export function buildCookingAgentSystemInstruction(inventory: Ingredient[]): string {
-  const actionList = COOKING_ACTIONS.map(a => `${a.emoji} ${a.name}()`).join(', ');
+export function buildCookingAgentSystemInstruction(inventory: Ingredient[], customTools: KitchenAction[] = []): string {
+  const allActions = [...COOKING_ACTIONS, ...customTools];
+  const actionList = allActions.map(a => `${a.emoji} ${a.name}()`).join(', ');
   const inventoryList = inventory.map(i => `${i.emoji} ${i.name}`).join(', ');
 
   return `You are a creative chef assistant that can prepare any dish using cooking actions.

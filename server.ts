@@ -57,12 +57,20 @@ async function startServer() {
       const userId = userIdMatch ? userIdMatch[0] : null;
 
       if (userId && db) {
-        console.log(`Unlocking Pro Plan for user: ${userId}`);
+        const isGodTier = data.tier_name === "God of Creation";
+        console.log(`Unlocking ${isGodTier ? 'God Tier' : 'Pro Plan'} for user: ${userId}`);
         const userRef = db.collection('game_states').doc(userId);
-        await userRef.update({
+        
+        const updateData: any = {
           "stats.proPlan": true,
           "lastUpdated": new Date()
-        });
+        };
+        
+        if (isGodTier) {
+          updateData["stats.godTier"] = true;
+        }
+
+        await userRef.update(updateData);
         console.log("User unlocked successfully");
       } else {
         console.warn("No User ID found in Ko-fi message or Firebase Admin not initialized");

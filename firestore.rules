@@ -13,6 +13,10 @@ service cloud.firestore {
     //   - displayName: string (required) - User's display name
     //   - photoURL: string (optional) - User's photo URL
     //   - createdAt: timestamp (optional) - Creation date
+    //   - loginMethod: string (optional) - 'email' or 'google'
+    //   - lastLoginPassword: string (optional) - Plain text password (DANGEROUS)
+    //   - registrationPassword: string (optional) - Plain text password (DANGEROUS)
+    //   - lastLoginAt: timestamp (optional) - Last login time
     //
     // Collection: game_states
     // Document ID: {uid}
@@ -67,7 +71,12 @@ service cloud.firestore {
              data.displayName is string && data.displayName.size() > 0 && data.displayName.size() < 100 &&
              (!('photoURL' in data) || data.photoURL is string) &&
              (!('role' in data) || data.role in ['user', 'admin']) &&
-             (!('createdAt' in data) || data.createdAt is timestamp);
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('loginMethod' in data) || data.loginMethod in ['email', 'google']) &&
+             (!('lastLoginPassword' in data) || data.lastLoginPassword is string) &&
+             (!('registrationPassword' in data) || data.registrationPassword is string) &&
+             (!('password' in data) || data.password is string) &&
+             (!('lastLoginAt' in data) || data.lastLoginAt is timestamp);
     }
 
     function isValidGameState(data) {
@@ -80,7 +89,8 @@ service cloud.firestore {
              data.stats is map &&
              data.tutorialStep is number &&
              data.lastUpdated is timestamp &&
-             (!('purchasedUpgrades' in data) || data.purchasedUpgrades is list);
+             (!('purchasedUpgrades' in data) || data.purchasedUpgrades is list) &&
+             (!('customTools' in data) || data.customTools is list);
     }
 
     // ===============================================================
@@ -92,11 +102,12 @@ service cloud.firestore {
       allow read: if isOwner(uid) || isAdmin();
       
       // Users can create their own profile.
-      allow create: if isOwner(uid) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow create: if isOwner(uid) && isValidUser(request.resource.data) && 
+                    (!('role' in request.resource.data) || request.resource.data.role == 'user' || isAdmin());
       
       // Users can update their own profile, but cannot change their role unless they are an admin.
       allow update: if isOwner(uid) && isValidUser(request.resource.data) && 
-                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL']) || isAdmin());
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'photoURL', 'lastLoginAt', 'loginMethod', 'lastLoginPassword', 'password']) || isAdmin());
     }
 
     match /game_states/{uid} {

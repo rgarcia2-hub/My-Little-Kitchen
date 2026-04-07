@@ -569,6 +569,16 @@ interface CombinationAgentProps {
   setCompletedRecipes: React.Dispatch<React.SetStateAction<CompletedRecipe[]>>;
   setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
   user: User;
+  manifestationName: string;
+  setManifestationName: React.Dispatch<React.SetStateAction<string>>;
+  manifestationEmoji: string;
+  setManifestationEmoji: React.Dispatch<React.SetStateAction<string>>;
+  customToolName: string;
+  setCustomToolName: React.Dispatch<React.SetStateAction<string>>;
+  customToolEmoji: string;
+  setCustomToolEmoji: React.Dispatch<React.SetStateAction<string>>;
+  customTools: KitchenAction[];
+  setCustomTools: React.Dispatch<React.SetStateAction<KitchenAction[]>>;
 }
 
 function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
@@ -644,10 +654,21 @@ function CombinationAgent({
   setCompletedRecipes,
   setCurrentOrderSteps,
   user,
+  manifestationName,
+  setManifestationName,
+  manifestationEmoji,
+  setManifestationEmoji,
+  customToolName,
+  setCustomToolName,
+  customToolEmoji,
+  setCustomToolEmoji,
+  customTools,
+  setCustomTools,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
   const [toolsSearchTerm, setToolsSearchTerm] = useState('');
+  
   const [showSkipModal, setShowSkipModal] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [skipAmount, setSkipAmount] = useState('1');
@@ -743,8 +764,8 @@ function CombinationAgent({
     ingredientNames: string[]
   ): Promise<Ingredient | null> => {
     // Apply safety_boost upgrade logic for "Kitchen Fire"
-    if (stats.purchasedUpgrades?.includes('fusion_reactor')) {
-      // Fusion Reactor eliminates fire risk
+    if (stats.purchasedUpgrades?.includes('fusion_reactor') || stats.godTier) {
+      // Fusion Reactor or God Tier eliminates fire risk
     } else {
       // Base 12% chance as requested by user
       let fireChance = 0.12; 
@@ -969,6 +990,35 @@ function CombinationAgent({
     } else {
       setSkipError('Incorrect password');
     }
+  };
+
+  const handleManifestIngredient = () => {
+    if (!manifestationName.trim()) return;
+    const newIng: Ingredient = {
+      name: manifestationName.trim(),
+      emoji: manifestationEmoji || '✨'
+    };
+    setInventory(prev => {
+      if (prev.some(ing => ing.name.toLowerCase() === newIng.name.toLowerCase())) return prev;
+      return [newIng, ...prev];
+    });
+    setManifestationName('');
+    setManifestationEmoji('✨');
+  };
+
+  const handleCreateCustomTool = () => {
+    if (!customToolName.trim()) return;
+    const newTool: KitchenAction = {
+      name: customToolName.trim().toLowerCase().replace(/\s+/g, '_'),
+      displayName: customToolName.trim(),
+      emoji: customToolEmoji || '🛠️'
+    };
+    setCustomTools(prev => {
+      if (prev.some(t => t.name === newTool.name)) return prev;
+      return [...prev, newTool];
+    });
+    setCustomToolName('');
+    setCustomToolEmoji('🛠️');
   };
 
   const handleAdminAddMoney = () => {
@@ -1600,6 +1650,18 @@ function CombinationAgent({
               <p className="section-subtitle">Select ingredients to use as function arguments</p>
             </div>
             <div className="section-header-right">
+              {stats.godTier && (
+                <div className="god-tier-action">
+                  <input 
+                    type="text" 
+                    placeholder="✨ Manifest..." 
+                    value={manifestationName}
+                    onChange={(e) => setManifestationName(e.target.value)}
+                    className="god-input"
+                  />
+                  <button onClick={handleManifestIngredient} className="god-button">Manifest</button>
+                </div>
+              )}
               <button 
                 className="reset-basics-button" 
                 onClick={() => {
@@ -1674,6 +1736,18 @@ function CombinationAgent({
               <p className="section-subtitle">Use function calls to combine ingredients</p>
             </div>
             <div className="section-header-right">
+              {stats.godTier && (
+                <div className="god-tier-action">
+                  <input 
+                    type="text" 
+                    placeholder="🛠️ New Tool..." 
+                    value={customToolName}
+                    onChange={(e) => setCustomToolName(e.target.value)}
+                    className="god-input"
+                  />
+                  <button onClick={handleCreateCustomTool} className="god-button">Create</button>
+                </div>
+              )}
               {hasSelection && (
                 <button 
                   className="clear-selection-button" 
@@ -1728,7 +1802,7 @@ function CombinationAgent({
                 💡 Select ingredients on the left to enable tools
               </div>
             )}
-            {COOKING_ACTIONS
+            {[...COOKING_ACTIONS, ...customTools]
               .filter(action => action.displayName.toLowerCase().includes(toolsSearchTerm.toLowerCase()))
               .map(action => {
                 // Serve requires exactly one ingredient selected
@@ -1918,6 +1992,7 @@ interface CookingAgentProps {
   onPass: () => void;
   stats: any;
   setStats: React.Dispatch<React.SetStateAction<any>>;
+  customTools: KitchenAction[];
 }
 
 function CookingAgent({
@@ -1932,17 +2007,18 @@ function CookingAgent({
   onPass,
   stats,
   setStats,
+  customTools,
 }: CookingAgentProps) {
   const { client, setConfig, sendMessage } = useGeminiAPIContext();
 
   // Update config when inventory changes - enable thinking for cooking agent
   useEffect(() => {
     setConfig({
-      systemInstruction: buildCookingAgentSystemInstruction(inventory),
-      tools: generateCookingTools(),
+      systemInstruction: buildCookingAgentSystemInstruction(inventory, customTools),
+      tools: generateCookingTools(customTools),
       // No thinkingBudget - enable thinking for cooking agent
     });
-  }, [setConfig, inventory]);
+  }, [setConfig, inventory, customTools]);
 
   // Store pending text from model response to merge with function call
   const pendingTextRef = useRef<string | null>(null);
@@ -2045,7 +2121,7 @@ function CookingAgent({
       const requestedIngredients = args.ingredients || [];
 
       // Find the action
-      const action = COOKING_ACTIONS.find(a => a.name === actionName);
+      const action = [...COOKING_ACTIONS, ...customTools].find(a => a.name === actionName);
       if (!action) {
         console.error(`Unknown action: ${actionName}`);
         await sendMessage([{
@@ -2192,7 +2268,7 @@ function CookingAgent({
     return () => {
       (client as any).off('approvedfunctioncalls', handleApprovedFunctionCalls);
     };
-  }, [client, sendMessage, setActiveAction, setActionTriggerCount, setActiveIngredients, setInventory, executeCombinationRef, onServe, onPass, inventory]);
+  }, [client, sendMessage, setActiveAction, setActionTriggerCount, setActiveIngredients, setInventory, executeCombinationRef, onServe, onPass, inventory, customTools]);
 
   // Expose sendMessage function via ref for external triggering
   useEffect(() => {
@@ -2222,6 +2298,7 @@ interface VerificationAgentProps {
   currentOrderSteps: {tool: string, ingredients: string[], result: string}[];
   setCompletedRecipes: React.Dispatch<React.SetStateAction<CompletedRecipe[]>>;
   setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
+  generateDivineImage: (dishName: string) => Promise<void>;
 }
 
 function VerificationAgent({
@@ -2234,6 +2311,7 @@ function VerificationAgent({
   currentOrderSteps,
   setCompletedRecipes,
   setCurrentOrderSteps,
+  generateDivineImage,
 }: VerificationAgentProps) {
   const { generateContent, setConfig } = useGeminiAPIContext();
 
@@ -2310,6 +2388,9 @@ function VerificationAgent({
             if (stats.purchasedUpgrades?.includes('golden_whisk')) {
               priceMultiplier *= 2;
             }
+            if (stats.godTier) {
+              priceMultiplier *= 3;
+            }
 
             // Reward based on difficulty
             let baseReward = 50;
@@ -2337,6 +2418,11 @@ function VerificationAgent({
 
             // Clear steps for next order
             setCurrentOrderSteps([]);
+
+            // Generate Divine Image if God Tier
+            if (stats.godTier) {
+              generateDivineImage(servedDishName);
+            }
 
             setStats((prev: any) => ({
               ...prev,
@@ -2423,6 +2509,15 @@ function KitchenAppContainer({ user }: { user: User }) {
   // Cooking state - track if the cooking agent is actively working
   const [isCooking, setIsCooking] = useState(false);
 
+  // God Tier State
+  const [manifestationName, setManifestationName] = useState('');
+  const [manifestationEmoji, setManifestationEmoji] = useState('✨');
+  const [customToolName, setCustomToolName] = useState('');
+  const [customToolEmoji, setCustomToolEmoji] = useState('🛠️');
+  const [customTools, setCustomTools] = useState<KitchenAction[]>([]);
+  const [divineImage, setDivineImage] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+
   // Ref to share the Combination Agent's execute function
   const executeCombinationRef = useRef<((action: KitchenAction, ingredients: string[]) => Promise<Ingredient | null>) | null>(null);
 
@@ -2446,7 +2541,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     completedNightmareOrders: 0,
     totalActions: 0,
     purchasedUpgrades: [] as string[],
-    proPlan: false
+    proPlan: false,
+    godTier: false
   });
   const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
   const [isAchievementsExpanded, setIsAchievementsExpanded] = useState(false);
@@ -2454,6 +2550,39 @@ function KitchenAppContainer({ user }: { user: User }) {
   const [isRecipeBookExpanded, setIsRecipeBookExpanded] = useState(false);
   const [completedRecipes, setCompletedRecipes] = useState<CompletedRecipe[]>([]);
   const [currentOrderSteps, setCurrentOrderSteps] = useState<{tool: string, ingredients: string[], result: string}[]>([]);
+
+  const { client } = useGeminiAPIContext();
+
+  const generateDivineImage = async (dishName: string) => {
+    if (!stats.godTier) return;
+    setIsGeneratingImage(true);
+    try {
+      const response = await client.generateContent('gemini-2.5-flash-image', [
+        {
+          role: 'user',
+          parts: [{
+            text: `A realistic, high-quality, professional food photography of a delicious ${dishName}. Cinematic lighting, gourmet presentation, 4k resolution.`,
+          }]
+        },
+      ], {
+        imageConfig: {
+          aspectRatio: "1:1",
+        },
+      });
+      
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          const base64Data = part.inlineData.data;
+          setDivineImage(`data:image/png;base64,${base64Data}`);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error generating divine image:', error);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
 
   // 1. Load data from Firestore on mount
   useEffect(() => {
@@ -2476,7 +2605,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           
           // Force Pro Plan for admin email
           if (user.email === 'robert.garcia.alsina2012@gmail.com') {
-            setStats({ ...loadedStats, proPlan: true });
+            setStats({ ...loadedStats, proPlan: true, godTier: true });
           } else {
             setStats(loadedStats);
           }
@@ -2497,6 +2626,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           } else {
             setInventory(STARTING_INGREDIENTS);
           }
+          setCustomTools(data.customTools || []);
         } else {
           // Initialize new game state in Firestore
           await setDoc(gameStateRef, {
@@ -2506,7 +2636,8 @@ function KitchenAppContainer({ user }: { user: User }) {
             completedRecipes: [],
             unlockedAchievements: [],
             purchasedUpgrades: [],
-            stats: user.email === 'robert.garcia.alsina2012@gmail.com' ? { ...stats, proPlan: true } : stats,
+            customTools: [],
+            stats: user.email === 'robert.garcia.alsina2012@gmail.com' ? { ...stats, proPlan: true, godTier: true } : stats,
             tutorialStep: 1,
             lastUpdated: Timestamp.now()
           }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
@@ -2550,6 +2681,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           purchasedUpgrades: stats.purchasedUpgrades,
           stats: stats,
           tutorialStep: tutorialStep,
+          customTools: customTools,
           lastUpdated: Timestamp.now()
         }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
       } catch (error) {
@@ -2741,6 +2873,16 @@ function KitchenAppContainer({ user }: { user: User }) {
           setCompletedRecipes={setCompletedRecipes}
           setCurrentOrderSteps={setCurrentOrderSteps}
           user={user}
+          manifestationName={manifestationName}
+          setManifestationName={setManifestationName}
+          manifestationEmoji={manifestationEmoji}
+          setManifestationEmoji={setManifestationEmoji}
+          customToolName={customToolName}
+          setCustomToolName={setCustomToolName}
+          customToolEmoji={customToolEmoji}
+          setCustomToolEmoji={setCustomToolEmoji}
+          customTools={customTools}
+          setCustomTools={setCustomTools}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
@@ -2766,6 +2908,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           onPass={handlePass}
           stats={stats}
           setStats={setStats}
+          customTools={customTools}
         />
         <GeminiDebug
           agentName="Cooking Agent"
@@ -2790,6 +2933,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           currentOrderSteps={currentOrderSteps}
           setCompletedRecipes={setCompletedRecipes}
           setCurrentOrderSteps={setCurrentOrderSteps}
+          generateDivineImage={generateDivineImage}
         />
         <GeminiDebug
           agentName="Judge Agent"
@@ -2800,6 +2944,33 @@ function KitchenAppContainer({ user }: { user: User }) {
           showApprovalSelector={false}
         />
       </GeminiAPIProvider>
+
+      {/* Divine Visualization Modal */}
+      {(divineImage || isGeneratingImage) && (
+        <div className="divine-modal-overlay" onClick={() => !isGeneratingImage && setDivineImage(null)}>
+          <div className="divine-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="divine-modal-header">
+              <h3 className="divine-modal-title">✨ Divine Visualization ✨</h3>
+              {!isGeneratingImage && <button className="divine-close-btn" onClick={() => setDivineImage(null)}>✕</button>}
+            </div>
+            <div className="divine-modal-body">
+              {isGeneratingImage ? (
+                <div className="divine-loading">
+                  <div className="divine-spinner"></div>
+                  <p>Manifesting visual essence...</p>
+                </div>
+              ) : (
+                <img src={divineImage!} alt="Divine Dish" className="divine-image" referrerPolicy="no-referrer" />
+              )}
+            </div>
+            {!isGeneratingImage && (
+              <div className="divine-modal-footer">
+                <p className="divine-hint">Witness the perfection of your creation, God of Creation.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Attribution Footer */}
       <footer className="attribution-footer">
@@ -2844,7 +3015,9 @@ function App() {
       {!user ? (
         <AuthScreen onAuthSuccess={(u) => setUser(u)} />
       ) : (
-        <KitchenAppContainer user={user} />
+        <GeminiAPIProvider>
+          <KitchenAppContainer user={user} />
+        </GeminiAPIProvider>
       )}
     </ErrorBoundary>
   );
