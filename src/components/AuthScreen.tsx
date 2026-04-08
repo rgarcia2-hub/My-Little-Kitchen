@@ -3,7 +3,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signInWithPopup, 
-  GoogleAuthProvider,
+  TwitterAuthProvider,
   updateProfile
 } from 'firebase/auth';
 import { auth, db } from '../firebase';
@@ -64,16 +64,34 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
       }
     } catch (err: any) {
       console.error('Auth error:', err);
-      setError(err.message);
+      let message = err.message;
+      
+      if (err.code === 'auth/email-already-in-use') {
+        message = 'EMAIL_ALREADY_REGISTERED. TRY_LOGIN_INSTEAD.';
+      } else if (err.code === 'auth/invalid-credential') {
+        message = 'INVALID_CREDENTIALS. CHECK_EMAIL_OR_PASSWORD.';
+      } else if (err.code === 'auth/user-not-found') {
+        message = 'OPERATOR_NOT_FOUND. INITIALIZE_ACCOUNT_FIRST.';
+      } else if (err.code === 'auth/wrong-password') {
+        message = 'SECURITY_KEY_MISMATCH. ACCESS_DENIED.';
+      } else if (err.code === 'auth/weak-password') {
+        message = 'SECURITY_KEY_TOO_WEAK. MIN_6_CHARACTERS.';
+      } else if (err.code === 'auth/invalid-email') {
+        message = 'INVALID_EMAIL_FORMAT. CHECK_INPUT.';
+      } else if (err.code === 'auth/operation-not-allowed') {
+        message = 'AUTH_METHOD_DISABLED. CONTACT_SYSTEM_ADMIN.';
+      }
+      
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleTwitterSignIn = async () => {
     setError(null);
     setLoading(true);
-    const provider = new GoogleAuthProvider();
+    const provider = new TwitterAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
       
@@ -87,15 +105,21 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         displayName: result.user.displayName,
         photoURL: result.user.photoURL,
         lastLoginAt: serverTimestamp(),
-        loginMethod: 'google',
+        loginMethod: 'twitter',
         role: 'user',
-        password: 'N/A (Google Authentication)' // Google doesn't provide a password
+        password: 'N/A (Twitter Authentication)'
       }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${result.user.uid}`));
       
       onAuthSuccess(result.user);
     } catch (err: any) {
-      console.error('Google Auth error:', err);
-      setError(err.message);
+      console.error('Twitter Auth error:', err);
+      let message = err.message;
+      if (err.code === 'auth/operation-not-allowed') {
+        message = 'TWITTER_AUTH_NOT_CONFIGURED_IN_FIREBASE. ACTIVATE_TWITTER_PROVIDER_IN_CONSOLE.';
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        message = 'AUTH_POPUP_CLOSED. TRY_AGAIN.';
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -130,6 +154,15 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               <div className="auth-error-box">
                 <span className="error-prefix">ERROR:</span>
                 {error}
+                {error.includes('TRY_LOGIN_INSTEAD') && (
+                  <button 
+                    type="button" 
+                    className="error-action-btn"
+                    onClick={() => setIsLogin(true)}
+                  >
+                    SWITCH_TO_LOGIN_MODE
+                  </button>
+                )}
               </div>
             )}
 
@@ -191,12 +224,16 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
 
               <button
                 type="button"
-                onClick={handleGoogleSignIn}
-                className="brutalist-btn secondary google-auth-btn"
+                onClick={handleTwitterSignIn}
+                className="brutalist-btn secondary twitter-auth-btn"
                 disabled={loading}
               >
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" referrerPolicy="no-referrer" />
-                GOOGLE_SIGN_IN
+                <div className="twitter-icon-container">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="twitter-svg">
+                    <g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g>
+                  </svg>
+                </div>
+                TWITTER_X_SIGN_IN
               </button>
             </form>
 

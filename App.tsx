@@ -677,7 +677,7 @@ function CombinationAgent({
   const [adminIngredientName, setAdminIngredientName] = useState('');
   const [adminIngredientEmoji, setAdminIngredientEmoji] = useState('🍎');
 
-  const isAdminUser = user.email === 'robert.garcia.alsina2012@gmail.com';
+  const isAdminUser = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
 
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
@@ -2484,6 +2484,8 @@ function VerificationAgent({
 // ============================================================================
 
 function KitchenAppContainer({ user }: { user: User }) {
+  const isAdminUser = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+
   // Tutorial State
   const [tutorialStep, setTutorialStep] = useState<number>(1);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -2603,8 +2605,8 @@ function KitchenAppContainer({ user }: { user: User }) {
           const data = docSnap.data();
           const loadedStats = data.stats || stats;
           
-          // Force Pro Plan for admin email
-          if (user.email === 'robert.garcia.alsina2012@gmail.com') {
+          // Force Pro Plan for admin email (only if using password provider)
+          if (isAdminUser) {
             setStats({ ...loadedStats, proPlan: true, godTier: true });
           } else {
             setStats(loadedStats);
@@ -2637,7 +2639,7 @@ function KitchenAppContainer({ user }: { user: User }) {
             unlockedAchievements: [],
             purchasedUpgrades: [],
             customTools: [],
-            stats: user.email === 'robert.garcia.alsina2012@gmail.com' ? { ...stats, proPlan: true, godTier: true } : stats,
+            stats: isAdminUser ? { ...stats, proPlan: true, godTier: true } : stats,
             tutorialStep: 1,
             lastUpdated: Timestamp.now()
           }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
