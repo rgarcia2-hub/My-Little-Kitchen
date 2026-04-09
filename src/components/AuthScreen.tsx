@@ -116,6 +116,8 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
       let message = err.message;
       if (err.code === 'auth/operation-not-allowed') {
         message = 'TWITTER_AUTH_NOT_CONFIGURED_IN_FIREBASE. ACTIVATE_TWITTER_PROVIDER_IN_CONSOLE.';
+      } else if (err.code === 'auth/invalid-credential') {
+        message = 'INVALID_TWITTER_CREDENTIALS. CHECK_API_KEY_AND_SECRET_IN_FIREBASE_CONSOLE.';
       } else if (err.code === 'auth/popup-closed-by-user') {
         message = 'AUTH_POPUP_CLOSED. TRY_AGAIN.';
       }
