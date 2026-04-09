@@ -429,6 +429,23 @@ body {
   text-underline-offset: 4px;
 }
 
+.view-achievements-btn.store-btn {
+  background: #ff5f5f !important;
+  color: white !important;
+  border-color: #141414 !important;
+  text-decoration: none;
+}
+
+.view-achievements-btn.store-btn:hover {
+  background: #ff4444 !important;
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0px #141414;
+}
+
+.view-achievements-btn.store-btn .emoji {
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+}
+
 /* ============================================================================
    Account & Settings Styles
    ============================================================================ */
@@ -1056,10 +1073,13 @@ body {
 .challenge-header-rail {
   background: #1a1a1a;
   color: #fff;
-  padding: 4px 12px;
+  padding: 6px 16px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   border-bottom: 2px solid #1a1a1a;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .rail-text {
@@ -1477,12 +1497,35 @@ body {
   margin-bottom: 12px;
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ingredients-search-input {
+  flex: 2;
+  min-width: 150px;
+  padding: 10px 12px;
+  border: 2px solid #141414;
+  border-radius: 0px;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  box-sizing: border-box;
+  outline: none;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.ingredients-search-input:focus {
+  border-color: #141414;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
 }
 
 .search-clear-button {
   position: absolute;
   right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   color: #999;
@@ -1493,28 +1536,22 @@ body {
   align-items: center;
   justify-content: center;
   transition: color 0.1s ease;
+  z-index: 5;
 }
 
-.search-clear-button:hover {
-  color: #333;
+/* Adjust clear button position if god-tier is present */
+.ingredients-search-container:has(.search-integrated) .search-clear-button {
+  right: calc(10px + 280px); /* Approximate width of god-tier-action */
 }
 
-.ingredients-search-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: monospace;
-  box-sizing: border-box;
-  outline: none;
-  transition: all 0.2s ease;
-  background: white;
-}
-
-.ingredients-search-input:focus {
-  border-color: var(--Blue-500);
-  box-shadow: 0 0 0 2px var(--Blue-400);
+@media (max-width: 768px) {
+  .ingredients-search-container {
+    flex-direction: column;
+  }
+  .ingredients-search-container:has(.search-integrated) .search-clear-button {
+    right: 10px;
+    top: 20px;
+  }
 }
 
 .ingredients-grid {
@@ -3391,22 +3428,53 @@ body {
   display: flex;
   gap: 8px;
   align-items: center;
-  background: rgba(255, 215, 0, 0.1);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px dashed #ffd700;
+  background: rgba(255, 215, 0, 0.05);
+  padding: 4px 12px;
+  border: 2px solid #141414;
+  box-shadow: 4px 4px 0px #ffd700;
+  position: relative;
+}
+
+.god-tier-action.search-integrated {
+  box-shadow: 4px 4px 0px #141414;
+  background: #fff;
+  padding: 2px 8px;
+  flex: 1;
+  min-width: 220px;
+  justify-content: center;
+}
+
+.god-tier-action.search-integrated::before {
+  content: 'GOD MODE';
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  background: #ffd700;
+  color: #000;
+  font-size: 7px;
+  font-weight: 900;
+  padding: 1px 4px;
+  border: 1px solid #141414;
+  z-index: 2;
 }
 
 .god-input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid #ffd700;
+  background: #fff;
+  border: 2px solid #141414;
   color: #1a1a1a;
-  font-size: 12px;
-  padding: 2px 4px;
-  width: 100px;
+  font-size: 11px;
+  padding: 4px 8px;
+  width: 90px;
+  min-width: 60px;
   outline: none;
   font-family: 'JetBrains Mono', monospace;
+  transition: all 0.2s ease;
+}
+
+.god-input:focus {
+  width: 120px;
+  border-color: #ffd700;
+  box-shadow: 2px 2px 0px #141414;
 }
 
 .god-input::placeholder {
@@ -3414,23 +3482,66 @@ body {
 }
 
 .god-button {
-  background: #ffd700;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
   color: #000;
-  border: none;
-  padding: 4px 12px;
-  border-radius: 2px;
+  border: 2px solid #141414;
+  padding: 4px 16px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   font-family: 'JetBrains Mono', monospace;
+  box-shadow: 4px 4px 0px #141414;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.god-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(45deg);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) rotate(45deg); }
 }
 
 .god-button:hover {
-  background: #ffcc00;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, #ffec8b 0%, #ff9d00 100%);
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #141414;
+}
+
+.god-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #141414;
+}
+
+.god-button .pro-badge {
+  background: #141414;
+  color: #ffd700;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
 }
 
 /* Divine Modal */

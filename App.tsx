@@ -1039,6 +1039,24 @@ function CombinationAgent({
     }
   };
 
+  const handleAdminToggleProPlan = () => {
+    if (isAdminUser) {
+      setStats((prev: any) => ({ ...prev, proPlan: !prev.proPlan }));
+      setSkipError('');
+    } else {
+      setSkipError('Unauthorized');
+    }
+  };
+
+  const handleAdminToggleGodTier = () => {
+    if (isAdminUser) {
+      setStats((prev: any) => ({ ...prev, godTier: !prev.godTier }));
+      setSkipError('');
+    } else {
+      setSkipError('Unauthorized');
+    }
+  };
+
   const handleAdminResetAll = () => {
     if (isAdminUser) {
       setInventory(STARTING_INGREDIENTS);
@@ -1343,6 +1361,15 @@ function CombinationAgent({
               <span>{isRecipeBookExpanded ? 'Hide Recipes' : 'Recipe Book'}</span>
               <span className="count-badge">{completedRecipes.length}</span>
             </button>
+            <a 
+              href="https://ko-fi.com/X8X51WOFNJ" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="view-achievements-btn store-btn"
+            >
+              <span className="emoji">🛒</span>
+              <span>STORE</span>
+            </a>
           </div>
 
           {stats.money > 0 && (
@@ -1621,6 +1648,24 @@ function CombinationAgent({
                   </div>
 
                   <div className="admin-section">
+                    <h4>Admin: Subscriptions & Plans</h4>
+                    <div className="flex gap-2 mb-2">
+                      <button 
+                        className={`admin-action-btn flex-1 ${stats.proPlan ? 'active' : ''}`} 
+                        onClick={handleAdminToggleProPlan}
+                      >
+                        {stats.proPlan ? 'Revoke PRO Plan' : 'Grant PRO Plan'}
+                      </button>
+                      <button 
+                        className={`admin-action-btn flex-1 ${stats.godTier ? 'active' : ''}`} 
+                        onClick={handleAdminToggleGodTier}
+                      >
+                        {stats.godTier ? 'Revoke God Tier' : 'Grant God Tier'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="admin-section">
                     <h4>Admin: System</h4>
                     <button 
                       className={`admin-action-btn w-full ${debugMode ? 'active' : ''}`} 
@@ -1650,18 +1695,6 @@ function CombinationAgent({
               <p className="section-subtitle">Select ingredients to use as function arguments</p>
             </div>
             <div className="section-header-right">
-              {stats.godTier && (
-                <div className="god-tier-action">
-                  <input 
-                    type="text" 
-                    placeholder="✨ Manifest..." 
-                    value={manifestationName}
-                    onChange={(e) => setManifestationName(e.target.value)}
-                    className="god-input"
-                  />
-                  <button onClick={handleManifestIngredient} className="god-button">Manifest</button>
-                </div>
-              )}
               <button 
                 className="reset-basics-button" 
                 onClick={() => {
@@ -1701,6 +1734,21 @@ function CombinationAgent({
                 ✕
               </button>
             )}
+            {stats.godTier && (
+              <div className="god-tier-action search-integrated">
+                <input 
+                  type="text" 
+                  placeholder="✨ Manifest..." 
+                  value={manifestationName}
+                  onChange={(e) => setManifestationName(e.target.value)}
+                  className="god-input"
+                />
+                <button onClick={handleManifestIngredient} className="god-button">
+                  <span className="pro-badge">PRO</span>
+                  Manifest
+                </button>
+              </div>
+            )}
           </div>
           <div className="ingredients-grid" ref={ingredientsRef}>
             {inventory.length === 0 ? (
@@ -1736,18 +1784,6 @@ function CombinationAgent({
               <p className="section-subtitle">Use function calls to combine ingredients</p>
             </div>
             <div className="section-header-right">
-              {stats.godTier && (
-                <div className="god-tier-action">
-                  <input 
-                    type="text" 
-                    placeholder="🛠️ New Tool..." 
-                    value={customToolName}
-                    onChange={(e) => setCustomToolName(e.target.value)}
-                    className="god-input"
-                  />
-                  <button onClick={handleCreateCustomTool} className="god-button">Create</button>
-                </div>
-              )}
               {hasSelection && (
                 <button 
                   className="clear-selection-button" 
@@ -1777,6 +1813,21 @@ function CombinationAgent({
               >
                 ✕
               </button>
+            )}
+            {stats.godTier && (
+              <div className="god-tier-action search-integrated">
+                <input 
+                  type="text" 
+                  placeholder="🛠️ New Tool..." 
+                  value={customToolName}
+                  onChange={(e) => setCustomToolName(e.target.value)}
+                  className="god-input"
+                />
+                <button onClick={handleCreateCustomTool} className="god-button">
+                  <span className="pro-badge">PRO</span>
+                  Create
+                </button>
+              </div>
             )}
           </div>
           
