@@ -143,11 +143,11 @@ export function MusicPlayer({ hasMusicPass = false }: MusicPlayerProps) {
 
       {/* Player UI */}
       {isOpen && (
-        <div className={`music-player-ui ${isMinimized ? 'minimized' : ''}`}>
+        <div className={`music-player-ui ${isMinimized ? 'minimized' : ''} ${currentTrack.isPremium ? 'kitchen-os-theme' : ''}`}>
           <div className="player-header">
             <div className="player-title">
               <Music size={14} className="mr-2" />
-              <span>KITCHEN_AUDIO_V1.0</span>
+              <span>{currentTrack.isPremium ? 'KITCHEN_OS_AUDIO_PREMIUM' : 'KITCHEN_AUDIO_V1.0'}</span>
             </div>
             <div className="player-header-actions">
               <button onClick={() => setIsMinimized(!isMinimized)} className="header-btn">
@@ -227,18 +227,21 @@ export function MusicPlayer({ hasMusicPass = false }: MusicPlayerProps) {
               )}
               
               <div className="playlist-mini-list mt-4 border-t border-gray-200 pt-2">
-                <div className="text-[9px] font-bold text-gray-400 mb-1 uppercase">Playlist</div>
+                <div className="text-[9px] font-bold text-gray-400 mb-2 uppercase tracking-widest">Playlist_Manifest</div>
                 {PLAYLIST.map((track, index) => (
                   <div 
                     key={track.id} 
-                    className={`flex items-center justify-between py-1 px-2 cursor-pointer hover:bg-gray-100 text-[10px] ${currentTrackIndex === index ? 'bg-black text-white' : ''}`}
+                    className={`playlist-item ${currentTrackIndex === index ? 'active' : ''}`}
                     onClick={() => setCurrentTrackIndex(index)}
                   >
-                    <div className="flex items-center overflow-hidden">
-                      <span className="mr-2 opacity-50">{index + 1}.</span>
-                      <span className="truncate">{track.title}</span>
+                    <div className="playlist-item-info">
+                      <span className="playlist-item-index">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="playlist-item-title">{track.title}</span>
+                      {track.isPremium && (
+                        <span className="playlist-item-badge">PREMIUM</span>
+                      )}
                     </div>
-                    {track.isPremium && !hasMusicPass && <Lock size={10} className="ml-2 text-yellow-500" />}
+                    {track.isPremium && !hasMusicPass && <Lock size={10} className="text-yellow-500" />}
                   </div>
                 ))}
               </div>
