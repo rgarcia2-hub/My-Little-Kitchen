@@ -1,0 +1,264 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music, X, Minimize2, Maximize2, Lock } from 'lucide-react';
+
+interface Track {
+  id: number;
+  title: string;
+  artist: string;
+  url: string;
+  isPremium?: boolean;
+}
+
+/**
+ * PLAYLIST CONFIGURATION
+ * To add your own music:
+ * 1. Place your .mp3 files in the /public/music folder.
+ * 2. Add a new entry to the PLAYLIST array below with the correct path.
+ *    Example: { id: 4, title: "My Song", artist: "Me", url: "/music/my-song.mp3" }
+ * 
+ * PREMIUM TRACKS:
+ * To make a song only available for Music Pass holders:
+ * Add `isPremium: true` to the track object.
+ */
+const PLAYLIST: Track[] = [
+  {
+    id: 1,
+    title: "Kitchen Vibes",
+    artist: "Lo-Fi Chef",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+  },
+  {
+    id: 2,
+    title: "Brutalist Beats",
+    artist: "OS Architect",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"
+  },
+  {
+    id: 3,
+    title: "Manifesting Melodies",
+    artist: "God Tier",
+    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    isPremium: true
+  },
+  {
+    id: 4,
+    title: "CLEAN LOOK",
+    artist: "Roby_010",
+    url: "/music/CLEAN LOOK.mp3",
+    isPremium: true // <--- Esto bloquea la canción si no tienen el pase
+  }
+];
+
+interface MusicPlayerProps {
+  hasMusicPass?: boolean;
+}
+
+export function MusicPlayer({ hasMusicPass = false }: MusicPlayerProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+  const [isMuted, setIsMuted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentTrack = PLAYLIST[currentTrackIndex];
+  const isLocked = currentTrack.isPremium && !hasMusicPass;
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = isMuted ? 0 : volume;
+    }
+  }, [volume, isMuted]);
+
+  useEffect(() => {
+    if (isPlaying && !isLocked) {
+      audioRef.current?.play().catch(e => console.error("Playback failed:", e));
+    } else {
+      audioRef.current?.pause();
+      if (isLocked) setIsPlaying(false);
+    }
+  }, [isPlaying, currentTrackIndex, isLocked]);
+
+  const togglePlay = () => {
+    if (isLocked) return;
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      const current = audioRef.current.currentTime;
+      const total = audioRef.current.duration;
+      setProgress((current / total) * 100);
+      setDuration(total);
+    }
+  };
+
+  const handleTrackEnd = () => {
+    nextTrack();
+  };
+
+  const nextTrack = () => {
+    let nextIndex = (currentTrackIndex + 1) % PLAYLIST.length;
+    setCurrentTrackIndex(nextIndex);
+  };
+
+  const prevTrack = () => {
+    let prevIndex = (currentTrackIndex - 1 + PLAYLIST.length) % PLAYLIST.length;
+    setCurrentTrackIndex(prevIndex);
+  };
+
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isLocked) return;
+    const newProgress = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = (newProgress / 100) * audioRef.current.duration;
+      setProgress(newProgress);
+    }
+  };
+
+  const toggleMute = () => setIsMuted(!isMuted);
+
+  return (
+    <div className="music-player-container">
+      <audio
+        ref={audioRef}
+        src={currentTrack.url}
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleTrackEnd}
+        onLoadedMetadata={handleTimeUpdate}
+      />
+
+      {/* Floating Toggle Button */}
+      <button 
+        className={`music-toggle-btn ${isOpen ? 'active' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        title="Music Player"
+      >
+        <Music size={24} />
+        {isPlaying && <span className="music-playing-indicator" />}
+      </button>
+
+      {/* Player UI */}
+      {isOpen && (
+        <div className={`music-player-ui ${isMinimized ? 'minimized' : ''}`}>
+          <div className="player-header">
+            <div className="player-title">
+              <Music size={14} className="mr-2" />
+              <span>KITCHEN_AUDIO_V1.0</span>
+            </div>
+            <div className="player-header-actions">
+              <button onClick={() => setIsMinimized(!isMinimized)} className="header-btn">
+                {isMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+              </button>
+              <button onClick={() => setIsOpen(false)} className="header-btn">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+
+          {!isMinimized && (
+            <div className="player-body">
+              <div className="track-info">
+                <div className="track-name flex items-center">
+                  {currentTrack.title}
+                  {currentTrack.isPremium && (
+                    <span className={`ml-2 text-[10px] px-1 border ${hasMusicPass ? 'border-green-500 text-green-500' : 'border-yellow-500 text-yellow-500'}`}>
+                      {hasMusicPass ? 'PASS_ACTIVE' : 'PASS_REQUIRED'}
+                    </span>
+                  )}
+                </div>
+                <div className="track-artist">{currentTrack.artist}</div>
+              </div>
+
+              {isLocked ? (
+                <div className="locked-track-overlay">
+                  <Lock size={32} className="mb-2 text-green-500" />
+                  <p className="text-[11px] font-bold text-center uppercase text-white tracking-widest">Access Restricted</p>
+                  <p className="text-[9px] text-green-500/70 text-center mt-2 font-mono">MUSIC_PASS_REQUIRED</p>
+                  <p className="text-[8px] text-gray-500 text-center mt-4 uppercase">Unlock via Ko-fi to manifest this audio</p>
+                </div>
+              ) : (
+                <>
+                  <div className="progress-container">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={progress || 0}
+                      onChange={handleProgressChange}
+                      className="progress-bar"
+                    />
+                    <div className="time-display">
+                      <span>{formatTime(audioRef.current?.currentTime || 0)}</span>
+                      <span>{formatTime(duration || 0)}</span>
+                    </div>
+                  </div>
+
+                  <div className="controls-container">
+                    <button onClick={prevTrack} className="control-btn">
+                      <SkipBack size={20} fill="currentColor" />
+                    </button>
+                    <button onClick={togglePlay} className="control-btn play-pause">
+                      {isPlaying ? <Pause size={24} fill="currentColor" /> : <Play size={24} fill="currentColor" />}
+                    </button>
+                    <button onClick={nextTrack} className="control-btn">
+                      <SkipForward size={20} fill="currentColor" />
+                    </button>
+                  </div>
+
+                  <div className="volume-container">
+                    <button onClick={toggleMute} className="volume-btn">
+                      {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                    </button>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={volume}
+                      onChange={(e) => setVolume(parseFloat(e.target.value))}
+                      className="volume-slider"
+                    />
+                  </div>
+                </>
+              )}
+              
+              <div className="playlist-mini-list mt-4 border-t border-gray-200 pt-2">
+                <div className="text-[9px] font-bold text-gray-400 mb-1 uppercase">Playlist</div>
+                {PLAYLIST.map((track, index) => (
+                  <div 
+                    key={track.id} 
+                    className={`flex items-center justify-between py-1 px-2 cursor-pointer hover:bg-gray-100 text-[10px] ${currentTrackIndex === index ? 'bg-black text-white' : ''}`}
+                    onClick={() => setCurrentTrackIndex(index)}
+                  >
+                    <div className="flex items-center overflow-hidden">
+                      <span className="mr-2 opacity-50">{index + 1}.</span>
+                      <span className="truncate">{track.title}</span>
+                    </div>
+                    {track.isPremium && !hasMusicPass && <Lock size={10} className="ml-2 text-yellow-500" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isMinimized && isPlaying && (
+            <div className="minimized-info">
+              <span className="scrolling-text">{currentTrack.title} - {currentTrack.artist}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatTime(seconds: number): string {
+  if (isNaN(seconds)) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}

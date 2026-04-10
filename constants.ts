@@ -635,10 +635,15 @@ Ensure that if a step depends on a previous step's result, you use the EXACT 're
 The 'result' of your LAST step (before the implicit serve step) MUST be exactly the dish name requested (or a very close plural/singular variation).
 
 DIFFICULTY GUIDANCE:
-- 'easy': Provide the most direct path possible (usually 1 or 2 steps). Avoid intermediate ingredients like 'Cracked Eggs' unless strictly necessary (e.g., 'eggs + fry -> Fried Eggs' is better than 'eggs + crack -> Cracked Eggs' then 'Cracked Eggs + fry -> Fried Eggs').
+- 'easy': Provide the most direct path possible (usually 1 or 2 steps). Avoid intermediate ingredients like 'Cracked Eggs' unless strictly necessary.
 - 'intermediate': Provide clear steps, but can include 1-2 logical intermediate steps.
-- 'difficult': Provide more abstract steps. Use broader terms for ingredients or tools (e.g., 'a heat source' instead of 'stove', 'some greens' instead of 'lettuce').
-- 'nightmare': Provide extremely vague, cryptic steps. Omit some intermediate steps or use riddles/metaphors. The player should have to experiment to find the exact path.
+- 'difficult': Provide more abstract steps. Use broader terms for ingredients or tools.
+- 'nightmare': Provide extremely vague, cryptic steps. Omit some intermediate steps or use riddles/metaphors.
+
+IMPORTANT:
+- NEVER return an empty steps array. 
+- If you don't know the exact recipe, use your culinary knowledge to invent a logical path using the available tools and ingredients.
+- Always prioritize using the 'Available Starting Ingredients' listed below.
 
 Available Tools:
 ${COOKING_ACTIONS.map(a => a.displayName).join(', ')}

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
+import { MusicPlayer } from './src/components/MusicPlayer';
+
 /**
  * Copyright 2024 Google LLC
  *
@@ -428,6 +430,29 @@ function AchievementItem({ achievement, isUnlocked }: AchievementItemProps) {
   );
 }
 
+interface ManifestationToastProps {
+  result: { name: string, emoji: string, isDuplicate: boolean };
+  onClose: () => void;
+}
+
+function ManifestationToast({ result, onClose }: ManifestationToastProps) {
+  const isError = result.name === "Failed to Manifest";
+  
+  return (
+    <div className={`manifestation-toast ${result.isDuplicate ? 'duplicate' : ''} ${isError ? 'error' : ''}`}>
+      <div className="manifestation-emoji">{result.emoji}</div>
+      <div className="manifestation-content">
+        <span className="manifestation-label">{isError ? 'System Error' : 'Manifestation Successful'}</span>
+        <span className="manifestation-name">{result.name}</span>
+        <div className="manifestation-status">
+          {isError ? 'RETRY_REQUIRED' : result.isDuplicate ? 'ALREADY_IN_INVENTORY' : 'NEW_DISCOVERY'}
+        </div>
+      </div>
+      <button className="achievement-toast-close" onClick={onClose}>✕</button>
+    </div>
+  );
+}
+
 // ============================================================================
 // Recipe Steps Component
 // ============================================================================
@@ -435,6 +460,7 @@ function AchievementItem({ achievement, isUnlocked }: AchievementItemProps) {
 interface RecipeStepsDisplayProps {
   steps: RecipeStep[];
   onClose: () => void;
+  onRetry: () => void;
   isLoading: boolean;
   orderName: string;
   difficulty?: string;
@@ -442,7 +468,7 @@ interface RecipeStepsDisplayProps {
   onPinToggle: () => void;
 }
 
-function RecipeStepsDisplay({ steps, onClose, isLoading, orderName, difficulty, isPinned, onPinToggle }: RecipeStepsDisplayProps) {
+function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, difficulty, isPinned, onPinToggle }: RecipeStepsDisplayProps) {
   const canPin = difficulty !== 'difficult' && difficulty !== 'nightmare';
 
   return (
@@ -474,7 +500,13 @@ function RecipeStepsDisplay({ steps, onClose, isLoading, orderName, difficulty, 
             </div>
           ) : steps.length === 0 ? (
             <div className="recipe-steps-empty">
-              <p>No steps found for this dish. Try being more specific!</p>
+              <p>The master chef is stumped by this dish!</p>
+              <button 
+                className="os-btn os-btn-primary mt-4"
+                onClick={onRetry}
+              >
+                Ask again
+              </button>
             </div>
           ) : (
             <div className="recipe-steps-list">
@@ -683,6 +715,7 @@ function CombinationAgent({
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
   const [showRecipeSteps, setShowRecipeSteps] = useState(false);
   const [isRecipePinned, setIsRecipePinned] = useState(false);
+  const [manifestationResult, setManifestationResult] = useState<{ name: string, emoji: string, isDuplicate: boolean } | null>(null);
 
   // Refs for auto-scroll
   const ingredientsRef = useRef<HTMLDivElement>(null);
@@ -830,7 +863,13 @@ function CombinationAgent({
     setShowRecipeSteps(true);
     setRecipeSteps([]);
     try {
-      const prompt = `Provide steps to cook ${orderName} in the game. The difficulty is ${difficulty}.`;
+      const prompt = `Dish: "${orderName}"
+Difficulty: ${difficulty}
+
+Please provide the logical steps to create this dish using the available tools and ingredients. 
+Even if the dish is complex, break it down into simple combinations. 
+If the dish is very unusual, use your best judgment to create a plausible recipe.
+Do not say you cannot do it; always provide a recipe.`;
       const response = await client.generateContent(model, [{ role: 'user', parts: [{ text: prompt }] }], {
         systemInstruction: STEPS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
@@ -1057,6 +1096,15 @@ function CombinationAgent({
     }
   };
 
+  const handleAdminToggleMusicPass = () => {
+    if (isAdminUser) {
+      setStats((prev: any) => ({ ...prev, musicPass: !prev.musicPass }));
+      setSkipError('');
+    } else {
+      setSkipError('Unauthorized');
+    }
+  };
+
   const handleAdminResetAll = () => {
     if (isAdminUser) {
       setInventory(STARTING_INGREDIENTS);
@@ -1126,6 +1174,18 @@ function CombinationAgent({
     }));
 
     if (newIngredient) {
+      const isDuplicate = isDuplicateIngredient(newIngredient.name, inventory);
+      
+      // Show manifestation result
+      setManifestationResult({
+        name: newIngredient.name,
+        emoji: newIngredient.emoji,
+        isDuplicate
+      });
+
+      // Clear manifestation result after a delay
+      setTimeout(() => setManifestationResult(null), 3000);
+
       // Add to current order steps
       setCurrentOrderSteps(prev => [...prev, {
         tool: action.displayName,
@@ -1134,7 +1194,7 @@ function CombinationAgent({
       }]);
 
       // Update stats for discovered ingredients
-      if (!isDuplicateIngredient(newIngredient.name, inventory)) {
+      if (!isDuplicate) {
         setStats((prev: any) => ({
           ...prev,
           discoveredIngredients: prev.discoveredIngredients + 1
@@ -1159,18 +1219,26 @@ function CombinationAgent({
       }
 
       // Add to inventory (at the beginning for recently used items at top)
-      // But skip if this ingredient already exists (duplicate check)
       setInventory(prev => {
-        if (isDuplicateIngredient(newIngredient.name, prev)) {
-          console.log(`Skipping duplicate ingredient: ${newIngredient.name}`);
-          return prev;
+        if (isDuplicate) {
+          // If duplicate, move it to the top instead of skipping
+          const filtered = prev.filter(ing => normalizeIngredientName(ing.name) !== normalizeIngredientName(newIngredient.name));
+          return [newIngredient, ...filtered];
         }
         return [newIngredient, ...prev];
       });
+    } else {
+      // Show error if combination failed
+      setManifestationResult({
+        name: "Failed to Manifest",
+        emoji: "❌",
+        isDuplicate: false
+      });
+      setTimeout(() => setManifestationResult(null), 3000);
     }
 
     setActiveAction(null);
-  }, [selectedIngredients, executeCombination, setActiveAction, setSelectedIngredients, setInventory, onServe]);
+  }, [selectedIngredients, executeCombination, setActiveAction, setSelectedIngredients, setInventory, onServe, inventory, stats.usedTools, stats.maxIngredientsUsed, setCurrentOrderSteps, setStats]);
 
   // Auto-scroll ingredients and tools sections on first load to show length
   useEffect(() => {
@@ -1662,6 +1730,12 @@ function CombinationAgent({
                       >
                         {stats.godTier ? 'Revoke God Tier' : 'Grant God Tier'}
                       </button>
+                      <button 
+                        className={`admin-action-btn flex-1 ${stats.musicPass ? 'active' : ''}`} 
+                        onClick={handleAdminToggleMusicPass}
+                      >
+                        {stats.musicPass ? 'Revoke Music Pass' : 'Grant Music Pass'}
+                      </button>
                     </div>
                   </div>
 
@@ -1684,6 +1758,14 @@ function CombinationAgent({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Manifestation Toast */}
+      {manifestationResult && (
+        <ManifestationToast 
+          result={manifestationResult} 
+          onClose={() => setManifestationResult(null)} 
+        />
       )}
 
       <div className="ingredients-tools-row">
@@ -1865,7 +1947,7 @@ function CombinationAgent({
                 <ActionTile
                   key={`${action.name}-${actionTriggerCount}`}
                   action={action}
-                  isActive={false}
+                  isActive={activeAction === action.name}
                   isDisabled={isDisabled}
                   isHighlighted={
                     (tutorialStep === 3 && action.name === 'fry') ||
@@ -2016,6 +2098,7 @@ function CombinationAgent({
             setShowRecipeSteps(false);
             setIsRecipePinned(false);
           }} 
+          onRetry={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
           isLoading={isFetchingSteps}
           orderName={currentOrder.name}
           difficulty={currentOrder.difficulty}
@@ -2595,7 +2678,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     totalActions: 0,
     purchasedUpgrades: [] as string[],
     proPlan: false,
-    godTier: false
+    godTier: false,
+    musicPass: false
   });
   const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
   const [isAchievementsExpanded, setIsAchievementsExpanded] = useState(false);
@@ -3032,6 +3116,9 @@ function KitchenAppContainer({ user }: { user: User }) {
           ItsCookie@
         </a>
       </footer>
+
+      {/* Music Player */}
+      <MusicPlayer hasMusicPass={stats.musicPass} />
     </div>
   );
 }
