@@ -22,7 +22,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2 } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2 } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -1105,6 +1105,23 @@ Do not say you cannot do it; always provide a recipe.`;
     }
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleProfileImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 500000) { // 500KB limit for base64 in Firestore
+        setSkipError('Image too large (max 500KB)');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setStats((prev: any) => ({ ...prev, profileImage: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleAdminResetAll = () => {
     if (isAdminUser) {
       setInventory(STARTING_INGREDIENTS);
@@ -1321,8 +1338,8 @@ Do not say you cannot do it; always provide a recipe.`;
                 setShowSkipModal(true);
               }}
             >
-              {user.photoURL ? (
-                <img src={user.photoURL} alt="Profile" className="user-avatar" referrerPolicy="no-referrer" />
+              {stats.profileImage || user.photoURL ? (
+                <img src={stats.profileImage || user.photoURL} alt="Profile" className="user-avatar object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px]">
                   {user.displayName?.[0] || user.email?.[0] || '?'}
@@ -1596,17 +1613,54 @@ Do not say you cannot do it; always provide a recipe.`;
               <div className="admin-section">
                 <h4>Account</h4>
                 <div className="account-info-card">
-                  <div className="account-header">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="Profile" className="account-avatar-large" referrerPolicy="no-referrer" />
-                    ) : (
-                      <div className="w-12 h-12 bg-black text-white flex items-center justify-center font-bold text-xl">
-                        {user.displayName?.[0] || user.email?.[0] || '?'}
+                  <div className="account-header-improved">
+                    <div className="profile-image-container">
+                      <div className="relative group profile-avatar-wrapper">
+                        {stats.profileImage || user.photoURL ? (
+                          <img 
+                            src={stats.profileImage || user.photoURL} 
+                            alt="Profile" 
+                            className="account-avatar-xl object-cover" 
+                            referrerPolicy="no-referrer" 
+                          />
+                        ) : (
+                          <div className="account-avatar-xl bg-black text-white flex items-center justify-center font-bold text-3xl">
+                            {user.displayName?.[0] || user.email?.[0] || '?'}
+                          </div>
+                        )}
+                        <button 
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-none border-none cursor-pointer"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Camera size={24} />
+                          <span className="text-[10px] mt-1 font-bold uppercase tracking-tighter">Change</span>
+                        </button>
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          className="hidden" 
+                          accept="image/*" 
+                          onChange={handleProfileImageUpload} 
+                        />
                       </div>
-                    )}
+                      
+                      {stats.profileImage && (
+                        <button 
+                          className="remove-profile-btn"
+                          onClick={() => setStats((prev: any) => ({ ...prev, profileImage: null }))}
+                          title="Remove custom photo"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+
                     <div className="account-details">
-                      <h5>{user.displayName || 'Chef'}</h5>
-                      <p>{user.email}</p>
+                      <h5 className="chef-name">{user.displayName || 'Chef'}</h5>
+                      <p className="chef-email">{user.email}</p>
+                      <div className="profile-status-badge">
+                        {stats.profileImage ? 'CUSTOM_AVATAR_ACTIVE' : 'DEFAULT_AVATAR'}
+                      </div>
                     </div>
                   </div>
                   
@@ -2679,7 +2733,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     purchasedUpgrades: [] as string[],
     proPlan: false,
     godTier: false,
-    musicPass: false
+    musicPass: false,
+    profileImage: null as string | null
   });
   const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
   const [isAchievementsExpanded, setIsAchievementsExpanded] = useState(false);

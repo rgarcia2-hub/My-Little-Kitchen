@@ -459,18 +459,139 @@ body {
   gap: 12px;
 }
 
-.account-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.hidden {
+  display: none;
 }
 
-.account-avatar-large {
-  width: 48px;
-  height: 48px;
-  border-radius: 0;
-  border: 2px solid #1a1a1a;
+.account-header-improved {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 0;
+}
+
+.profile-image-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.account-avatar-xl {
+  width: 80px;
+  height: 80px;
+  border: 3px solid #141414;
+  background: #fff;
   object-fit: cover;
+  box-shadow: 4px 4px 0px #141414;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.account-avatar-xl:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px #141414;
+}
+
+.remove-profile-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background: #ff4600;
+  color: white;
+  border: 2px solid #141414;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 2px 2px 0px #141414;
+}
+
+.remove-profile-btn:hover {
+  background: #ff0000;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #141414;
+}
+
+.chef-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+}
+
+.chef-email {
+  margin: 2px 0 8px 0;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.profile-status-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: bold;
+  padding: 2px 6px;
+  background: #141414;
+  color: #00ff00;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.relative {
+  position: relative;
+}
+
+.group {
+  cursor: pointer;
+}
+
+.group:hover .group-hover\:opacity-100 {
+  opacity: 1;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.opacity-0 {
+  opacity: 0;
+}
+
+.transition-opacity {
+  transition: opacity 0.2s ease;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.text-white {
+  color: #fff;
+}
+
+.rounded-none {
+  border-radius: 0;
 }
 
 .account-details h5 {
