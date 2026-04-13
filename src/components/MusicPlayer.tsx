@@ -46,18 +46,6 @@ const PLAYLIST: Track[] = [
     artist: "Roby_010",
     url: "/music/CLEAN LOOK.mp3",
     isPremium: true // <--- Esto bloquea la canción si no tienen el pase
-  },
-  {
-    id: 5,
-    title: "Cooking Food",
-    artist: "Nicolás Vázquez Cores",
-    url: "/music/Coocking Food.mp3"
-  },
-  {
-    id: 6,
-    title: "Cookies",
-    artist: "Nicolás Vázquez Cores",
-    url: "/music/Cookies.mp3"
   }
 ];
 
