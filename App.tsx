@@ -4,6 +4,7 @@
 */
 
 import { MusicPlayer } from './src/components/MusicPlayer';
+import { Analytics } from '@vercel/analytics/react';
 
 /**
  * Copyright 2024 Google LLC
@@ -3206,15 +3207,18 @@ function App() {
   }
 
   return (
-    <ErrorBoundary>
-      {!user ? (
-        <AuthScreen onAuthSuccess={(u) => setUser(u)} />
-      ) : (
-        <GeminiAPIProvider>
-          <KitchenAppContainer user={user} />
-        </GeminiAPIProvider>
-      )}
+    <>
+      <ErrorBoundary>
+        {!user ? (
+          <AuthScreen onAuthSuccess={(u) => setUser(u)} />
+        ) : (
+          <GeminiAPIProvider>
+            <KitchenAppContainer user={user} />
+          </GeminiAPIProvider>
+        )}
     </ErrorBoundary>
+      <Analytics />
+    </>
   );
 }
 
