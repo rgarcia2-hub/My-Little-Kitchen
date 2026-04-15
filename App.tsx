@@ -713,7 +713,8 @@ function CombinationAgent({
   const [adminIngredientName, setAdminIngredientName] = useState('');
   const [adminIngredientEmoji, setAdminIngredientEmoji] = useState('🍎');
 
-  const isAdminUser = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+  const isSuperAdmin = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+  const isAdminUser = isSuperAdmin || (user.email === 'gianlucaperalta555@gmail.com' && user.providerData.some(p => p.providerId === 'password'));
 
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
@@ -1796,14 +1797,16 @@ Do not say you cannot do it; always provide a recipe.`;
                     <button className="admin-danger-btn" onClick={handleAdminClearInventory}>Reset Inventory</button>
                   </div>
 
-                  <div className="admin-section">
-                    <h4>Admin: Achievements & Stats</h4>
-                    <div className="flex gap-2 mb-2">
-                      <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
-                      <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
+                  {isSuperAdmin && (
+                    <div className="admin-section">
+                      <h4>Admin: Achievements & Stats</h4>
+                      <div className="flex gap-2 mb-2">
+                        <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
+                        <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
+                      </div>
+                      <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
                     </div>
-                    <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
-                  </div>
+                  )}
 
                   <div className="admin-section">
                     <h4>Admin: Order Management</h4>
@@ -2752,7 +2755,8 @@ function VerificationAgent({
 // ============================================================================
 
 function KitchenAppContainer({ user }: { user: User }) {
-  const isAdminUser = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+  const isSuperAdmin = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+  const isAdminUser = isSuperAdmin || (user.email === 'gianlucaperalta555@gmail.com' && user.providerData.some(p => p.providerId === 'password'));
 
   // Tutorial State
   const [tutorialStep, setTutorialStep] = useState<number>(1);
