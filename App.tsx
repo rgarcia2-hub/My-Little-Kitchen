@@ -52,6 +52,10 @@ import {
   buildCookingAgentSystemInstruction,
   getRandomDifficulty,
   CompletedRecipe,
+  TITLES,
+  XP_PER_DIFFICULTY,
+  getLevelFromXP,
+  getXPForLevel,
 } from './constants';
 
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
@@ -898,14 +902,35 @@ Do not say you cannot do it; always provide a recipe.`;
           else if (currentOrder.difficulty === 'difficult') baseReward = 250;
           else if (currentOrder.difficulty === 'nightmare') baseReward = 1000;
 
-          setStats((prev: any) => ({
-            ...prev,
-            completedOrders: prev.completedOrders + 1,
-            completedNightmareOrders: currentOrder.difficulty === 'nightmare' 
-              ? (prev.completedNightmareOrders || 0) + 1 
-              : (prev.completedNightmareOrders || 0),
-            money: (prev.money || 0) + baseReward,
-          }));
+          setStats((prev: any) => {
+            const gainedXP = XP_PER_DIFFICULTY[currentOrder.difficulty] || 20;
+            const newXP = (prev.xp || 0) + gainedXP;
+            const newLevel = getLevelFromXP(newXP);
+            const leveledUp = newLevel > (prev.level || 1);
+            
+            let newMoney = (prev.money || 0) + baseReward;
+            let newPurchasedUpgrades = [...(prev.purchasedUpgrades || [])];
+            let newTitle = prev.title || 'Kitchen Hand';
+
+            if (leveledUp) {
+              newMoney += newLevel * 100;
+              const applicableTitle = [...TITLES].reverse().find(t => newLevel >= t.level);
+              if (applicableTitle) newTitle = applicableTitle.name;
+            }
+
+            return {
+              ...prev,
+              completedOrders: prev.completedOrders + 1,
+              completedNightmareOrders: currentOrder.difficulty === 'nightmare' 
+                ? (prev.completedNightmareOrders || 0) + 1 
+                : (prev.completedNightmareOrders || 0),
+              money: newMoney,
+              xp: newXP,
+              level: newLevel,
+              title: newTitle,
+              purchasedUpgrades: newPurchasedUpgrades,
+            };
+          });
 
           // Add to Recipe Book
           setCompletedRecipes(prev => {
@@ -1322,6 +1347,10 @@ Do not say you cannot do it; always provide a recipe.`;
   // Get the current in-progress order name
   const currentOrder = orders.find(o => o.status === 'in_progress');
 
+  const currentLevelXP = getXPForLevel(stats.level || 1);
+  const nextLevelXP = getXPForLevel((stats.level || 1) + 1);
+  const xpProgress = Math.min(100, Math.max(0, (((stats.xp || 0) - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100));
+
   return (
     <div className="kitchen-app">
       {/* Page Title */}
@@ -1331,7 +1360,21 @@ Do not say you cannot do it; always provide a recipe.`;
             <h1 className="kitchen-title">My little Kitchen</h1>
           </div>
           
-          <div className="settings-container">
+          <div className="settings-container flex items-center gap-4">
+            <div className="stats-display-container mr-4">
+              <div className="level-badge-container">
+                <span className="level-label">LVL</span>
+                <span className="level-value">{stats.level || 1}</span>
+              </div>
+              <div className="xp-bar-container" title={`${Math.floor(stats.xp || 0)} / ${nextLevelXP} XP`}>
+                <div className="xp-bar-fill" style={{ width: `${xpProgress}%` }}></div>
+                <span className="xp-text">{stats.title || 'Kitchen Hand'}</span>
+              </div>
+              <div className="money-display-bar">
+                <span className="money-icon">💰</span>
+                <span className="money-amount">Dinero: ${stats.money}</span>
+              </div>
+            </div>
             <button 
               className="user-profile-btn-top"
               onClick={() => {
@@ -1456,13 +1499,6 @@ Do not say you cannot do it; always provide a recipe.`;
               <span>STORE</span>
             </a>
           </div>
-
-          {stats.money > 0 && (
-            <div className="money-display-bar">
-              <span className="money-icon">💰</span>
-              <span className="money-amount">Dinero: ${stats.money}</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -1665,6 +1701,14 @@ Do not say you cannot do it; always provide a recipe.`;
                   </div>
                   
                   <div className="account-stats-grid">
+                    <div className="account-stat-item">
+                      <span className="stat-label">Level</span>
+                      <span className="stat-value">{stats.level || 1}</span>
+                    </div>
+                    <div className="account-stat-item">
+                      <span className="stat-label">Title</span>
+                      <span className="stat-value">{stats.title || 'Kitchen Hand'}</span>
+                    </div>
                     <div className="account-stat-item">
                       <span className="stat-label">Balance</span>
                       <span className="stat-value">${stats.money}</span>
@@ -2612,18 +2656,54 @@ function VerificationAgent({
               generateDivineImage(servedDishName);
             }
 
-            setStats((prev: any) => ({
-              ...prev,
-              completedOrders: prev.completedOrders + 1,
-              completedNightmareOrders: order.difficulty === 'nightmare' 
-                ? (prev.completedNightmareOrders || 0) + 1 
-                : (prev.completedNightmareOrders || 0),
-              money: (prev.money || 0) + reward,
-              maxConfidence: Math.max(prev.maxConfidence || 0, finalConfidence),
-              completedDishes: prev.completedDishes?.includes(order.name) 
-                ? prev.completedDishes 
-                : [...(prev.completedDishes || []), order.name]
-            }));
+            setStats((prev: any) => {
+              const gainedXP = XP_PER_DIFFICULTY[order.difficulty] || 20;
+              const newXP = (prev.xp || 0) + gainedXP;
+              const newLevel = getLevelFromXP(newXP);
+              const leveledUp = newLevel > (prev.level || 1);
+              
+              let newMoney = (prev.money || 0) + reward;
+              let newPurchasedUpgrades = [...(prev.purchasedUpgrades || [])];
+              let newTitle = prev.title || 'Kitchen Hand';
+
+              if (leveledUp) {
+                // Level up rewards
+                newMoney += newLevel * 100;
+                
+                // Title update
+                const applicableTitle = [...TITLES].reverse().find(t => newLevel >= t.level);
+                if (applicableTitle) {
+                  newTitle = applicableTitle.name;
+                }
+
+                // Random upgrade chance (20%)
+                if (Math.random() < 0.20) {
+                  const unownedUpgrades = UPGRADES.filter(u => !newPurchasedUpgrades.includes(u.id));
+                  if (unownedUpgrades.length > 0) {
+                    const randomUpgrade = unownedUpgrades[Math.floor(Math.random() * unownedUpgrades.length)];
+                    newPurchasedUpgrades.push(randomUpgrade.id);
+                    // We can show a toast for this later
+                  }
+                }
+              }
+
+              return {
+                ...prev,
+                completedOrders: prev.completedOrders + 1,
+                completedNightmareOrders: order.difficulty === 'nightmare' 
+                  ? (prev.completedNightmareOrders || 0) + 1 
+                  : (prev.completedNightmareOrders || 0),
+                money: newMoney,
+                xp: newXP,
+                level: newLevel,
+                title: newTitle,
+                purchasedUpgrades: newPurchasedUpgrades,
+                maxConfidence: Math.max(prev.maxConfidence || 0, finalConfidence),
+                completedDishes: prev.completedDishes?.includes(order.name) 
+                  ? prev.completedDishes 
+                  : [...(prev.completedDishes || []), order.name]
+              };
+            });
 
             setOrders(prev => {
               const updatedOrders = prev.map(o =>
@@ -2730,6 +2810,9 @@ function KitchenAppContainer({ user }: { user: User }) {
     completedDishes: [] as string[],
     completedNightmareOrders: 0,
     totalActions: 0,
+    xp: 0,
+    level: 1,
+    title: 'Kitchen Hand',
     purchasedUpgrades: [] as string[],
     proPlan: false,
     godTier: false,

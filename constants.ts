@@ -406,6 +406,36 @@ export const EXAMPLE_ORDERS: Order[] = [
 // Helper Functions
 // ============================================================================
 
+export const TITLES = [
+  { level: 1, name: 'Kitchen Hand' },
+  { level: 5, name: 'Prep Cook' },
+  { level: 10, name: 'Line Cook' },
+  { level: 15, name: 'Sous Chef' },
+  { level: 20, name: 'Chef de Cuisine' },
+  { level: 30, name: 'Executive Chef' },
+  { level: 40, name: 'Master Chef' },
+  { level: 50, name: 'Culinary Legend' },
+  { level: 75, name: 'Kitchen God' },
+  { level: 100, name: 'The Singularity Chef' },
+];
+
+export const XP_PER_DIFFICULTY = {
+  easy: 20,
+  intermediate: 50,
+  difficult: 150,
+  nightmare: 500
+};
+
+export function getLevelFromXP(xp: number): number {
+  // Simple quadratic progression: XP = 50 * level^2
+  // level = sqrt(xp / 50)
+  return Math.floor(Math.sqrt(xp / 50)) + 1;
+}
+
+export function getXPForLevel(level: number): number {
+  return 50 * Math.pow(level - 1, 2);
+}
+
 /** Get a random difficulty based on weighted probabilities */
 export function getRandomDifficulty(): OrderDifficulty {
   const rand = Math.random();

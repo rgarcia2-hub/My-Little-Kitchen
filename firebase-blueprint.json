@@ -46,7 +46,29 @@
         "completedRecipes": { "type": "array", "items": { "$ref": "CompletedRecipe" } },
         "unlockedAchievements": { "type": "array", "items": { "type": "string" } },
         "purchasedUpgrades": { "type": "array", "items": { "type": "string" } },
-        "stats": { "type": "object" },
+        "stats": { 
+          "type": "object",
+          "properties": {
+            "completedOrders": { "type": "integer" },
+            "money": { "type": "integer" },
+            "discoveredIngredients": { "type": "integer" },
+            "usedToolsCount": { "type": "integer" },
+            "usedTools": { "type": "array", "items": { "type": "string" } },
+            "maxConfidence": { "type": "number" },
+            "maxIngredientsUsed": { "type": "integer" },
+            "completedDishes": { "type": "array", "items": { "type": "string" } },
+            "completedNightmareOrders": { "type": "integer" },
+            "totalActions": { "type": "integer" },
+            "xp": { "type": "number" },
+            "level": { "type": "integer" },
+            "title": { "type": "string" },
+            "purchasedUpgrades": { "type": "array", "items": { "type": "string" } },
+            "proPlan": { "type": "boolean" },
+            "godTier": { "type": "boolean" },
+            "musicPass": { "type": "boolean" },
+            "profileImage": { "type": ["string", "null"] }
+          }
+        },
         "tutorialStep": { "type": "integer" },
         "lastUpdated": { "type": "string", "format": "date-time" }
       },
