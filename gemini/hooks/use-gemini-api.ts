@@ -94,12 +94,10 @@ export function useGeminiAPI(): UseCoreAPIResults {
   const apiKey = useMemo(() => {
     const key = getApiKey();
     if (!key) {
-      throw new Error(
-        "API key not found. " +
-        "For local development, set VITE_GEMINI_API_KEY in your .env file. " +
-        "In AI Studio, the key is provided automatically."
-      );
+      console.error("Gemini API key is missing! API calls will fail.");
+      return ''; // Don't throw here to allow some UI to render
     }
+    console.log("Gemini API key found.");
     return key;
   }, []);
 
@@ -181,18 +179,24 @@ export function useGeminiAPI(): UseCoreAPIResults {
 
   const getEffectiveConfig = useCallback(
     (config: GenerateContentConfig) => {
-      let effectiveConfig = config;
+      let effectiveConfig = { ...config };
 
       // Remove tools if function calling is disabled
       if (!functionCallingEnabled) {
-        const { tools, ...rest } = config;
-        effectiveConfig = rest;
+        const { tools, ...rest } = effectiveConfig;
+        effectiveConfig = rest as GenerateContentConfig;
       }
 
-      // Always add thinking config
+      // Only add includeThoughts if it was already opted-in or if useThinking is true
+      // and only if thinkingConfig isn't explicitly disabling it
+      const thinkingConfig = effectiveConfig.thinkingConfig || {};
+      
       return {
         ...effectiveConfig,
-        thinkingConfig: { ...effectiveConfig.thinkingConfig, includeThoughts: true },
+        thinkingConfig: { 
+          ...thinkingConfig,
+          includeThoughts: thinkingConfig.includeThoughts !== false 
+        },
       };
     },
     [functionCallingEnabled]

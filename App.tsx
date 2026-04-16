@@ -64,6 +64,19 @@ import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
 
+const safeJsonParse = (text: string) => {
+  try {
+    let cleaned = text;
+    if (text.includes('```')) {
+      cleaned = text.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').trim();
+    }
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error('Failed to parse JSON:', text, e);
+    return null;
+  }
+};
+
 // ============================================================================
 // Error Boundary Component
 // ============================================================================
@@ -879,9 +892,6 @@ function CombinationAgent({
       systemInstruction: COMBINATION_SYSTEM_INSTRUCTION,
       responseMimeType: 'application/json',
       responseSchema: COMBINATION_RESPONSE_SCHEMA,
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
     });
   }, [setConfig]);
 
@@ -988,16 +998,21 @@ function CombinationAgent({
       ];
 
       const response = await generateContent(contents);
-      const text = response?.text || '{}';
-      const result: CombinationResult = JSON.parse(text);
+      const text = response?.text || '';
+      const result = safeJsonParse(text) as CombinationResult | null;
+      
+      if (!result || !result.result_name || !result.emoji) {
+        console.error('Combination failed or returned invalid JSON:', text);
+        return null;
+      }
 
       return {
         name: result.result_name,
         emoji: result.emoji,
-        rarity: (currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity
+        rarity: (currentOrder?.difficulty === 'nightmare') ? 'nightmare' : (result.rarity || 'common')
       };
     } catch (error) {
-      console.error('Error in combination:', error);
+      console.error('Error in combination API call:', error);
       return null;
     }
   }, [generateContent, recipeSteps, orders]);
@@ -1027,9 +1042,9 @@ Do not say you cannot do it; always provide a recipe.`;
         responseMimeType: 'application/json',
         responseSchema: STEPS_RESPONSE_SCHEMA,
       });
-      const text = response?.text || '{}';
-      const result = JSON.parse(text);
-      if (result.steps) {
+      const text = response?.text || '';
+      const result = safeJsonParse(text);
+      if (result && result.steps) {
         setRecipeSteps(result.steps);
       }
     } catch (error) {
@@ -2785,9 +2800,6 @@ function VerificationAgent({
       systemInstruction: VERIFICATION_SYSTEM_INSTRUCTION,
       responseMimeType: 'application/json',
       responseSchema: VERIFICATION_RESPONSE_SCHEMA,
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
     });
   }, [setConfig]);
 
@@ -2815,8 +2827,13 @@ function VerificationAgent({
           ];
 
           const response = await generateContent(contents);
-          const text = response?.text || '{}';
-          const result: VerificationResult = JSON.parse(text);
+          const text = response?.text || '';
+          const result = safeJsonParse(text) as VerificationResult | null;
+
+          if (!result) {
+            console.error('Verification failed or returned invalid JSON:', text);
+            continue;
+          }
 
           // Apply confidence_boost upgrade
           let confidenceBonus = stats.purchasedUpgrades?.includes('confidence_boost') ? 0.1 : 0;

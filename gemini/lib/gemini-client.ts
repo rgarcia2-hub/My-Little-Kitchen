@@ -93,12 +93,18 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
     const generateContentParameters: GenerateContentParameters = { model, contents, config: config };
     console.log("client.generateContent", generateContentParameters);
     this.log({ type: 'generate-content', direction: 'send', message: generateContentParameters });
-    const result = await this.genAI.models.generateContent(generateContentParameters);
-    // This logs the result, including function calls, but doesn't actually call them
-    this.log({ type: 'generate-content', direction: 'receive', message: result });
-    // This emits an event for the called functions to be processed
-    this.emitAnyFunctionCalls(result);
-    return result;
+    try {
+      const result = await this.genAI.models.generateContent(generateContentParameters);
+      // This logs the result, including function calls, but doesn't actually call them
+      this.log({ type: 'generate-content', direction: 'receive', message: result });
+      // This emits an event for the called functions to be processed
+      this.emitAnyFunctionCalls(result);
+      return result;
+    } catch (error) {
+      console.error("Gemini API generateContent error:", error);
+      this.log({ type: 'generate-content', direction: 'receive', message: { error: error instanceof Error ? error.message : String(error) } });
+      throw error;
+    }
   }
   async generateContentStream(
     onUpdate: (text: string) => void,
