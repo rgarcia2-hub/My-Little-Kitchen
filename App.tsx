@@ -64,19 +64,6 @@ import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
 
-const safeJsonParse = (text: string) => {
-  try {
-    let cleaned = text;
-    if (text.includes('```')) {
-      cleaned = text.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').trim();
-    }
-    return JSON.parse(cleaned);
-  } catch (e) {
-    console.error('Failed to parse JSON:', text, e);
-    return null;
-  }
-};
-
 // ============================================================================
 // Error Boundary Component
 // ============================================================================
@@ -233,41 +220,6 @@ interface GlitchedTitleProps {
   className?: string;
 }
 
-function VerifiedBadge({ size = 14, className = "" }: { size?: number, className?: string }) {
-  return (
-    <div 
-      className={`verified-badge ${className}`} 
-      style={{ 
-        width: size + 4, 
-        height: size + 4, 
-        display: 'inline-flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        marginLeft: '2px', 
-        marginRight: '2px',
-        verticalAlign: 'middle',
-        flexShrink: 0,
-      }}
-      title="Verified Chef"
-    >
-      <svg 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        xmlns="http://www.w3.org/2000/svg" 
-        style={{ 
-          width: size, 
-          height: size,
-          transform: 'rotate(12deg)',
-          overflow: 'visible'
-        }}
-      >
-        <rect width="24" height="24" rx="1.5" fill="#0066FF" />
-        <path d="M6 12L10 16L18 8" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
-
 function GlitchedTitle({ title, className = "" }: GlitchedTitleProps) {
   return (
     <div className={`glitched-title-container ${className}`}>
@@ -287,10 +239,9 @@ interface LeaderboardProps {
   data: any[];
   isLoading: boolean;
   onClose: () => void;
-  currentUserUid?: string;
 }
 
-function Leaderboard({ data, isLoading, onClose, currentUserUid }: LeaderboardProps) {
+function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
   return (
     <div className="os-modal-overlay" onClick={onClose}>
       <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
@@ -332,10 +283,7 @@ function Leaderboard({ data, isLoading, onClose, currentUserUid }: LeaderboardPr
                           )}
                         </div>
                         <div className="os-chef-info">
-                          <div className="flex items-center gap-1">
-                            <span className="os-chef-name">{entry.displayName}</span>
-                            {entry.uid === currentUserUid && <VerifiedBadge size={12} />}
-                          </div>
+                          <span className="os-chef-name">{entry.displayName}</span>
                           <span className="os-chef-title">{entry.customTitle || entry.title}</span>
                         </div>
                       </div>
@@ -892,6 +840,9 @@ function CombinationAgent({
       systemInstruction: COMBINATION_SYSTEM_INSTRUCTION,
       responseMimeType: 'application/json',
       responseSchema: COMBINATION_RESPONSE_SCHEMA,
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     });
   }, [setConfig]);
 
@@ -998,21 +949,16 @@ function CombinationAgent({
       ];
 
       const response = await generateContent(contents);
-      const text = response?.text || '';
-      const result = safeJsonParse(text) as CombinationResult | null;
-      
-      if (!result || !result.result_name || !result.emoji) {
-        console.error('Combination failed or returned invalid JSON:', text);
-        return null;
-      }
+      const text = response?.text || '{}';
+      const result: CombinationResult = JSON.parse(text);
 
       return {
         name: result.result_name,
         emoji: result.emoji,
-        rarity: (currentOrder?.difficulty === 'nightmare') ? 'nightmare' : (result.rarity || 'common')
+        rarity: (currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity
       };
     } catch (error) {
-      console.error('Error in combination API call:', error);
+      console.error('Error in combination:', error);
       return null;
     }
   }, [generateContent, recipeSteps, orders]);
@@ -1042,9 +988,9 @@ Do not say you cannot do it; always provide a recipe.`;
         responseMimeType: 'application/json',
         responseSchema: STEPS_RESPONSE_SCHEMA,
       });
-      const text = response?.text || '';
-      const result = safeJsonParse(text);
-      if (result && result.steps) {
+      const text = response?.text || '{}';
+      const result = JSON.parse(text);
+      if (result.steps) {
         setRecipeSteps(result.steps);
       }
     } catch (error) {
@@ -1602,10 +1548,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     {user.displayName?.[0] || user.email?.[0] || '?'}
                   </div>
                 )}
-                <span className="user-name-text">
-                  {user.displayName || 'Chef'}
-                  <VerifiedBadge size={14} />
-                </span>
+                <span className="user-name-text">{user.displayName || 'Chef'}</span>
                 <span className="settings-gear">⚙️</span>
               </div>
             </button>
@@ -1910,10 +1853,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     </div>
 
                     <div className="account-details">
-                      <h5 className="chef-name">
-                        {user.displayName || 'Chef'}
-                        <VerifiedBadge size={18} />
-                      </h5>
+                      <h5 className="chef-name">{user.displayName || 'Chef'}</h5>
                       <p className="chef-email">{user.email}</p>
                       <div className="profile-status-badge">
                         {stats.profileImage ? 'CUSTOM_AVATAR_ACTIVE' : 'DEFAULT_AVATAR'}
@@ -2800,6 +2740,9 @@ function VerificationAgent({
       systemInstruction: VERIFICATION_SYSTEM_INSTRUCTION,
       responseMimeType: 'application/json',
       responseSchema: VERIFICATION_RESPONSE_SCHEMA,
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     });
   }, [setConfig]);
 
@@ -2827,13 +2770,8 @@ function VerificationAgent({
           ];
 
           const response = await generateContent(contents);
-          const text = response?.text || '';
-          const result = safeJsonParse(text) as VerificationResult | null;
-
-          if (!result) {
-            console.error('Verification failed or returned invalid JSON:', text);
-            continue;
-          }
+          const text = response?.text || '{}';
+          const result: VerificationResult = JSON.parse(text);
 
           // Apply confidence_boost upgrade
           let confidenceBonus = stats.purchasedUpgrades?.includes('confidence_boost') ? 0.1 : 0;
@@ -3560,7 +3498,6 @@ function KitchenAppContainer({ user }: { user: User }) {
           data={leaderboardData} 
           isLoading={isLeaderboardLoading} 
           onClose={() => setIsLeaderboardOpen(false)} 
-          currentUserUid={user.uid}
         />
       )}
 

@@ -42,16 +42,21 @@ declare const process: { env?: { API_KEY?: string; GEMINI_API_KEY?: string } } |
 
 function getApiKey(): string {
   // Try Vite environment first (local development)
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_KITCHEN_API_KEY) {
-    return (import.meta as any).env.VITE_KITCHEN_API_KEY;
-  }
   if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GEMINI_API_KEY) {
     return (import.meta as any).env.VITE_GEMINI_API_KEY;
   }
 
-  // Fallback chain for different environments
-  const env = (typeof process !== 'undefined' && process?.env) ? process.env : {};
-  return (env.KITCHEN_API_KEY || env.GEMINI_API_KEY || env.API_KEY || '');
+  // Try AI Studio environment (GEMINI_API_KEY is the standard)
+  if (typeof process !== 'undefined' && process?.env?.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+
+  // Fallback to API_KEY
+  if (typeof process !== 'undefined' && process?.env?.API_KEY) {
+    return process.env.API_KEY;
+  }
+
+  return '';
 }
 
 export type UseCoreAPIResults = {
@@ -89,10 +94,12 @@ export function useGeminiAPI(): UseCoreAPIResults {
   const apiKey = useMemo(() => {
     const key = getApiKey();
     if (!key) {
-      console.error("Gemini API key is missing! API calls will fail.");
-      return ''; // Don't throw here to allow some UI to render
+      throw new Error(
+        "API key not found. " +
+        "For local development, set VITE_GEMINI_API_KEY in your .env file. " +
+        "In AI Studio, the key is provided automatically."
+      );
     }
-    console.log("Gemini API key found.");
     return key;
   }, []);
 
@@ -174,24 +181,18 @@ export function useGeminiAPI(): UseCoreAPIResults {
 
   const getEffectiveConfig = useCallback(
     (config: GenerateContentConfig) => {
-      let effectiveConfig = { ...config };
+      let effectiveConfig = config;
 
       // Remove tools if function calling is disabled
       if (!functionCallingEnabled) {
-        const { tools, ...rest } = effectiveConfig;
-        effectiveConfig = rest as GenerateContentConfig;
+        const { tools, ...rest } = config;
+        effectiveConfig = rest;
       }
 
-      // Only add includeThoughts if it was already opted-in or if useThinking is true
-      // and only if thinkingConfig isn't explicitly disabling it
-      const thinkingConfig = effectiveConfig.thinkingConfig || {};
-      
+      // Always add thinking config
       return {
         ...effectiveConfig,
-        thinkingConfig: { 
-          ...thinkingConfig,
-          includeThoughts: thinkingConfig.includeThoughts !== false 
-        },
+        thinkingConfig: { ...effectiveConfig.thinkingConfig, includeThoughts: true },
       };
     },
     [functionCallingEnabled]

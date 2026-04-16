@@ -1,4 +1,5 @@
 import express from "express";
+import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -34,41 +35,6 @@ async function startServer() {
   // According to Ko-fi docs, it's a POST with a JSON body.
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-
-  app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
-  });
-
-  // API Route: Gemini Proxy (to handle manifestation/combinations on custom domains)
-  app.post("/api/gemini/generateContent", async (req, res) => {
-    try {
-      const apiKey = process.env.KITCHEN_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
-      if (!apiKey) {
-        console.error("No Gemini API key configured on server (tried KITCHEN_API_KEY, GEMINI_API_KEY, API_KEY)");
-        return res.status(500).json({ error: "Gemini API key not configured on server" });
-      }
-
-      const { model, contents, config } = req.body;
-      const { GoogleGenAI } = await import("@google/genai");
-      const genAI = new GoogleGenAI({ apiKey });
-      
-      console.log(`[Proxy] Calling Gemini (${model})...`);
-      const result = await genAI.models.generateContent({ 
-        model, 
-        contents, 
-        config 
-      });
-      
-      console.log(`[Proxy] Gemini returned success. Text length: ${result.text?.length || 0}`);
-      res.json(result);
-    } catch (error: any) {
-      console.error("Gemini Proxy Error:", error);
-      res.status(500).json({ 
-        error: error.message || "Failed to call Gemini API",
-        details: error.toString()
-      });
-    }
-  });
 
   // API Route: Ko-fi Webhook
   app.post("/api/kofi-webhook", async (req, res) => {
@@ -119,7 +85,6 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
