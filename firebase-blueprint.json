@@ -41,6 +41,8 @@
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "The user's unique ID" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": ["string", "null"] },
         "money": { "type": "integer", "description": "Current balance" },
         "inventory": { "type": "array", "items": { "$ref": "Ingredient" } },
         "completedRecipes": { "type": "array", "items": { "$ref": "CompletedRecipe" } },
@@ -66,6 +68,7 @@
             "proPlan": { "type": "boolean" },
             "godTier": { "type": "boolean" },
             "musicPass": { "type": "boolean" },
+            "customTitle": { "type": ["string", "null"] },
             "profileImage": { "type": ["string", "null"] }
           }
         },

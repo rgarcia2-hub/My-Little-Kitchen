@@ -13,9 +13,12 @@ import { Type } from '@google/genai';
 // Types
 // ============================================================================
 
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'cosmic' | 'nightmare';
+
 export interface Ingredient {
   name: string;
   emoji: string;
+  rarity?: Rarity;
 }
 
 export interface KitchenAction {
@@ -27,6 +30,7 @@ export interface KitchenAction {
 export interface CombinationResult {
   result_name: string;
   emoji: string;
+  rarity: Rarity;
 }
 
 export type OrderDifficulty = 'easy' | 'intermediate' | 'difficult' | 'nightmare';
@@ -527,36 +531,36 @@ export const COOKING_ACTIONS: KitchenAction[] = [
 
 export const STARTING_INGREDIENTS: Ingredient[] = [
   // Proteins
-  { name: 'chicken', emoji: '🐔' }, { name: 'beef', emoji: '🥩' }, { name: 'pork', emoji: '🐷' },
-  { name: 'fish', emoji: '🐟' }, { name: 'salmon', emoji: '🍣' }, { name: 'shrimp', emoji: '🦐' },
-  { name: 'eggs', emoji: '🥚' }, { name: 'tofu', emoji: '🧈' }, { name: 'beans', emoji: '🫘' },
-  { name: 'lentils', emoji: '🫘' }, { name: 'turkey', emoji: '🦃' }, { name: 'lamb', emoji: '🐑' },
-  { name: 'duck', emoji: '🦆' },
+  { name: 'chicken', emoji: '🐔', rarity: 'common' }, { name: 'beef', emoji: '🥩', rarity: 'common' }, { name: 'pork', emoji: '🐷', rarity: 'common' },
+  { name: 'fish', emoji: '🐟', rarity: 'common' }, { name: 'salmon', emoji: '🍣', rarity: 'uncommon' }, { name: 'shrimp', emoji: '🦐', rarity: 'uncommon' },
+  { name: 'eggs', emoji: '🥚', rarity: 'common' }, { name: 'tofu', emoji: '🧈', rarity: 'uncommon' }, { name: 'beans', emoji: '🫘', rarity: 'common' },
+  { name: 'lentils', emoji: '🫘', rarity: 'common' }, { name: 'turkey', emoji: '🦃', rarity: 'common' }, { name: 'lamb', emoji: '🐑', rarity: 'uncommon' },
+  { name: 'duck', emoji: '🦆', rarity: 'rare' },
 
   // Dairy
-  { name: 'milk', emoji: '🥛' }, { name: 'butter', emoji: '🧈' }, { name: 'cheese', emoji: '🧀' },
-  { name: 'cream', emoji: '🥛' }, { name: 'yogurt', emoji: '🥛' }, { name: 'sour cream', emoji: '🥛' },
-  { name: 'mozzarella', emoji: '🧀' }, { name: 'parmesan', emoji: '🧀' }, { name: 'cheddar', emoji: '🧀' },
+  { name: 'milk', emoji: '🥛', rarity: 'common' }, { name: 'butter', emoji: '🧈', rarity: 'common' }, { name: 'cheese', emoji: '🧀', rarity: 'common' },
+  { name: 'cream', emoji: '🥛', rarity: 'uncommon' }, { name: 'yogurt', emoji: '🥛', rarity: 'uncommon' }, { name: 'sour cream', emoji: '🥛', rarity: 'uncommon' },
+  { name: 'mozzarella', emoji: '🧀', rarity: 'uncommon' }, { name: 'parmesan', emoji: '🧀', rarity: 'rare' }, { name: 'cheddar', emoji: '🧀', rarity: 'uncommon' },
 
   // Grains & Starches
-  { name: 'flour', emoji: '🌾' }, { name: 'rice', emoji: '🍚' }, { name: 'pasta', emoji: '🍝' },
-  { name: 'bread', emoji: '🍞' }, { name: 'oats', emoji: '🌾' },
-  { name: 'barley', emoji: '🌾' }, { name: 'wheat', emoji: '🌾' }, { name: 'corn', emoji: '🌽' },
-  { name: 'potatoes', emoji: '🥔' }, { name: 'sweet potato', emoji: '🍠' }, { name: 'noodles', emoji: '🍜' },
+  { name: 'flour', emoji: '🌾', rarity: 'common' }, { name: 'rice', emoji: '🍚', rarity: 'common' }, { name: 'pasta', emoji: '🍝', rarity: 'common' },
+  { name: 'bread', emoji: '🍞', rarity: 'common' }, { name: 'oats', emoji: '🌾', rarity: 'common' },
+  { name: 'barley', emoji: '🌾', rarity: 'common' }, { name: 'wheat', emoji: '🌾', rarity: 'common' }, { name: 'corn', emoji: '🌽', rarity: 'common' },
+  { name: 'potatoes', emoji: '🥔', rarity: 'common' }, { name: 'sweet potato', emoji: '🍠', rarity: 'uncommon' }, { name: 'noodles', emoji: '🍜', rarity: 'uncommon' },
 
   // Herbs & Spices
-  { name: 'basil', emoji: '🌿' }, { name: 'oregano', emoji: '🌿' }, { name: 'thyme', emoji: '🌿' },
-  { name: 'rosemary', emoji: '🌿' }, { name: 'parsley', emoji: '🌿' }, { name: 'cilantro', emoji: '🌿' },
-  { name: 'salt', emoji: '🧂' }, { name: 'pepper', emoji: '🌶️' }, { name: 'paprika', emoji: '🌶️' },
-  { name: 'cumin', emoji: '🌶️' }, { name: 'cinnamon', emoji: '🌶️' }, { name: 'vanilla', emoji: '🌿' },
+  { name: 'basil', emoji: '🌿', rarity: 'common' }, { name: 'oregano', emoji: '🌿', rarity: 'common' }, { name: 'thyme', emoji: '🌿', rarity: 'common' },
+  { name: 'rosemary', emoji: '🌿', rarity: 'common' }, { name: 'parsley', emoji: '🌿', rarity: 'common' }, { name: 'cilantro', emoji: '🌿', rarity: 'common' },
+  { name: 'salt', emoji: '🧂', rarity: 'common' }, { name: 'pepper', emoji: '🌶️', rarity: 'common' }, { name: 'paprika', emoji: '🌶️', rarity: 'common' },
+  { name: 'cumin', emoji: '🌶️', rarity: 'common' }, { name: 'cinnamon', emoji: '🌶️', rarity: 'common' }, { name: 'vanilla', emoji: '🌿', rarity: 'uncommon' },
 
   // Pantry Staples
-  { name: 'olive oil', emoji: '🫒' }, { name: 'vegetable oil', emoji: '🛢️' }, { name: 'vinegar', emoji: '🍶' },
-  { name: 'soy sauce', emoji: '🍶' }, { name: 'honey', emoji: '🍯' }, { name: 'maple syrup', emoji: '🍯' },
+  { name: 'olive oil', emoji: '🫒', rarity: 'common' }, { name: 'vegetable oil', emoji: '🛢️', rarity: 'common' }, { name: 'vinegar', emoji: '🍶', rarity: 'common' },
+  { name: 'soy sauce', emoji: '🍶', rarity: 'common' }, { name: 'honey', emoji: '🍯', rarity: 'uncommon' }, { name: 'maple syrup', emoji: '🍯', rarity: 'rare' },
 
   // Baking
-  { name: 'sugar', emoji: '🍯' }, { name: 'baking soda', emoji: '🥄' }, { name: 'yeast', emoji: '🍞' },
-  { name: 'vanilla extract', emoji: '🌿' }, { name: 'cocoa powder', emoji: '☕' }, { name: 'chocolate', emoji: '🍫' },
+  { name: 'sugar', emoji: '🍯', rarity: 'common' }, { name: 'baking soda', emoji: '🥄', rarity: 'common' }, { name: 'yeast', emoji: '🍞', rarity: 'uncommon' },
+  { name: 'vanilla extract', emoji: '🌿', rarity: 'rare' }, { name: 'cocoa powder', emoji: '☕', rarity: 'uncommon' }, { name: 'chocolate', emoji: '🍫', rarity: 'rare' },
 
   // Nuts & Seeds
   { name: 'almonds', emoji: '🌰' }, { name: 'walnuts', emoji: '🌰' }, { name: 'pecans', emoji: '🌰' },
@@ -598,20 +602,36 @@ determine what dish or prepared item results from this combination.
 Return a JSON object with:
 - result_name: The name of the resulting dish or item (1-3 words)
 - emoji: A single emoji that represents the result
+- rarity: The rarity of the result ('common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'divine', 'cosmic', 'nightmare')
 
 CRITICAL RULE:
 Use the most standard, common, and obvious name for the result. 
 If the combination is a well-known recipe step, use that specific name.
 If a "CURRENT RECIPE GUIDE" is provided in the prompt, you MUST follow its logic and use its 'result' names for matching combinations.
-Avoid being overly creative; prioritize consistency so that players following a recipe guide can recognize the results.`;
+Avoid being overly creative; prioritize consistency so that players following a recipe guide can recognize the results.
+
+RARITY GUIDELINES:
+- common: Basic ingredients or simple combinations (e.g., Chopped Onion, Fried Egg)
+- uncommon: More complex preparations or intermediate steps (e.g., Bread Dough, Sautéed Vegetables)
+- rare: Full dishes or complex combinations (e.g., Beef Bourguignon, Sushi Roll)
+- epic: High-end gourmet dishes or very difficult combinations (e.g., Lobster Thermidor, Wagyu Steak)
+- legendary: Mythical or extremely complex creations (e.g., Ambrosia, Dragon Breath Chili)
+- mythic: Ancient or forgotten recipes with extraordinary properties
+- divine: Food fit for gods, glowing with celestial energy
+- cosmic: Ingredients from beyond the stars, reality-bending flavors
+- nightmare: Dark, twisted, or extremely dangerous culinary experiments. ONLY use this if the prompt mentions a nightmare difficulty or dark theme.`;
 
 export const COMBINATION_RESPONSE_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     result_name: { type: Type.STRING },
-    emoji: { type: Type.STRING }
+    emoji: { type: Type.STRING },
+    rarity: { 
+      type: Type.STRING,
+      enum: ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'divine', 'cosmic', 'nightmare']
+    }
   },
-  required: ['result_name', 'emoji']
+  required: ['result_name', 'emoji', 'rarity']
 };
 
 // ============================================================================

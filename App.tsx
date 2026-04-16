@@ -59,7 +59,7 @@ import {
 } from './constants';
 
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp, query, orderBy, limit, getDocs, collection } from "firebase/firestore";
 import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
@@ -215,15 +215,89 @@ interface IngredientTileProps {
   onClick: () => void;
 }
 
+interface GlitchedTitleProps {
+  title: string;
+  className?: string;
+}
+
+function GlitchedTitle({ title, className = "" }: GlitchedTitleProps) {
+  return (
+    <div className={`glitched-title-container ${className}`}>
+      <div className="glitched-title-particles">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="particle" style={{ '--i': i } as any}></div>
+        ))}
+      </div>
+      <span className="glitched-title-text" data-text={title}>
+        {title}
+      </span>
+    </div>
+  );
+}
+
+interface LeaderboardProps {
+  data: any[];
+  isLoading: boolean;
+  onClose: () => void;
+}
+
+function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
+  return (
+    <div className="leaderboard-overlay" onClick={onClose}>
+      <div className="leaderboard-modal" onClick={e => e.stopPropagation()}>
+        <div className="leaderboard-header">
+          <h2>🏆 Top Chefs</h2>
+          <button className="close-button" onClick={onClose}>&times;</button>
+        </div>
+        <div className="leaderboard-content">
+          {isLoading ? (
+            <div className="loading-state">Loading rankings...</div>
+          ) : (
+            <div className="leaderboard-list">
+              <div className="leaderboard-row header">
+                <span className="rank">#</span>
+                <span className="chef">Chef</span>
+                <span className="money">Money</span>
+                <span className="level">Level</span>
+              </div>
+              {data.map((entry, index) => (
+                <div key={entry.uid} className="leaderboard-row">
+                  <span className="rank">{index + 1}</span>
+                  <div className="chef-info">
+                    {entry.photoURL && <img src={entry.photoURL} alt="" className="chef-avatar" />}
+                    <div className="chef-details">
+                      <span className="chef-name">{entry.displayName}</span>
+                      {entry.customTitle ? (
+                        <GlitchedTitle title={entry.customTitle} className="mini" />
+                      ) : (
+                        <span className="chef-title">{entry.title}</span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="money">${entry.money.toLocaleString()}</span>
+                  <span className="level">Lvl {entry.level}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighlighted, onClick }: IngredientTileProps) {
+  const rarityClass = ingredient.rarity ? `rarity-${ingredient.rarity}` : 'rarity-common';
+  
   return (
     <button
-      className={`ingredient-tile ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''} ${isHighlighted ? 'tutorial-highlight' : ''}`}
+      className={`ingredient-tile ${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass}`}
       onClick={onClick}
-      title={isSelected ? `Click to deselect ${ingredient.name}` : `Click to select ${ingredient.name}`}
+      title={isSelected ? `Click to deselect ${ingredient.name} (${ingredient.rarity || 'common'})` : `Click to select ${ingredient.name} (${ingredient.rarity || 'common'})`}
       data-ingredient={ingredient.name}
       disabled={isDisabled}
     >
+      <div className="rarity-indicator"></div>
       <span className="emoji">{ingredient.emoji}</span>
       <span className="name">{ingredient.name}</span>
     </button>
@@ -615,6 +689,10 @@ interface CombinationAgentProps {
   setCustomToolEmoji: React.Dispatch<React.SetStateAction<string>>;
   customTools: KitchenAction[];
   setCustomTools: React.Dispatch<React.SetStateAction<KitchenAction[]>>;
+  adminCustomTitle: string;
+  setAdminCustomTitle: React.Dispatch<React.SetStateAction<string>>;
+  fetchLeaderboard: () => Promise<void>;
+  setIsLeaderboardOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
@@ -700,6 +778,10 @@ function CombinationAgent({
   setCustomToolEmoji,
   customTools,
   setCustomTools,
+  adminCustomTitle,
+  setAdminCustomTitle,
+  fetchLeaderboard,
+  setIsLeaderboardOpen,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -819,7 +901,8 @@ function CombinationAgent({
       if (Math.random() < fireChance) {
         return {
           name: 'Kitchen Fire',
-          emoji: '🔥'
+          emoji: '🔥',
+          rarity: 'common'
         };
       }
     }
@@ -848,6 +931,7 @@ function CombinationAgent({
       return {
         name: result.result_name,
         emoji: result.emoji,
+        rarity: (currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity
       };
     } catch (error) {
       console.error('Error in combination:', error);
@@ -995,7 +1079,7 @@ Do not say you cannot do it; always provide a recipe.`;
   const handleAdminAddIngredient = () => {
     if (isAdminUser) {
       if (adminIngredientName.trim()) {
-        const newIng = { name: adminIngredientName.trim(), emoji: adminIngredientEmoji };
+        const newIng: Ingredient = { name: adminIngredientName.trim(), emoji: adminIngredientEmoji, rarity: 'common' };
         if (!isDuplicateIngredient(newIng.name, inventory)) {
           setInventory(prev => [newIng, ...prev]);
           setAdminIngredientName('');
@@ -1125,6 +1209,24 @@ Do not say you cannot do it; always provide a recipe.`;
   const handleAdminToggleMusicPass = () => {
     if (isAdminUser) {
       setStats((prev: any) => ({ ...prev, musicPass: !prev.musicPass }));
+      setSkipError('');
+    } else {
+      setSkipError('Unauthorized');
+    }
+  };
+
+  const handleAdminSetCustomTitle = () => {
+    if (isAdminUser) {
+      const title = adminCustomTitle.trim();
+      const forbiddenWords = ['admin', 'owner', 'moderator', 'staff', 'system'];
+      const isForbidden = forbiddenWords.some(word => title.toLowerCase().includes(word));
+
+      if (isForbidden) {
+        setSkipError('Advanced permissions required for this title');
+        return;
+      }
+
+      setStats((prev: any) => ({ ...prev, customTitle: title || null }));
       setSkipError('');
     } else {
       setSkipError('Unauthorized');
@@ -1356,41 +1458,68 @@ Do not say you cannot do it; always provide a recipe.`;
     <div className="kitchen-app">
       {/* Page Title */}
       <div className="kitchen-header">
-        <div className="flex justify-between items-center w-full max-w-7xl mx-auto relative">
-          <div>
+        <div className="header-content-wrapper max-w-7xl mx-auto px-4">
+          <div className="header-left">
             <h1 className="kitchen-title">My little Kitchen</h1>
           </div>
           
-          <div className="settings-container flex items-center gap-4">
-            <div className="stats-display-container mr-4">
-              <div className="level-badge-container">
-                <span className="level-label">LVL</span>
-                <span className="level-value">{stats.level || 1}</span>
-              </div>
-              <div className="xp-bar-container" title={`${Math.floor(stats.xp || 0)} / ${nextLevelXP} XP`}>
-                <div className="xp-bar-fill" style={{ width: `${xpProgress}%` }}></div>
-                <span className="xp-text">{stats.title || 'Kitchen Hand'}</span>
-              </div>
+          <div className="header-center">
+            <div className="stats-group">
               <div className="money-display-bar">
                 <span className="money-icon">💰</span>
-                <span className="money-amount">Dinero: ${stats.money}</span>
+                <span className="money-amount">${stats.money}</span>
+              </div>
+              
+              <div className="level-status-card">
+                <div className="level-badge-mini">
+                  <span className="level-mini-label">LVL</span>
+                  <span className="level-val">{stats.level || 1}</span>
+                </div>
+                <div className="status-details">
+                  <div className="title-row">
+                    {stats.customTitle ? (
+                      <GlitchedTitle title={stats.customTitle} className="mini" />
+                    ) : (
+                      <span className="standard-title">{stats.title || 'Kitchen Hand'}</span>
+                    )}
+                  </div>
+                  <div className="xp-bar-wrapper" title={`${Math.floor(stats.xp || 0)} / ${nextLevelXP} XP`}>
+                    <div className="xp-bar-fill-new" style={{ width: `${xpProgress}%` }}></div>
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+
+          <div className="header-right">
+            <button 
+              className="leaderboard-btn-header"
+              onClick={() => {
+                fetchLeaderboard();
+                setIsLeaderboardOpen(true);
+              }}
+              title="View Leaderboard"
+            >
+              🏆
+            </button>
+
             <button 
               className="user-profile-btn-top"
               onClick={() => {
                 setShowSkipModal(true);
               }}
             >
-              {stats.profileImage || user.photoURL ? (
-                <img src={stats.profileImage || user.photoURL} alt="Profile" className="user-avatar object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px]">
-                  {user.displayName?.[0] || user.email?.[0] || '?'}
-                </div>
-              )}
-              <span className="user-name-text">{user.displayName || 'Chef'}</span>
-              <span className="emoji">⚙️</span>
+              <div className="profile-btn-content">
+                {stats.profileImage || user.photoURL ? (
+                  <img src={stats.profileImage || user.photoURL} alt="Profile" className="user-avatar object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center font-bold text-[10px]">
+                    {user.displayName?.[0] || user.email?.[0] || '?'}
+                  </div>
+                )}
+                <span className="user-name-text">{user.displayName || 'Chef'}</span>
+                <span className="settings-gear">⚙️</span>
+              </div>
             </button>
           </div>
         </div>
@@ -1837,6 +1966,20 @@ Do not say you cannot do it; always provide a recipe.`;
                       >
                         {stats.musicPass ? 'Revoke Music Pass' : 'Grant Music Pass'}
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="admin-section">
+                    <h4>Admin: Custom Title (Neon/Glitch)</h4>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        className="admin-input flex-1" 
+                        placeholder="Custom Title..." 
+                        value={adminCustomTitle}
+                        onChange={(e) => setAdminCustomTitle(e.target.value)}
+                      />
+                      <button className="admin-action-btn" onClick={handleAdminSetCustomTitle}>Set</button>
                     </div>
                   </div>
 
@@ -2821,8 +2964,13 @@ function KitchenAppContainer({ user }: { user: User }) {
     proPlan: false,
     godTier: false,
     musicPass: false,
+    customTitle: null as string | null,
     profileImage: null as string | null
   });
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+  const [adminCustomTitle, setAdminCustomTitle] = useState('');
   const [recentAchievement, setRecentAchievement] = useState<Achievement | null>(null);
   const [isAchievementsExpanded, setIsAchievementsExpanded] = useState(false);
   const [isUpgradesExpanded, setIsUpgradesExpanded] = useState(false);
@@ -2880,11 +3028,11 @@ function KitchenAppContainer({ user }: { user: User }) {
         const docSnap = await getDoc(gameStateRef).catch(err => handleFirestoreError(err, OperationType.GET, `game_states/${user.uid}`));
         if (docSnap && docSnap.exists()) {
           const data = docSnap.data();
-          const loadedStats = data.stats || stats;
+          const loadedStats = { ...stats, ...(data.stats || {}) };
           
           // Force Pro Plan for admin email (only if using password provider)
           if (isAdminUser) {
-            setStats({ ...loadedStats, proPlan: true, godTier: true });
+            setStats({ ...loadedStats, proPlan: true, godTier: true, musicPass: true });
           } else {
             setStats(loadedStats);
           }
@@ -2910,13 +3058,15 @@ function KitchenAppContainer({ user }: { user: User }) {
           // Initialize new game state in Firestore
           await setDoc(gameStateRef, {
             uid: user.uid,
+            displayName: user.displayName || 'Chef',
+            photoURL: user.photoURL || null,
             money: 0,
             inventory: STARTING_INGREDIENTS,
             completedRecipes: [],
             unlockedAchievements: [],
             purchasedUpgrades: [],
             customTools: [],
-            stats: isAdminUser ? { ...stats, proPlan: true, godTier: true } : stats,
+            stats: isAdminUser ? { ...stats, proPlan: true, godTier: true, musicPass: true } : stats,
             tutorialStep: 1,
             lastUpdated: Timestamp.now()
           }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
@@ -2944,6 +3094,34 @@ function KitchenAppContainer({ user }: { user: User }) {
     return () => unsubscribe();
   }, [user.uid]);
 
+  const fetchLeaderboard = async () => {
+    setIsLeaderboardLoading(true);
+    try {
+      const q = query(collection(db, "game_states"), orderBy("stats.money", "desc"), limit(10));
+      const querySnapshot = await getDocs(q);
+      const data: any[] = [];
+      
+      for (const docSnap of querySnapshot.docs) {
+        const gameState = docSnap.data();
+        
+        data.push({
+          uid: docSnap.id,
+          displayName: gameState.displayName || "Unknown Chef",
+          photoURL: gameState.photoURL || null,
+          money: gameState.stats?.money || 0,
+          level: gameState.stats?.level || 1,
+          title: gameState.stats?.title || "Kitchen Hand",
+          customTitle: gameState.stats?.customTitle || null
+        });
+      }
+      setLeaderboardData(data);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+    } finally {
+      setIsLeaderboardLoading(false);
+    }
+  };
+
   // 3. Save data to Firestore when it changes
   useEffect(() => {
     if (!user || !isDataLoaded) return;
@@ -2953,6 +3131,8 @@ function KitchenAppContainer({ user }: { user: User }) {
         const gameStateRef = doc(db, 'game_states', user.uid);
         await setDoc(gameStateRef, {
           uid: user.uid,
+          displayName: user.displayName || 'Chef',
+          photoURL: user.photoURL || null,
           money: stats.money,
           inventory: inventory,
           completedRecipes: completedRecipes,
@@ -3162,6 +3342,10 @@ function KitchenAppContainer({ user }: { user: User }) {
           setCustomToolEmoji={setCustomToolEmoji}
           customTools={customTools}
           setCustomTools={setCustomTools}
+          adminCustomTitle={adminCustomTitle}
+          setAdminCustomTitle={setAdminCustomTitle}
+          fetchLeaderboard={fetchLeaderboard}
+          setIsLeaderboardOpen={setIsLeaderboardOpen}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
@@ -3260,6 +3444,14 @@ function KitchenAppContainer({ user }: { user: User }) {
       </footer>
 
       {/* Music Player */}
+      {isLeaderboardOpen && (
+        <Leaderboard 
+          data={leaderboardData} 
+          isLoading={isLeaderboardLoading} 
+          onClose={() => setIsLeaderboardOpen(false)} 
+        />
+      )}
+
       <MusicPlayer hasMusicPass={stats.musicPass} />
     </div>
   );
