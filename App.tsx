@@ -243,43 +243,63 @@ interface LeaderboardProps {
 
 function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
   return (
-    <div className="leaderboard-overlay" onClick={onClose}>
-      <div className="leaderboard-modal" onClick={e => e.stopPropagation()}>
-        <div className="leaderboard-header">
-          <h2>🏆 Top Chefs</h2>
-          <button className="close-button" onClick={onClose}>&times;</button>
+    <div className="os-modal-overlay" onClick={onClose}>
+      <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
+        <div className="os-modal-header-green-alt">
+          <div className="header-left-group">
+            <span className="os-modal-icon">📊</span>
+            <span className="os-modal-title">GLOBAL_RANKINGS_v2.4</span>
+          </div>
+          <button className="os-close-btn" onClick={onClose}>&times;</button>
         </div>
-        <div className="leaderboard-content">
+        
+        <div className="os-leaderboard-body">
           {isLoading ? (
-            <div className="loading-state">Loading rankings...</div>
+            <div className="os-loading-state">
+              <div className="os-spinner"></div>
+              <span>FETCHING_DATA...</span>
+            </div>
           ) : (
-            <div className="leaderboard-list">
-              <div className="leaderboard-row header">
-                <span className="rank">#</span>
-                <span className="chef">Chef</span>
-                <span className="money">Money</span>
-                <span className="level">Level</span>
+            <div className="os-table-container">
+              <div className="os-table-header">
+                <span className="col-rank">#</span>
+                <span className="col-chef">CHEF_ID</span>
+                <span className="col-money">CAPITAL</span>
+                <span className="col-level">LVL</span>
               </div>
-              {data.map((entry, index) => (
-                <div key={entry.uid} className="leaderboard-row">
-                  <span className="rank">{index + 1}</span>
-                  <div className="chef-info">
-                    {entry.photoURL && <img src={entry.photoURL} alt="" className="chef-avatar" />}
-                    <div className="chef-details">
-                      <span className="chef-name">{entry.displayName}</span>
-                      {entry.customTitle ? (
-                        <GlitchedTitle title={entry.customTitle} className="mini" />
-                      ) : (
-                        <span className="chef-title">{entry.title}</span>
-                      )}
+              <div className="os-table-rows">
+                {data.length === 0 ? (
+                  <div className="os-empty-state">NO_ACTIVE_CHEFS_FOUND</div>
+                ) : (
+                  data.map((entry, index) => (
+                    <div key={entry.uid} className="os-table-row">
+                      <span className="col-rank">{index + 1}</span>
+                      <div className="col-chef os-chef-cell">
+                        <div className="os-avatar-mini">
+                          {entry.photoURL ? (
+                            <img src={entry.photoURL} alt="" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="os-avatar-placeholder">{entry.displayName[0]}</div>
+                          )}
+                        </div>
+                        <div className="os-chef-info">
+                          <span className="os-chef-name">{entry.displayName}</span>
+                          <span className="os-chef-title">{entry.customTitle || entry.title}</span>
+                        </div>
+                      </div>
+                      <span className="col-money">${entry.money.toLocaleString()}</span>
+                      <span className="col-level">[{entry.level}]</span>
                     </div>
-                  </div>
-                  <span className="money">${entry.money.toLocaleString()}</span>
-                  <span className="level">Lvl {entry.level}</span>
-                </div>
-              ))}
+                  ))
+                )}
+              </div>
             </div>
           )}
+        </div>
+        
+        <div className="os-leaderboard-footer">
+          <div className="footer-status">SYSTEM_STATUS: ONLINE</div>
+          <div className="footer-timestamp">{new Date().toLocaleTimeString()}</div>
         </div>
       </div>
     </div>
@@ -693,6 +713,8 @@ interface CombinationAgentProps {
   setAdminCustomTitle: React.Dispatch<React.SetStateAction<string>>;
   fetchLeaderboard: () => Promise<void>;
   setIsLeaderboardOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowLevelError: React.Dispatch<React.SetStateAction<boolean>>;
+  setShowLeaderboardOptIn: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
@@ -782,6 +804,8 @@ function CombinationAgent({
   setAdminCustomTitle,
   fetchLeaderboard,
   setIsLeaderboardOpen,
+  setShowLevelError,
+  setShowLeaderboardOptIn,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -1495,8 +1519,15 @@ Do not say you cannot do it; always provide a recipe.`;
             <button 
               className="leaderboard-btn-header"
               onClick={() => {
-                fetchLeaderboard();
-                setIsLeaderboardOpen(true);
+                const currentLevel = stats.level || 1;
+                if (currentLevel < 5) {
+                  setShowLevelError(true);
+                } else if (!stats.leaderboardOptIn) {
+                  setShowLeaderboardOptIn(true);
+                } else {
+                  fetchLeaderboard();
+                  setIsLeaderboardOpen(true);
+                }
               }}
               title="View Leaderboard"
             >
@@ -2965,9 +2996,12 @@ function KitchenAppContainer({ user }: { user: User }) {
     godTier: false,
     musicPass: false,
     customTitle: null as string | null,
-    profileImage: null as string | null
+    profileImage: null as string | null,
+    leaderboardOptIn: false
   });
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [showLevelError, setShowLevelError] = useState(false);
+  const [showLeaderboardOptIn, setShowLeaderboardOptIn] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
   const [adminCustomTitle, setAdminCustomTitle] = useState('');
@@ -3097,22 +3131,35 @@ function KitchenAppContainer({ user }: { user: User }) {
   const fetchLeaderboard = async () => {
     setIsLeaderboardLoading(true);
     try {
-      const q = query(collection(db, "game_states"), orderBy("stats.money", "desc"), limit(10));
+      // Query game states where leaderboardOptIn is true
+      // Note: We'll filter level in memory to avoid needing a composite index for now
+      const q = query(
+        collection(db, "game_states"), 
+        orderBy("stats.money", "desc"), 
+        limit(100)
+      );
       const querySnapshot = await getDocs(q);
       const data: any[] = [];
       
       for (const docSnap of querySnapshot.docs) {
         const gameState = docSnap.data();
+        const level = gameState.stats?.level || 1;
+        const optIn = gameState.stats?.leaderboardOptIn || false;
         
-        data.push({
-          uid: docSnap.id,
-          displayName: gameState.displayName || "Unknown Chef",
-          photoURL: gameState.photoURL || null,
-          money: gameState.stats?.money || 0,
-          level: gameState.stats?.level || 1,
-          title: gameState.stats?.title || "Kitchen Hand",
-          customTitle: gameState.stats?.customTitle || null
-        });
+        // Only include chefs that are level 5+ AND opted in
+        if (level >= 5 && optIn) {
+          data.push({
+            uid: docSnap.id,
+            displayName: gameState.displayName || "Unknown Chef",
+            photoURL: gameState.photoURL || null,
+            money: gameState.stats?.money || 0,
+            level: level,
+            title: gameState.stats?.title || "Kitchen Hand",
+            customTitle: gameState.stats?.customTitle || null
+          });
+        }
+        
+        if (data.length >= 10) break;
       }
       setLeaderboardData(data);
     } catch (error) {
@@ -3346,6 +3393,8 @@ function KitchenAppContainer({ user }: { user: User }) {
           setAdminCustomTitle={setAdminCustomTitle}
           fetchLeaderboard={fetchLeaderboard}
           setIsLeaderboardOpen={setIsLeaderboardOpen}
+          setShowLevelError={setShowLevelError}
+          setShowLeaderboardOptIn={setShowLeaderboardOptIn}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
@@ -3450,6 +3499,81 @@ function KitchenAppContainer({ user }: { user: User }) {
           isLoading={isLeaderboardLoading} 
           onClose={() => setIsLeaderboardOpen(false)} 
         />
+      )}
+
+      {showLeaderboardOptIn && (
+        <div className="os-modal-overlay" onClick={() => setShowLeaderboardOptIn(false)}>
+          <div className="os-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="os-modal-header-green">
+              <span className="os-modal-icon">⚡</span>
+              <span className="os-modal-title">ELIGIBILITY_CONFIRMED</span>
+            </div>
+            <div className="os-modal-body">
+              <div className="os-status-code">STATUS: ELIGIBLE_FOR_RANKING</div>
+              <p className="os-modal-text">
+                Congratulations, Chef. You have reached the elite tier. 
+                You are now eligible to appear on the global <span className="text-highlight-green">LEADERBOARD</span>.
+              </p>
+              
+              <div className="os-optin-control">
+                <div className="os-control-label">
+                  <span className="label-main">BROADCAST_PRESENCE</span>
+                  <span className="label-sub">Allow other chefs to see your stats</span>
+                </div>
+                <label className="os-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={stats.leaderboardOptIn}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setStats(prev => ({ ...prev, leaderboardOptIn: val }));
+                    }}
+                  />
+                  <span className="os-slider"></span>
+                </label>
+              </div>
+
+              <div className="os-modal-actions">
+                <button 
+                  className="os-modal-btn green" 
+                  onClick={() => {
+                    setShowLeaderboardOptIn(false);
+                    if (stats.leaderboardOptIn) {
+                      fetchLeaderboard();
+                      setIsLeaderboardOpen(true);
+                    }
+                  }}
+                >
+                  {stats.leaderboardOptIn ? 'PROCEED_TO_RANKINGS' : 'CLOSE_TERMINAL'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLevelError && (
+        <div className="os-modal-overlay" onClick={() => setShowLevelError(false)}>
+          <div className="os-modal-card" onClick={e => e.stopPropagation()}>
+            <div className="os-modal-header-red">
+              <span className="os-modal-icon">⚠️</span>
+              <span className="os-modal-title">ACCESS_DENIED</span>
+            </div>
+            <div className="os-modal-body">
+              <div className="os-error-code">ERROR_CODE: LVL_REQ_NOT_MET</div>
+              <p className="os-modal-text">
+                The Leaderboard is restricted to elite chefs. 
+                You must reach <span className="text-highlight">LEVEL 5</span> to view global rankings.
+              </p>
+              <div className="os-modal-progress-hint">
+                CURRENT_LEVEL: {stats.level || 1} / 5
+              </div>
+              <button className="os-modal-btn" onClick={() => setShowLevelError(false)}>
+                ACKNOWLEDGE
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <MusicPlayer hasMusicPass={stats.musicPass} />

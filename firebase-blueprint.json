@@ -69,7 +69,8 @@
             "godTier": { "type": "boolean" },
             "musicPass": { "type": "boolean" },
             "customTitle": { "type": ["string", "null"] },
-            "profileImage": { "type": ["string", "null"] }
+            "profileImage": { "type": ["string", "null"] },
+            "leaderboardOptIn": { "type": "boolean" }
           }
         },
         "tutorialStep": { "type": "integer" },
