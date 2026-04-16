@@ -220,6 +220,41 @@ interface GlitchedTitleProps {
   className?: string;
 }
 
+function VerifiedBadge({ size = 14, className = "" }: { size?: number, className?: string }) {
+  return (
+    <div 
+      className={`verified-badge ${className}`} 
+      style={{ 
+        width: size + 4, 
+        height: size + 4, 
+        display: 'inline-flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        marginLeft: '2px', 
+        marginRight: '2px',
+        verticalAlign: 'middle',
+        flexShrink: 0,
+      }}
+      title="Verified Chef"
+    >
+      <svg 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg" 
+        style={{ 
+          width: size, 
+          height: size,
+          transform: 'rotate(12deg)',
+          overflow: 'visible'
+        }}
+      >
+        <rect width="24" height="24" rx="1.5" fill="#0066FF" />
+        <path d="M6 12L10 16L18 8" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
 function GlitchedTitle({ title, className = "" }: GlitchedTitleProps) {
   return (
     <div className={`glitched-title-container ${className}`}>
@@ -239,9 +274,10 @@ interface LeaderboardProps {
   data: any[];
   isLoading: boolean;
   onClose: () => void;
+  currentUserUid?: string;
 }
 
-function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
+function Leaderboard({ data, isLoading, onClose, currentUserUid }: LeaderboardProps) {
   return (
     <div className="os-modal-overlay" onClick={onClose}>
       <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
@@ -283,7 +319,10 @@ function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
                           )}
                         </div>
                         <div className="os-chef-info">
-                          <span className="os-chef-name">{entry.displayName}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="os-chef-name">{entry.displayName}</span>
+                            {entry.uid === currentUserUid && <VerifiedBadge size={12} />}
+                          </div>
                           <span className="os-chef-title">{entry.customTitle || entry.title}</span>
                         </div>
                       </div>
@@ -1548,7 +1587,10 @@ Do not say you cannot do it; always provide a recipe.`;
                     {user.displayName?.[0] || user.email?.[0] || '?'}
                   </div>
                 )}
-                <span className="user-name-text">{user.displayName || 'Chef'}</span>
+                <span className="user-name-text">
+                  {user.displayName || 'Chef'}
+                  <VerifiedBadge size={14} />
+                </span>
                 <span className="settings-gear">⚙️</span>
               </div>
             </button>
@@ -1853,7 +1895,10 @@ Do not say you cannot do it; always provide a recipe.`;
                     </div>
 
                     <div className="account-details">
-                      <h5 className="chef-name">{user.displayName || 'Chef'}</h5>
+                      <h5 className="chef-name">
+                        {user.displayName || 'Chef'}
+                        <VerifiedBadge size={18} />
+                      </h5>
                       <p className="chef-email">{user.email}</p>
                       <div className="profile-status-badge">
                         {stats.profileImage ? 'CUSTOM_AVATAR_ACTIVE' : 'DEFAULT_AVATAR'}
@@ -3498,6 +3543,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           data={leaderboardData} 
           isLoading={isLeaderboardLoading} 
           onClose={() => setIsLeaderboardOpen(false)} 
+          currentUserUid={user.uid}
         />
       )}
 

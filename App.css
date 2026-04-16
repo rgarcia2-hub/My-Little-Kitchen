@@ -4888,6 +4888,24 @@ input:checked + .os-slider:before {
   color: #444;
 }
 
+.verified-badge {
+  transition: transform 0.2s ease;
+}
+
+.verified-badge:hover {
+  transform: scale(1.1);
+}
+
+.user-name-text {
+  display: inline-flex;
+  align-items: center;
+}
+
+.chef-name {
+  display: flex;
+  align-items: center;
+}
+
 .leaderboard-modal {
   background: white;
   border: 4px solid #1a1a1a;
