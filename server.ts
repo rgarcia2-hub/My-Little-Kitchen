@@ -42,10 +42,10 @@ async function startServer() {
   // API Route: Gemini Proxy (to handle manifestation/combinations on custom domains)
   app.post("/api/gemini/generateContent", async (req, res) => {
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.KITCHEN_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
       if (!apiKey) {
-        console.error("GEMINI_API_KEY not configured on server");
-        return res.status(500).json({ error: "GEMINI_API_KEY not configured on server" });
+        console.error("No Gemini API key configured on server (tried KITCHEN_API_KEY, GEMINI_API_KEY, API_KEY)");
+        return res.status(500).json({ error: "Gemini API key not configured on server" });
       }
 
       const { model, contents, config } = req.body;

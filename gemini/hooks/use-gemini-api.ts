@@ -42,21 +42,16 @@ declare const process: { env?: { API_KEY?: string; GEMINI_API_KEY?: string } } |
 
 function getApiKey(): string {
   // Try Vite environment first (local development)
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_KITCHEN_API_KEY) {
+    return (import.meta as any).env.VITE_KITCHEN_API_KEY;
+  }
   if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GEMINI_API_KEY) {
     return (import.meta as any).env.VITE_GEMINI_API_KEY;
   }
 
-  // Try AI Studio environment (GEMINI_API_KEY is the standard)
-  if (typeof process !== 'undefined' && process?.env?.GEMINI_API_KEY) {
-    return process.env.GEMINI_API_KEY;
-  }
-
-  // Fallback to API_KEY
-  if (typeof process !== 'undefined' && process?.env?.API_KEY) {
-    return process.env.API_KEY;
-  }
-
-  return '';
+  // Fallback chain for different environments
+  const env = (typeof process !== 'undefined' && process?.env) ? process.env : {};
+  return (env.KITCHEN_API_KEY || env.GEMINI_API_KEY || env.API_KEY || '');
 }
 
 export type UseCoreAPIResults = {
