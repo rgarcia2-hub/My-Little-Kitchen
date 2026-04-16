@@ -39,13 +39,21 @@ export interface GeminiClientEventTypes {
 }
 
 export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
-  private readonly genAI: GoogleGenAI;
+  private readonly genAI: GoogleGenAI | null = null;
+  private readonly useProxy: boolean = false;
 
   private chat: Chat | null = null;
+  private proxyHistory: Content[] = [];
+  private currentModel: string = "";
 
   constructor(options: GeminiClientOptions) {
     super();
-    this.genAI = new GoogleGenAI({ apiKey: options.apiKey });
+    if (options.apiKey) {
+      this.genAI = new GoogleGenAI({ apiKey: options.apiKey });
+    } else {
+      console.warn("No Gemini API key provided to client. Falling back to server-side proxy.");
+      this.useProxy = true;
+    }
     this.sendMessage = this.sendMessage.bind(this);
     this.sendMessageStream = this.sendMessageStream.bind(this);
     this.startChat = this.startChat.bind(this);
@@ -93,6 +101,33 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
     const generateContentParameters: GenerateContentParameters = { model, contents, config: config };
     console.log("client.generateContent", generateContentParameters);
     this.log({ type: 'generate-content', direction: 'send', message: generateContentParameters });
+    
+    if (this.useProxy) {
+      try {
+        const response = await fetch("/api/gemini/generateContent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model, contents, config })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Proxy failed");
+        }
+        
+        const result = await response.json();
+        this.log({ type: 'generate-content', direction: 'receive', message: result });
+        this.emitAnyFunctionCalls(result);
+        return result;
+      } catch (error) {
+        console.error("Gemini Proxy generateContent error:", error);
+        this.log({ type: 'generate-content', direction: 'receive', message: { error: error instanceof Error ? error.message : String(error) } });
+        throw error;
+      }
+    }
+
+    if (!this.genAI) throw new Error("GenAI not initialized and proxy failed");
+
     try {
       const result = await this.genAI.models.generateContent(generateContentParameters);
       // This logs the result, including function calls, but doesn't actually call them
@@ -134,8 +169,18 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
   }
 
   startChat(model: string, config?: GenerateContentConfig, history?: Content[]): void {
+    this.currentModel = model;
+    if (this.useProxy) {
+      this.proxyHistory = history || [];
+      this.chat = {
+        sendMessage: async () => { throw new Error("Use proxySendMessage instead"); },
+        sendMessageStream: async () => { throw new Error("Use proxySendMessageStream instead"); },
+        getHistory: () => this.proxyHistory
+      } as any;
+      return;
+    }
+    if (!this.genAI) return;
     const createChatParameters: CreateChatParameters = { model, config, history };
-    // this.log("client.startChat", createChatParameters);
     this.chat = this.genAI.chats.create(createChatParameters);
   }
 
@@ -143,6 +188,15 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
     if (!this.chat) {
       throw new Error("Chat not started.");
     }
+    
+    if (this.useProxy) {
+      const contents: Content[] = [...this.proxyHistory, { role: 'user', parts: message }];
+      const result = await this.generateContent(this.currentModel, contents, config);
+      // Update history
+      this.proxyHistory = [...contents, { role: 'model', parts: result.candidates[0].content.parts }];
+      return result;
+    }
+
     const sendMessageParameters: SendMessageParameters = { message, config: config }
     this.log({ type: 'send-message', direction: 'send', message: sendMessageParameters });
     const result = await this.chat.sendMessage(sendMessageParameters);
@@ -159,6 +213,18 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
     if (!this.chat) {
       throw new Error("Chat not started. Call startChat() first.");
     }
+
+    if (this.useProxy) {
+      const contents: Content[] = [...this.proxyHistory, { role: 'user', parts: message }];
+      // Streams are harder to proxy without a specialized endpoint, 
+      // so we fallback to non-streaming via the proxy for now.
+      const result = await this.generateContent(this.currentModel, contents, config);
+      const text = result.text || "";
+      onUpdate(text);
+      this.proxyHistory = [...contents, { role: 'model', parts: result.candidates[0].content.parts }];
+      return;
+    }
+
     const sendMessageParameters: SendMessageParameters = { message, config: config }
     this.log({ type: 'send-message-stream', direction: 'send', message: sendMessageParameters });
     const stream = await this.chat.sendMessageStream(sendMessageParameters);
@@ -183,6 +249,9 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
   getHistory(): Content[] {
     if (!this.chat) {
       throw new Error("Chat not started. Call startChat() first.");
+    }
+    if (this.useProxy) {
+      return this.proxyHistory;
     }
     const history = this.chat.getHistory();
     return history;
