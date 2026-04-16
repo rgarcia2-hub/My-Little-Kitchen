@@ -796,7 +796,7 @@ function CombinationAgent({
   const [adminIngredientEmoji, setAdminIngredientEmoji] = useState('🍎');
 
   const isSuperAdmin = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
-  const isAdminUser = isSuperAdmin || (user.email === 'gianlucaperalta555@gmail.com' && user.providerData.some(p => p.providerId === 'password'));
+  const isAdminUser = isSuperAdmin;
 
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
@@ -2899,7 +2899,7 @@ function VerificationAgent({
 
 function KitchenAppContainer({ user }: { user: User }) {
   const isSuperAdmin = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
-  const isAdminUser = isSuperAdmin || (user.email === 'gianlucaperalta555@gmail.com' && user.providerData.some(p => p.providerId === 'password'));
+  const isAdminUser = isSuperAdmin;
 
   // Tutorial State
   const [tutorialStep, setTutorialStep] = useState<number>(1);
