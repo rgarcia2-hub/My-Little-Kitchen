@@ -69,8 +69,7 @@ service cloud.firestore {
       return isAuthenticated() &&
              (request.auth.token.email == "robert.garcia.alsina2012@gmail.com" || 
               request.auth.token.email == "gianlucaperalta555@gmail.com") &&
-             request.auth.token.email_verified == true &&
-             request.auth.token.firebase.sign_in_provider == 'password';
+             request.auth.token.email_verified == true;
     }
 
     function hasRequiredFields(fields) {

@@ -64,6 +64,9 @@ import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
 
+const VERIFIED_BADGE_URL = "/verified.png";
+const ADMIN_EMAILS = ['robert.garcia.alsina2012@gmail.com', 'gianlucaperalta555@gmail.com'];
+
 // ============================================================================
 // Error Boundary Component
 // ============================================================================
@@ -283,7 +286,18 @@ function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
                           )}
                         </div>
                         <div className="os-chef-info">
-                          <span className="os-chef-name">{entry.displayName}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="os-chef-name">{entry.displayName}</span>
+                            {(ADMIN_EMAILS.includes(entry.email || '') || (entry.displayName === 'VERIFIEDROBY' && entry.money > 1000000)) && (
+                              <img 
+                                src={VERIFIED_BADGE_URL} 
+                                alt="Verified" 
+                                style={{ width: '14px', height: '14px' }}
+                                className="flex-shrink-0" 
+                                referrerPolicy="no-referrer"
+                              />
+                            )}
+                          </div>
                           <span className="os-chef-title">{entry.customTitle || entry.title}</span>
                         </div>
                       </div>
@@ -819,7 +833,7 @@ function CombinationAgent({
   const [adminIngredientName, setAdminIngredientName] = useState('');
   const [adminIngredientEmoji, setAdminIngredientEmoji] = useState('🍎');
 
-  const isSuperAdmin = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+  const isSuperAdmin = ADMIN_EMAILS.includes(user.email || '');
   const isAdminUser = isSuperAdmin;
 
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
@@ -1243,7 +1257,9 @@ Do not say you cannot do it; always provide a recipe.`;
     if (isAdminUser) {
       const title = adminCustomTitle.trim();
       const forbiddenWords = ['admin', 'owner', 'moderator', 'staff', 'system'];
-      const isForbidden = forbiddenWords.some(word => title.toLowerCase().includes(word));
+      
+      // Super admins (Robert) can use any title including 'Owner'
+      const isForbidden = !isSuperAdmin && forbiddenWords.some(word => title.toLowerCase().includes(word));
 
       if (isForbidden) {
         setSkipError('Advanced permissions required for this title');
@@ -1254,6 +1270,34 @@ Do not say you cannot do it; always provide a recipe.`;
       setSkipError('');
     } else {
       setSkipError('Unauthorized');
+    }
+  };
+
+  const handleAdminAddXP = (amount: number) => {
+    if (isAdminUser) {
+      setStats((prev: any) => {
+        const newXP = (prev.xp || 0) + amount;
+        const newLevel = getLevelFromXP(newXP);
+        const leveledUp = newLevel > (prev.level || 1);
+        
+        let newMoney = prev.money;
+        let newTitle = prev.title || 'Kitchen Hand';
+
+        if (leveledUp) {
+          newMoney += newLevel * 100;
+          const applicableTitle = [...TITLES].reverse().find(t => newLevel >= t.level);
+          if (applicableTitle) newTitle = applicableTitle.name;
+        }
+
+        return {
+          ...prev,
+          xp: newXP,
+          level: newLevel,
+          title: newTitle,
+          money: newMoney
+        };
+      });
+      setSkipError('');
     }
   };
 
@@ -1548,7 +1592,18 @@ Do not say you cannot do it; always provide a recipe.`;
                     {user.displayName?.[0] || user.email?.[0] || '?'}
                   </div>
                 )}
-                <span className="user-name-text">{user.displayName || 'Chef'}</span>
+                <div className="flex items-center gap-1">
+                  <span className="user-name-text">{user.displayName || 'Chef'}</span>
+                  {ADMIN_EMAILS.includes(user.email || '') && (
+                    <img 
+                      src={VERIFIED_BADGE_URL} 
+                      alt="Verified" 
+                      style={{ width: '14px', height: '14px' }}
+                      className="flex-shrink-0" 
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                </div>
                 <span className="settings-gear">⚙️</span>
               </div>
             </button>
@@ -1853,7 +1908,18 @@ Do not say you cannot do it; always provide a recipe.`;
                     </div>
 
                     <div className="account-details">
-                      <h5 className="chef-name">{user.displayName || 'Chef'}</h5>
+                      <div className="flex items-center gap-1">
+                        <h5 className="chef-name">{user.displayName || 'Chef'}</h5>
+                        {ADMIN_EMAILS.includes(user.email || '') && (
+                          <img 
+                            src={VERIFIED_BADGE_URL} 
+                            alt="Verified" 
+                            style={{ width: '18px', height: '18px' }}
+                            className="flex-shrink-0" 
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                      </div>
                       <p className="chef-email">{user.email}</p>
                       <div className="profile-status-badge">
                         {stats.profileImage ? 'CUSTOM_AVATAR_ACTIVE' : 'DEFAULT_AVATAR'}
@@ -1958,14 +2024,25 @@ Do not say you cannot do it; always provide a recipe.`;
                   </div>
 
                   {isSuperAdmin && (
-                    <div className="admin-section">
-                      <h4>Admin: Achievements & Stats</h4>
-                      <div className="flex gap-2 mb-2">
-                        <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
-                        <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
+                    <>
+                      <div className="admin-section">
+                        <h4>Admin: Experience & Levels</h4>
+                        <div className="flex gap-2">
+                          <button className="admin-action-btn flex-1" onClick={() => handleAdminAddXP(100)}>+100 XP</button>
+                          <button className="admin-action-btn flex-1" onClick={() => handleAdminAddXP(1000)}>+1000 XP</button>
+                          <button className="admin-action-btn flex-1" onClick={() => handleAdminAddXP(5000)}>+5000 XP</button>
+                        </div>
                       </div>
-                      <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
-                    </div>
+
+                      <div className="admin-section">
+                        <h4>Admin: Achievements & Stats</h4>
+                        <div className="flex gap-2 mb-2">
+                          <button className="admin-action-btn flex-1" onClick={handleAdminUnlockAchievements}>Unlock All</button>
+                          <button className="admin-action-btn flex-1" onClick={handleAdminAddMoney}>Add $100</button>
+                        </div>
+                        <button className="admin-danger-btn w-full" onClick={handleAdminResetAll}>Full Reset</button>
+                      </div>
+                    </>
                   )}
 
                   <div className="admin-section">
@@ -2929,7 +3006,7 @@ function VerificationAgent({
 // ============================================================================
 
 function KitchenAppContainer({ user }: { user: User }) {
-  const isSuperAdmin = user.email === 'robert.garcia.alsina2012@gmail.com' && user.providerData.some(p => p.providerId === 'password');
+  const isSuperAdmin = ADMIN_EMAILS.includes(user.email || '');
   const isAdminUser = isSuperAdmin;
 
   // Tutorial State
@@ -3150,6 +3227,7 @@ function KitchenAppContainer({ user }: { user: User }) {
         if (level >= 5 && optIn) {
           data.push({
             uid: docSnap.id,
+            email: gameState.email || null,
             displayName: gameState.displayName || "Unknown Chef",
             photoURL: gameState.photoURL || null,
             money: gameState.stats?.money || 0,
@@ -3178,6 +3256,7 @@ function KitchenAppContainer({ user }: { user: User }) {
         const gameStateRef = doc(db, 'game_states', user.uid);
         await setDoc(gameStateRef, {
           uid: user.uid,
+          email: user.email,
           displayName: user.displayName || 'Chef',
           photoURL: user.photoURL || null,
           money: stats.money,
