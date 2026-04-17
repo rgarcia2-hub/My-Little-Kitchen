@@ -44,8 +44,8 @@ const PLAYLIST: Track[] = [
     id: 4,
     title: "CLEAN LOOK",
     artist: "Roby_010",
-    url: "/music/CLEAN LOOK.mp3",
-    isPremium: true // <--- Esto bloquea la canción si no tienen el pase
+    url: "/music/clean_look.mp3",
+    isPremium: false
   }
 ];
 
