@@ -22,7 +22,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2 } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -320,8 +320,19 @@ function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
   );
 }
 
-function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighlighted, onClick }: IngredientTileProps) {
+interface IngredientTileProps {
+  ingredient: Ingredient;
+  isSelected: boolean;
+  isActive: boolean;
+  isDisabled: boolean;
+  isHighlighted?: boolean;
+  onClick: () => void;
+  onEdit?: () => void;
+}
+
+function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighlighted, onClick, onEdit }: IngredientTileProps) {
   const rarityClass = ingredient.rarity ? `rarity-${ingredient.rarity}` : 'rarity-common';
+  const isCrumble = ingredient.name.toLowerCase() === 'crumble cookie';
   
   return (
     <button
@@ -332,6 +343,18 @@ function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighli
       disabled={isDisabled}
     >
       <div className="rarity-indicator"></div>
+      {isCrumble && (
+        <div 
+          className="edit-cookie-trigger" 
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.();
+          }}
+          title="Customize your Crumble Cookie"
+        >
+          <Edit3 size={12} />
+        </div>
+      )}
       <span className="emoji">{ingredient.emoji}</span>
       <span className="name">{ingredient.name}</span>
     </button>
@@ -385,8 +408,10 @@ function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemin
 
   const difficultyClass = order.difficulty ? `difficulty-${order.difficulty}` : '';
 
+  const rarityClass = order.rarity ? `rarity-${order.rarity}` : '';
+
   return (
-    <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''}`}>
+    <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass}`}>
       {order.difficulty && (
         <div className={`order-difficulty ${difficultyClass}`}>
           {order.difficulty}
@@ -561,6 +586,136 @@ function ManifestationToast({ result, onClose }: ManifestationToastProps) {
         </div>
       </div>
       <button className="achievement-toast-close" onClick={onClose}>✕</button>
+    </div>
+  );
+}
+
+// ============================================================================
+// Crumble Cookie Customizer Component
+// ============================================================================
+
+interface CrumbleCookieCustomizerProps {
+  onClose: () => void;
+  onSave: (customization: any) => void;
+}
+
+function CrumbleCookieCustomizer({ onClose, onSave }: CrumbleCookieCustomizerProps) {
+  const [glazing, setGlazing] = useState('none');
+  const [toppings, setToppings] = useState<string[]>([]);
+  const [flavor, setFlavor] = useState('classic');
+
+  const flavors = [
+    { id: 'classic', name: 'Classic Vanilla', emoji: '🍪' },
+    { id: 'choco', name: 'Double Chocolate', emoji: '🍩' },
+    { id: 'velvet', name: 'Red Velvet', emoji: '🔴' },
+    { id: 'chromatic', name: 'Chromatic Chaos', emoji: '🌈' },
+  ];
+
+  const glazings = [
+    { id: 'none', name: 'None' },
+    { id: 'cream', name: 'Buttercream', color: '#fffbfa' },
+    { id: 'choco', name: 'Chocolate Ganache', color: '#3e2723' },
+    { id: 'strawberry', name: 'Strawberry Drizzle', color: '#ff80ab' },
+    { id: 'chromatic', name: 'Chromatic Frosting', color: 'rainbow' },
+  ];
+
+  const possibleToppings = [
+    { id: 'chips', name: 'Choco Chips', emoji: '🍫' },
+    { id: 'sprinkles', name: 'Rainbow Sprinkles', emoji: '✨' },
+    { id: 'walnuts', name: 'Walnuts', emoji: '🌰' },
+    { id: 'strawberry', name: 'Fresh Strawberry', emoji: '🍓' },
+  ];
+
+  const toggleTopping = (id: string) => {
+    setToppings(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  };
+
+  return (
+    <div className="customizer-overlay" onClick={onClose}>
+      <div className="customizer-card" onClick={e => e.stopPropagation()}>
+        <div className="customizer-header">
+          <h2 className="customizer-title">Crumble Design Studio</h2>
+          <button onClick={onClose} className="recipe-steps-close">✕</button>
+        </div>
+        <div className="customizer-body">
+          <div className="cookie-preview-section">
+            <div className={`cookie-visual ${flavor === 'chromatic' || glazing === 'chromatic' ? 'rarity-chromatic' : ''}`}>
+              {flavors.find(f => f.id === flavor)?.emoji}
+            </div>
+            {glazing !== 'none' && (
+               <div 
+                 className="cookie-decoration" 
+                 style={{ 
+                   color: glazings.find(g => g.id === glazing)?.color === 'rainbow' ? 'transparent' : glazings.find(g => g.id === glazing)?.color,
+                   top: '40%',
+                   fontSize: '120px',
+                   opacity: 0.7,
+                   WebkitTextStroke: glazing === 'chromatic' ? '0' : '2px #1a1a1a'
+                 } as any}
+               >
+                 {glazing === 'chromatic' ? '✨' : '💧'}
+               </div>
+            )}
+            <div className="toppings-container">
+               {toppings.map((t, i) => (
+                 <span key={t} className="cookie-decoration" style={{ transform: `rotate(${i * 45}deg) translate(80px)` }}>
+                   {possibleToppings.find(pt => pt.id === t)?.emoji}
+                 </span>
+               ))}
+            </div>
+          </div>
+          <div className="customizer-options">
+            <div className="option-group">
+              <h4>Select Base Flavor</h4>
+              <div className="option-buttons">
+                {flavors.map(f => (
+                  <button 
+                    key={f.id} 
+                    className={`option-btn ${flavor === f.id ? 'active' : ''}`}
+                    onClick={() => setFlavor(f.id)}
+                  >
+                    {f.emoji} {f.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="option-group">
+              <h4>Frosting / Glazing</h4>
+              <div className="option-buttons">
+                {glazings.map(g => (
+                  <button 
+                    key={g.id} 
+                    className={`option-btn ${glazing === g.id ? 'active' : ''}`}
+                    onClick={() => setGlazing(g.id)}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="option-group">
+              <h4>Add Toppings</h4>
+              <div className="option-buttons">
+                {possibleToppings.map(t => (
+                  <button 
+                    key={t.id} 
+                    className={`option-btn ${toppings.includes(t.id) ? 'active' : ''}`}
+                    onClick={() => toggleTopping(t.id)}
+                  >
+                    {t.emoji} {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="customizer-footer">
+          <button className="cancel-cookie-btn" onClick={onClose}>Cancel</button>
+          <button className="save-cookie-btn" onClick={() => onSave({ flavor, glazing, toppings })}>
+            Finalize Chromatic Creation
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -770,6 +925,9 @@ interface CombinationAgentProps {
   setIsLeaderboardOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setShowLevelError: React.Dispatch<React.SetStateAction<boolean>>;
   setShowLeaderboardOptIn: React.Dispatch<React.SetStateAction<boolean>>;
+  onEditIngredient: (ingredient: Ingredient) => void;
+  manifestationResult: { name: string, emoji: string, isDuplicate: boolean } | null;
+  setManifestationResult: React.Dispatch<React.SetStateAction<{ name: string, emoji: string, isDuplicate: boolean } | null>>;
 }
 
 function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
@@ -861,6 +1019,9 @@ function CombinationAgent({
   setIsLeaderboardOpen,
   setShowLevelError,
   setShowLeaderboardOptIn,
+  onEditIngredient,
+  manifestationResult,
+  setManifestationResult,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -881,7 +1042,7 @@ function CombinationAgent({
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
   const [showRecipeSteps, setShowRecipeSteps] = useState(false);
   const [isRecipePinned, setIsRecipePinned] = useState(false);
-  const [manifestationResult, setManifestationResult] = useState<{ name: string, emoji: string, isDuplicate: boolean } | null>(null);
+  const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
 
   // Refs for auto-scroll
   const ingredientsRef = useRef<HTMLDivElement>(null);
@@ -1007,10 +1168,12 @@ function CombinationAgent({
       const text = response?.text || '{}';
       const result: CombinationResult = JSON.parse(text);
 
+      const isCrumble = result.result_name.toLowerCase() === 'crumble cookie';
+
       return {
         name: result.result_name,
         emoji: result.emoji,
-        rarity: (currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity
+        rarity: (isCrumble) ? 'chromatic' : ((currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity)
       };
     } catch (error) {
       console.error('Error in combination:', error);
@@ -1217,6 +1380,23 @@ Do not say you cannot do it; always provide a recipe.`;
       setSkipError('');
     } else {
       setSkipError('Incorrect password');
+    }
+  };
+
+  const handleAdminAddSpecificOrder = () => {
+    if (isAdminUser) {
+      const template = EXAMPLE_ORDERS.find(o => o.name === selectedAdminOrderName);
+      if (template) {
+        const newOrder: Order = {
+          ...template,
+          id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          status: 'not_started'
+        };
+        setOrders(prev => [...prev, newOrder]);
+        setSkipError('');
+      }
+    } else {
+      setSkipError('Unauthorized');
     }
   };
 
@@ -2095,6 +2275,25 @@ Do not say you cannot do it; always provide a recipe.`;
                   </div>
 
                   <div className="admin-section">
+                    <h4>Admin: Specific Order</h4>
+                    <div className="flex gap-2">
+                      <select 
+                        className="skip-input flex-1"
+                        style={{ background: 'white', color: 'black' }}
+                        value={selectedAdminOrderName}
+                        onChange={(e) => setSelectedAdminOrderName(e.target.value)}
+                      >
+                        {EXAMPLE_ORDERS.map(order => (
+                          <option key={order.id} value={order.name}>
+                            {order.emoji} {order.name} ({order.difficulty})
+                          </option>
+                        ))}
+                      </select>
+                      <button className="admin-action-btn" onClick={handleAdminAddSpecificOrder}>Manifest</button>
+                    </div>
+                  </div>
+
+                  <div className="admin-section">
                     <h4>Admin: Subscriptions & Plans</h4>
                     <div className="flex gap-2 mb-2">
                       <button 
@@ -2245,6 +2444,7 @@ Do not say you cannot do it; always provide a recipe.`;
                       (tutorialStep === 4 && ingredient.name === 'Fried Eggs')
                     }
                     onClick={() => toggleIngredient(ingredient.name)}
+                    onEdit={() => onEditIngredient(ingredient)}
                   />
                 ))
             )}
@@ -3095,6 +3295,22 @@ function KitchenAppContainer({ user }: { user: User }) {
   const [manifestationEmoji, setManifestationEmoji] = useState('✨');
   const [customToolName, setCustomToolName] = useState('');
   const [customToolEmoji, setCustomToolEmoji] = useState('🛠️');
+  const [showCrumbleCustomizer, setShowCrumbleCustomizer] = useState(false);
+  const [manifestationResult, setManifestationResult] = useState<{ name: string, emoji: string, isDuplicate: boolean } | null>(null);
+
+  const handleCookieCustomizationSave = (customization: any) => {
+    setShowCrumbleCustomizer(false);
+    // You could save this customization to state or Firestore if needed
+    // For now, let's just show a notification
+    setManifestationResult({ 
+      name: `Crumble Cookie Customized! (${customization.flavor})`, 
+      emoji: '✨', 
+      isDuplicate: false 
+    });
+
+    // Auto-clear notification
+    setTimeout(() => setManifestationResult(null), 3000);
+  };
   const [customTools, setCustomTools] = useState<KitchenAction[]>([]);
   const [divineImage, setDivineImage] = useState<string | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -3531,6 +3747,9 @@ function KitchenAppContainer({ user }: { user: User }) {
           setIsLeaderboardOpen={setIsLeaderboardOpen}
           setShowLevelError={setShowLevelError}
           setShowLeaderboardOptIn={setShowLeaderboardOptIn}
+          onEditIngredient={() => setShowCrumbleCustomizer(true)}
+          manifestationResult={manifestationResult}
+          setManifestationResult={setManifestationResult}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
@@ -3686,6 +3905,13 @@ function KitchenAppContainer({ user }: { user: User }) {
             </div>
           </div>
         </div>
+      )}
+
+      {showCrumbleCustomizer && (
+        <CrumbleCookieCustomizer 
+          onClose={() => setShowCrumbleCustomizer(false)}
+          onSave={handleCookieCustomizationSave}
+        />
       )}
 
       {showLevelError && (

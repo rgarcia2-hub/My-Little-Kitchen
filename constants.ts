@@ -13,7 +13,7 @@ import { Type } from '@google/genai';
 // Types
 // ============================================================================
 
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'cosmic' | 'nightmare';
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'cosmic' | 'nightmare' | 'chromatic';
 
 export interface Ingredient {
   name: string;
@@ -40,6 +40,7 @@ export interface Order {
   name: string;
   emoji: string;
   difficulty: OrderDifficulty;
+  rarity?: Rarity;
   status: 'not_started' | 'in_progress' | 'completed' | 'failed';
   servedDish?: string;  // What was actually served (for failed orders)
 }
@@ -404,6 +405,7 @@ export const EXAMPLE_ORDERS: Order[] = [
   { id: 'order-19', name: 'The Singularity Cake', emoji: '🕳️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-20', name: 'Quantum Soup', emoji: '⚛️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-21', name: 'Phoenix Down Omelette', emoji: '🔥', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-22', name: 'Crumble Cookie', emoji: '🍪', difficulty: 'difficult', rarity: 'chromatic', status: 'not_started' },
 ];
 
 // ============================================================================
@@ -628,7 +630,7 @@ export const COMBINATION_RESPONSE_SCHEMA = {
     emoji: { type: Type.STRING },
     rarity: { 
       type: Type.STRING,
-      enum: ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'divine', 'cosmic', 'nightmare']
+      enum: ['common', 'uncommon', 'rare', 'epic', 'legendary', 'mythic', 'divine', 'cosmic', 'nightmare', 'chromatic']
     }
   },
   required: ['result_name', 'emoji', 'rarity']
