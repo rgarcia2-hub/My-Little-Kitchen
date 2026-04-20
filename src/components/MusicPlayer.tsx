@@ -45,7 +45,7 @@ const PLAYLIST: Track[] = [
     title: "CLEAN LOOK",
     artist: "Roby_010",
     url: "/music/clean_look.mp3",
-    isPremium: false
+    isPremium: true
   }
 ];
 
