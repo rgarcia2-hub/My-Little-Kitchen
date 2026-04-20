@@ -33,7 +33,7 @@ export interface CombinationResult {
   rarity: Rarity;
 }
 
-export type OrderDifficulty = 'easy' | 'intermediate' | 'difficult' | 'nightmare';
+export type OrderDifficulty = 'easy' | 'intermediate' | 'difficult' | 'nightmare' | 'chromatic';
 
 export interface Order {
   id: string;
@@ -405,7 +405,7 @@ export const EXAMPLE_ORDERS: Order[] = [
   { id: 'order-19', name: 'The Singularity Cake', emoji: '🕳️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-20', name: 'Quantum Soup', emoji: '⚛️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-21', name: 'Phoenix Down Omelette', emoji: '🔥', difficulty: 'nightmare', status: 'not_started' },
-  { id: 'order-22', name: 'Crumble Cookie', emoji: '🍪', difficulty: 'difficult', rarity: 'chromatic', status: 'not_started' },
+  { id: 'order-22', name: 'Crumble Cookie', emoji: '🍪', difficulty: 'chromatic', rarity: 'chromatic', status: 'not_started' },
 ];
 
 // ============================================================================
@@ -429,7 +429,8 @@ export const XP_PER_DIFFICULTY = {
   easy: 20,
   intermediate: 50,
   difficult: 150,
-  nightmare: 500
+  nightmare: 500,
+  chromatic: 2500
 };
 
 export function getLevelFromXP(xp: number): number {
@@ -445,11 +446,12 @@ export function getXPForLevel(level: number): number {
 /** Get a random difficulty based on weighted probabilities */
 export function getRandomDifficulty(): OrderDifficulty {
   const rand = Math.random();
-  // Easy: 60%, Intermediate: 20%, Difficult: 15%, Nightmare: 5%
-  if (rand < 0.60) return 'easy';
-  if (rand < 0.80) return 'intermediate';
-  if (rand < 0.95) return 'difficult';
-  return 'nightmare';
+  // Easy: 59%, Intermediate: 20%, Difficult: 15%, Nightmare: 5%, Chromatic: 1%
+  if (rand < 0.59) return 'easy';
+  if (rand < 0.79) return 'intermediate';
+  if (rand < 0.94) return 'difficult';
+  if (rand < 0.99) return 'nightmare';
+  return 'chromatic';
 }
 
 /** Sanitize action name for function declarations: "deep fry" → "deep_fry" */

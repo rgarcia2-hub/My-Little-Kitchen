@@ -1897,13 +1897,56 @@ body {
 .rarity-nightmare .name { color: #ff4444 !important; text-shadow: 0 0 5px #ff0000; }
 .rarity-nightmare .emoji { filter: drop-shadow(0 0 5px #ff0000); }
 
+.rarity-chromatic { 
+  background: #fff !important;
+  color: #1a1a1a !important;
+  border-width: 3px !important;
+  border-style: solid !important;
+  border-image: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff) 1;
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5), inset 0 0 8px rgba(0, 255, 255, 0.3) !important;
+  position: relative;
+  overflow: hidden;
+  animation: chromatic-glimmer 2s linear infinite;
+}
+
+.rarity-chromatic::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0) 45%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0) 55%
+  );
+  animation: chromatic-shine 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes chromatic-glimmer {
+  0% { filter: hue-rotate(0deg) saturate(1); }
+  50% { filter: hue-rotate(180deg) saturate(1.5); }
+  100% { filter: hue-rotate(360deg) saturate(1); }
+}
+
+@keyframes chromatic-shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
 .rarity-chromatic .name {
   background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: chromatic-bg 3s linear infinite;
-  font-weight: 800 !important;
+  animation: chromatic-bg 2s linear infinite;
+  font-weight: 900 !important;
+  font-style: italic;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .rarity-chromatic .emoji {

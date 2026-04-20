@@ -414,7 +414,7 @@ function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemin
     <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass}`}>
       {order.difficulty && (
         <div className={`order-difficulty ${difficultyClass}`}>
-          {order.difficulty}
+          {order.difficulty === 'chromatic' || order.rarity === 'chromatic' ? 'Chromatic' : order.difficulty}
         </div>
       )}
       <div className="order-emoji">{order.emoji}</div>
@@ -1168,12 +1168,18 @@ function CombinationAgent({
       const text = response?.text || '{}';
       const result: CombinationResult = JSON.parse(text);
 
-      const isCrumble = result.result_name.toLowerCase() === 'crumble cookie';
+      let resultName = result.result_name;
+      const isCrumble = resultName.toLowerCase() === 'crumble cookie';
+      
+      // Make Crumble Cookie extremely rare (e.g. 5% chance if LLM suggests it, unless in God Tier)
+      if (isCrumble && Math.random() > 0.05 && !stats.godTier) {
+        resultName = 'Unfinished Cookie';
+      }
 
       return {
-        name: result.result_name,
-        emoji: result.emoji,
-        rarity: (isCrumble) ? 'chromatic' : ((currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity)
+        name: resultName,
+        emoji: isCrumble && resultName === 'Unfinished Cookie' ? '🍪' : result.emoji,
+        rarity: (resultName.toLowerCase() === 'crumble cookie') ? 'chromatic' : ((currentOrder?.difficulty === 'nightmare') ? 'nightmare' : result.rarity)
       };
     } catch (error) {
       console.error('Error in combination:', error);
@@ -1194,6 +1200,7 @@ function CombinationAgent({
     setShowRecipeSteps(true);
     setRecipeSteps([]);
     try {
+      const recipeModel = "gemini-1.5-flash";
       const prompt = `Dish: "${orderName}"
 Difficulty: ${difficulty}
 
@@ -1201,15 +1208,28 @@ Please provide the logical steps to create this dish using the available tools a
 Even if the dish is complex, break it down into simple combinations. 
 If the dish is very unusual, use your best judgment to create a plausible recipe.
 Do not say you cannot do it; always provide a recipe.`;
-      const response = await client.generateContent(model, [{ role: 'user', parts: [{ text: prompt }] }], {
+      const response = await client.generateContent(recipeModel, [{ role: 'user', parts: [{ text: prompt }] }], {
         systemInstruction: STEPS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         responseSchema: STEPS_RESPONSE_SCHEMA,
       });
       const text = response?.text || '{}';
-      const result = JSON.parse(text);
-      if (result.steps) {
-        setRecipeSteps(result.steps);
+      try {
+        // Robust cleaning of the response text to extract only the JSON object
+        const cleanedJson = text.replace(/^[^{]*(\{.*\})[^}]*$/s, '$1')
+                               .replace(/```json\n?|```/g, '')
+                               .trim();
+        
+        const result: { steps: RecipeStep[] } = JSON.parse(cleanedJson);
+        if (result.steps && Array.isArray(result.steps)) {
+          setRecipeSteps(result.steps);
+        } else {
+          console.error('Recipe steps not found in result:', result);
+          setRecipeSteps([]);
+        }
+      } catch (parseError) {
+        console.error('Error parsing recipe steps JSON:', parseError, 'Raw text:', text);
+        setRecipeSteps([]);
       }
     } catch (error) {
       console.error('Error fetching steps:', error);
@@ -3367,7 +3387,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     if (!stats.godTier) return;
     setIsGeneratingImage(true);
     try {
-      const response = await client.generateContent('gemini-2.5-flash-image', [
+      // Use gemini-1.5-flash which is standard in this environment
+      const response = await client.generateContent('gemini-1.5-flash', [
         {
           role: 'user',
           parts: [{
@@ -3589,6 +3610,17 @@ function KitchenAppContainer({ user }: { user: User }) {
 
   // Verification callback - called when serve() is invoked, returns success/failure
   const handleVerifyServedDish = useCallback(async (servedDishName: string): Promise<boolean> => {
+    // Remove from inventory on every serve attempt
+    setInventory(prev => {
+      const index = prev.findIndex(i => normalizeIngredientName(i.name) === normalizeIngredientName(servedDishName));
+      if (index !== -1) {
+        const newInv = [...prev];
+        newInv.splice(index, 1);
+        return newInv;
+      }
+      return prev;
+    });
+
     if (verifyServedDishRef.current) {
       const result = await verifyServedDishRef.current(servedDishName);
       setIsCooking(false); // Clear cooking state after verification
@@ -3596,7 +3628,7 @@ function KitchenAppContainer({ user }: { user: User }) {
     }
     setIsCooking(false);
     return false;
-  }, []);
+  }, [setInventory]);
 
   // Callback for adding a new custom order
   const handleAddOrder = useCallback((orderName: string) => {
