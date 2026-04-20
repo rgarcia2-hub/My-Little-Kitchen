@@ -1368,7 +1368,7 @@ Do not say you cannot do it; always provide a recipe.`;
       const dishName = ingredientNames[0];
 
       // Trigger verification agent
-      onServe(dishName);
+      await onServe(dishName);
       return;
     }
 
@@ -2804,12 +2804,21 @@ function VerificationAgent({
   // Use refs to always access the current values (avoids stale closure)
   const ordersRef = useRef(orders);
   const inventoryRef = useRef(inventory);
+  const currentOrderStepsRef = useRef(currentOrderSteps);
+  const statsRef = useRef(stats);
+
   useEffect(() => {
     ordersRef.current = orders;
   }, [orders]);
   useEffect(() => {
     inventoryRef.current = inventory;
   }, [inventory]);
+  useEffect(() => {
+    currentOrderStepsRef.current = currentOrderSteps;
+  }, [currentOrderSteps]);
+  useEffect(() => {
+    statsRef.current = stats;
+  }, [stats]);
 
   // Set config on mount
   useEffect(() => {
@@ -2826,40 +2835,63 @@ function VerificationAgent({
   // Expose verification function via ref
   useEffect(() => {
     verifyServedDishRef.current = async (servedDishName: string) => {
-      // Use ref to get current orders (avoids stale closure)
+      // Use ref to get current values (avoids stale closure)
       const currentOrders = ordersRef.current;
+      const currentStats = statsRef.current;
+      const currentSteps = currentOrderStepsRef.current;
 
-      // Find in_progress orders to check against
-      const inProgressOrders = currentOrders.filter(o => o.status === 'in_progress');
-
-      if (inProgressOrders.length === 0) {
-        // No active order - return success without running verification
-        return true; // Success, but no order to verify against
+      // Find candidate orders to check against (prefer in_progress, fallback to not_started)
+      let candidateOrders = currentOrders.filter(o => o.status === 'in_progress');
+      if (candidateOrders.length === 0) {
+        candidateOrders = currentOrders.filter(o => o.status === 'not_started');
       }
 
-      // Check each pending order for a match
-      for (const order of inProgressOrders) {
+      if (candidateOrders.length === 0) {
+        return true; // No active or pending orders to verify against
+      }
+
+      // Check each candidate order for a match
+      for (const order of candidateOrders) {
         try {
-          const prompt = `Order: "${order.name}"\nServed dish: "${servedDishName}"\n\nDoes this served dish match the order? Be lenient and use semantic matching. If it's a very similar dish or a common variation, it should match.`;
+          // 1. Local Exact/Semantic Match Bypass (Instant & Reliable)
+          const normServed = normalizeIngredientName(servedDishName);
+          const normOrder = normalizeIngredientName(order.name);
+          
+          let localMatch = normServed === normOrder || 
+                           normServed === normOrder + 's' || 
+                           normOrder === normServed + 's';
+          
+          let result: VerificationResult;
 
-          const contents: Content[] = [
-            { role: 'user', parts: [{ text: prompt }] }
-          ];
+          if (localMatch) {
+            result = {
+              matches: true,
+              confidence: 1.0,
+              explanation: "Local exact match detected."
+            };
+          } else {
+            // 2. Gemini AI Verification for semantic matches
+            const prompt = `Order: "${order.name}"\nServed dish: "${servedDishName}"\n\nDoes this served dish match the order? Be lenient and use semantic matching. If it's a very similar dish or a common variation, it should match.`;
 
-          const response = await generateContent(contents);
-          const text = response?.text || '{}';
-          const result: VerificationResult = JSON.parse(text);
+            const contents: Content[] = [
+              { role: 'user', parts: [{ text: prompt }] }
+            ];
+
+            const response = await generateContent(contents);
+            const text = response?.text || '{}';
+            result = JSON.parse(text);
+          }
 
           // Apply confidence_boost upgrade
-          let confidenceBonus = stats.purchasedUpgrades?.includes('confidence_boost') ? 0.1 : 0;
-          if (stats.purchasedUpgrades?.includes('molecular_kit')) {
+          let confidenceBonus = currentStats.purchasedUpgrades?.includes('confidence_boost') ? 0.1 : 0;
+          if (currentStats.purchasedUpgrades?.includes('molecular_kit')) {
             confidenceBonus += 0.2;
           }
           const totalConfidence = result.confidence + confidenceBonus;
 
-          if (result.matches && totalConfidence > 0.7) {
+          if (result.matches && totalConfidence > 0.6) { // Lowered threshold slightly for better UX
             // Apply auto_plating bonus: if confidence is high, treat as perfect
-            const finalConfidence = (stats.purchasedUpgrades?.includes('auto_plating') && totalConfidence > 0.85) 
+            const finalConfidence = (currentStats.purchasedUpgrades?.includes('auto_plating') && totalConfidence > 0.85) 
               ? 1.0 
               : totalConfidence;
 
@@ -2867,14 +2899,12 @@ function VerificationAgent({
             const servedIngredient = findIngredientInInventory(servedDishName, inventoryRef.current);
             const servedEmoji = servedIngredient?.emoji || '✅';
 
-            // Match found! Update order to completed with the served dish's emoji
-            // Update stats for completed orders and max confidence
-            // Apply better_prices upgrade
-            let priceMultiplier = stats.purchasedUpgrades?.includes('better_prices') ? 1.5 : 1;
-            if (stats.purchasedUpgrades?.includes('golden_whisk')) {
+            // Match found! Update order to completed
+            let priceMultiplier = currentStats.purchasedUpgrades?.includes('better_prices') ? 1.5 : 1;
+            if (currentStats.purchasedUpgrades?.includes('golden_whisk')) {
               priceMultiplier *= 2;
             }
-            if (stats.godTier) {
+            if (currentStats.godTier) {
               priceMultiplier *= 3;
             }
 
@@ -2888,7 +2918,6 @@ function VerificationAgent({
 
             // Save recipe
             setCompletedRecipes(prev => {
-              // Avoid duplicates for the same order name
               if (prev.some(r => r.orderName === order.name)) return prev;
               
               const newRecipe: CompletedRecipe = {
@@ -2897,7 +2926,7 @@ function VerificationAgent({
                 dishName: servedDishName,
                 emoji: servedEmoji,
                 timestamp: new Date().toISOString(),
-                steps: [...currentOrderSteps]
+                steps: [...currentSteps]
               };
               return [newRecipe, ...prev];
             });
@@ -2906,7 +2935,7 @@ function VerificationAgent({
             setCurrentOrderSteps([]);
 
             // Generate Divine Image if God Tier
-            if (stats.godTier) {
+            if (currentStats.godTier) {
               generateDivineImage(servedDishName);
             }
 
@@ -2921,22 +2950,16 @@ function VerificationAgent({
               let newTitle = prev.title || 'Kitchen Hand';
 
               if (leveledUp) {
-                // Level up rewards
                 newMoney += newLevel * 100;
-                
-                // Title update
                 const applicableTitle = [...TITLES].reverse().find(t => newLevel >= t.level);
                 if (applicableTitle) {
                   newTitle = applicableTitle.name;
                 }
-
-                // Random upgrade chance (20%)
                 if (Math.random() < 0.20) {
                   const unownedUpgrades = UPGRADES.filter(u => !newPurchasedUpgrades.includes(u.id));
                   if (unownedUpgrades.length > 0) {
                     const randomUpgrade = unownedUpgrades[Math.floor(Math.random() * unownedUpgrades.length)];
                     newPurchasedUpgrades.push(randomUpgrade.id);
-                    // We can show a toast for this later
                   }
                 }
               }
@@ -2965,33 +2988,25 @@ function VerificationAgent({
                   ? { ...o, status: 'completed' as const, emoji: servedEmoji }
                   : o
               );
-
-              // Add a new random order
               const difficulty = getRandomDifficulty();
               const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
-              // Pick a random one from the pool
               const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
-              
               const newOrder: Order = {
                 ...randomTemplate,
                 id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 status: 'not_started'
               };
-
               return [...updatedOrders, newOrder];
             });
 
-            return true; // Found a match, return success
+            return true;
           }
         } catch (error) {
           console.error('Error verifying order:', error);
         }
       }
-
-      // No match found - keep order in_progress so model can try again
-      return false; // No match found, but order stays active
+      return false;
     };
-
     return () => {
       verifyServedDishRef.current = null;
     };
