@@ -2995,6 +2995,73 @@ body {
   box-shadow: 4px 4px 0 black;
 }
 
+/* ============================================================================
+   Anti-Screenshot & Protection Logic
+   ============================================================================ */
+
+.select-none {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.recipe-steps-modal.blacked-out {
+  position: relative;
+  overflow: hidden;
+}
+
+.blackout-shield {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  padding: 40px;
+}
+
+.blackout-content h3 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  margin: 10px 0;
+  color: #ef4444;
+}
+
+.blackout-content p {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.blackout-sub {
+  opacity: 0.6;
+  font-size: 12px;
+  margin-top: 20px !important;
+}
+
+.blackout-icon {
+  animation: pulse-red-alert 1.5s infinite;
+}
+
+@keyframes pulse-red-alert {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@media print {
+  .recipe-steps-overlay,
+  .recipe-steps-modal,
+  #root > *:not(.print-allow) {
+    display: none !important;
+  }
+}
+
 .recipe-steps-empty {
   text-align: center;
   padding: 40px;

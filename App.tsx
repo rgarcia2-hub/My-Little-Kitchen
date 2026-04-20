@@ -64,7 +64,7 @@ import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
 
-const VERIFIED_BADGE_URL = "/verified.png";
+const VERIFIED_BADGE_URL = "/verified.png?v=3.0";
 const ADMIN_EMAILS = ['robert.garcia.alsina2012@gmail.com', 'gianlucaperalta555@gmail.com'];
 
 // ============================================================================
@@ -582,10 +582,51 @@ interface RecipeStepsDisplayProps {
 
 function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, difficulty, isPinned, onPinToggle }: RecipeStepsDisplayProps) {
   const canPin = difficulty !== 'difficult' && difficulty !== 'nightmare';
+  const isProtected = difficulty === 'difficult' || difficulty === 'nightmare';
+  const [isBlackedOut, setIsBlackedOut] = useState(false);
+
+  useEffect(() => {
+    if (!isProtected) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        setIsBlackedOut(true);
+      }
+    };
+
+    const handleBlur = () => {
+      setIsBlackedOut(true);
+    };
+
+    const handleFocus = () => {
+      // Small delay before revealing to discourage quick switching
+      setTimeout(() => setIsBlackedOut(false), 500);
+    };
+
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [isProtected]);
 
   return (
-    <div className={`recipe-steps-overlay ${isPinned ? 'pinned' : ''}`}>
-      <div className="recipe-steps-modal">
+    <div className={`recipe-steps-overlay ${isPinned ? 'pinned' : ''} ${isProtected ? 'protected-mode' : ''}`}>
+      <div className={`recipe-steps-modal ${isBlackedOut ? 'blacked-out' : ''}`}>
+        {isBlackedOut && isProtected && (
+          <div className="blackout-shield">
+            <div className="blackout-content">
+              <Camera size={48} className="blackout-icon" />
+              <h3>CAPTURA BLOQUEADA</h3>
+              <p>Los chefs legendarios guardan sus secretos.</p>
+              <p className="blackout-sub">Vuelve a la pestaña para ver la receta.</p>
+            </div>
+          </div>
+        )}
         <div className="recipe-steps-header">
           <div className="recipe-steps-header-text">
             <h3 className="recipe-steps-title">Cooking Guide: {orderName}</h3>
@@ -621,7 +662,7 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
               </button>
             </div>
           ) : (
-            <div className="recipe-steps-list">
+            <div className={`recipe-steps-list ${isProtected ? 'select-none' : ''}`}>
               {steps.map((step, index) => (
                 <div key={index} className="recipe-step-item">
                   <div className="step-number">{index + 1}</div>
@@ -3184,6 +3225,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           // Initialize new game state in Firestore
           await setDoc(gameStateRef, {
             uid: user.uid,
+            email: user.email,
             displayName: user.displayName || 'Chef',
             photoURL: user.photoURL || null,
             money: 0,
@@ -3238,8 +3280,8 @@ function KitchenAppContainer({ user }: { user: User }) {
         const level = gameState.stats?.level || 1;
         const optIn = gameState.stats?.leaderboardOptIn || false;
         
-        // Only include chefs that are level 5+ AND opted in
-        if (level >= 5 && optIn) {
+        // Include chefs that are level 5+ AND opted in OR are admins
+        if ((level >= 5 && optIn) || ADMIN_EMAILS.includes(gameState.email || '')) {
           data.push({
             uid: docSnap.id,
             email: gameState.email || null,
