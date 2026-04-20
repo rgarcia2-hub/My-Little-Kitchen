@@ -56,6 +56,11 @@ import {
   XP_PER_DIFFICULTY,
   getLevelFromXP,
   getXPForLevel,
+  FAME_LEVELS,
+  SHOP_ITEMS,
+  getCurrentFameLevel,
+  ShopItem,
+  FameLevel,
 } from './constants';
 
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
@@ -1042,7 +1047,11 @@ function CombinationAgent({
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
   const [showRecipeSteps, setShowRecipeSteps] = useState(false);
   const [isRecipePinned, setIsRecipePinned] = useState(false);
+  const [isShopExpanded, setIsShopExpanded] = useState(false);
+  const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
+
+  const currentFame = getCurrentFameLevel(stats.fameDonated || 0);
 
   // Refs for auto-scroll
   const ingredientsRef = useRef<HTMLDivElement>(null);
@@ -1097,6 +1106,46 @@ function CombinationAgent({
   const handleCopyId = () => {
     navigator.clipboard.writeText(user.uid);
     alert("ID copied! Paste it in the Ko-fi message.");
+  };
+
+  const handleDonateToFame = () => {
+    const amount = parseInt(fameDonationAmount, 10);
+    if (isNaN(amount) || amount <= 0) return;
+    if (stats.money >= amount) {
+      const nextDonated = (stats.fameDonated || 0) + amount;
+      const oldFame = getCurrentFameLevel(stats.fameDonated || 0);
+      const newFame = getCurrentFameLevel(nextDonated);
+      
+      setStats((prev: any) => ({
+        ...prev,
+        money: prev.money - amount,
+        fameDonated: nextDonated
+      }));
+
+      // Find if we crossed a new threshold
+      if (newFame && (!oldFame || oldFame.tier !== newFame.tier || oldFame.stage !== newFame.stage)) {
+        alert(`✨ Your fame has reached: ${newFame.tier} Level ${newFame.stage}! ${newFame.emoji} ✨`);
+      }
+    } else {
+      alert("Insufficient funds for this donation.");
+    }
+  };
+
+  const handleBuyShopItem = (item: ShopItem) => {
+    if (stats.money >= item.price) {
+      if ((stats.purchasedShopItems || []).includes(item.id)) {
+        alert("You already own this item!");
+        return;
+      }
+      setStats((prev: any) => ({
+        ...prev,
+        money: prev.money - item.price,
+        purchasedShopItems: [...(prev.purchasedShopItems || []), item.id]
+      }));
+      alert(`Successfully purchased ${item.name}! Check your settings to apply it.`);
+    } else {
+      alert("Insufficient funds for this item.");
+    }
   };
 
   // Toggle ingredient selection
@@ -1200,7 +1249,8 @@ function CombinationAgent({
     setShowRecipeSteps(true);
     setRecipeSteps([]);
     try {
-      const recipeModel = "gemini-1.5-flash";
+      // Use the current model from context to ensure compatibility with the provided API Key
+      const recipeModel = model || "gemini-1.5-flash"; 
       const prompt = `Dish: "${orderName}"
 Difficulty: ${difficulty}
 
@@ -1208,12 +1258,19 @@ Please provide the logical steps to create this dish using the available tools a
 Even if the dish is complex, break it down into simple combinations. 
 If the dish is very unusual, use your best judgment to create a plausible recipe.
 Do not say you cannot do it; always provide a recipe.`;
+
       const response = await client.generateContent(recipeModel, [{ role: 'user', parts: [{ text: prompt }] }], {
         systemInstruction: STEPS_SYSTEM_INSTRUCTION,
         responseMimeType: 'application/json',
         responseSchema: STEPS_RESPONSE_SCHEMA,
       });
+
       const text = response?.text || '{}';
+      
+      if (!text || text === '{}') {
+        throw new Error('Emply response from AI');
+      }
+
       try {
         // Robust cleaning of the response text to extract only the JSON object
         const cleanedJson = text.replace(/^[^{]*(\{.*\})[^}]*$/s, '$1')
@@ -1229,10 +1286,15 @@ Do not say you cannot do it; always provide a recipe.`;
         }
       } catch (parseError) {
         console.error('Error parsing recipe steps JSON:', parseError, 'Raw text:', text);
+        // Fallback for when JSON is not perfect but contains steps
+        if (text.includes('"steps"') || text.includes('steps')) {
+           alert("The recipe was partially generated but has formatting issues. Try again!");
+        }
         setRecipeSteps([]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching steps:', error);
+      alert(`Could not get recipe steps: ${error.message || 'Verification error'}. Ensure your Gemini API Key is correctly set in the settings menu.`);
     } finally {
       setIsFetchingSteps(false);
     }
@@ -1770,6 +1832,12 @@ Do not say you cannot do it; always provide a recipe.`;
         <div className="header-content-wrapper max-w-7xl mx-auto px-4">
           <div className="header-left">
             <h1 className="kitchen-title">My little Kitchen</h1>
+            {currentFame && (
+              <div className="fame-badge-header" title={`${currentFame.tier} Fame Stage ${currentFame.stage}`}>
+                <span className="fame-emoji">{currentFame.emoji}</span>
+                <span className="fame-stage-num">{currentFame.stage}</span>
+              </div>
+            )}
           </div>
           
           <div className="header-center">
@@ -1788,6 +1856,8 @@ Do not say you cannot do it; always provide a recipe.`;
                   <div className="title-row">
                     {stats.customTitle ? (
                       <GlitchedTitle title={stats.customTitle} className="mini" />
+                    ) : (stats.purchasedShopItems || []).includes('title_legend') ? (
+                      <GlitchedTitle title="GOD OF FOOD" className="mini" />
                     ) : (
                       <span className="standard-title">{stats.title || 'Kitchen Hand'}</span>
                     )}
@@ -1939,12 +2009,28 @@ Do not say you cannot do it; always provide a recipe.`;
                 if (!isRecipeBookExpanded) {
                   setIsAchievementsExpanded(false);
                   setIsUpgradesExpanded(false);
+                  setIsShopExpanded(false);
                 }
               }}
             >
               <span className="emoji">📖</span>
               <span>{isRecipeBookExpanded ? 'Hide Recipes' : 'Recipe Book'}</span>
               <span className="count-badge">{completedRecipes.length}</span>
+            </button>
+            <button 
+              className={`view-achievements-btn store-btn ${isShopExpanded ? 'active' : ''}`}
+              onClick={() => {
+                setIsShopExpanded(!isShopExpanded);
+                if (!isShopExpanded) {
+                  setIsAchievementsExpanded(false);
+                  setIsUpgradesExpanded(false);
+                  setIsRecipeBookExpanded(false);
+                }
+              }}
+            >
+              <span className="emoji">🛒</span>
+              <span>Visual Shop</span>
+              {currentFame && <span className="fame-badge-mini ml-2">{currentFame.emoji}</span>}
             </button>
             <a 
               href="https://ko-fi.com/X8X51WOFNJ" 
@@ -1998,6 +2084,88 @@ Do not say you cannot do it; always provide a recipe.`;
                 </div>
               ))
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Visual Shop Section (Conditional Render) */}
+      {isShopExpanded && (
+        <section className="kitchen-section achievements-section expanded shop-section">
+          <div className="section-header">
+            <div className="section-header-text">
+              <h2 className="section-title">Visual Shop & Fame</h2>
+              <p className="section-subtitle">Donate to reach universal fame or buy cosmetic upgrades</p>
+            </div>
+            <div className="flex items-center gap-4">
+               <div className="money-display small">
+                <span className="money-icon">💰</span>
+                <span className="money-amount">${stats.money}</span>
+              </div>
+              <button className="close-achievements" onClick={() => setIsShopExpanded(false)}>✕</button>
+            </div>
+          </div>
+
+          <div className="shop-content-wrapper">
+            {/* Fame System Sub-section */}
+            <div className="fame-container-brutalist">
+              <div className="fame-header">
+                <div className="fame-badge-large" style={{ 
+                  background: currentFame ? (currentFame.color.startsWith('linear') ? currentFame.color : currentFame.color) : '#eee',
+                  color: 'white',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                }}>
+                  {currentFame ? currentFame.emoji : '🧱'}
+                </div>
+                <div className="fame-info">
+                  <h3 className="fame-title-text">{currentFame ? `${currentFame.tier} Fame` : 'No Fame Yet'}</h3>
+                  <p className="fame-subtitle-text">{currentFame ? `Stage ${currentFame.stage}` : 'Donate money to start your journey'}</p>
+                  <div className="fame-progress-track">
+                    <div className="fame-progress-fill" style={{ width: `${Math.min(100, (stats.fameDonated || 0) / (FAME_LEVELS[FAME_LEVELS.length - 1].threshold) * 100)}%` }}></div>
+                  </div>
+                  <span className="fame-total-label">Total Donated: ${stats.fameDonated || 0}</span>
+                </div>
+              </div>
+
+              <div className="fame-donation-controls">
+                <div className="donation-input-wrapper">
+                  <span className="dollar-sign">$</span>
+                  <input 
+                    type="number" 
+                    value={fameDonationAmount}
+                    onChange={(e) => setFameDonationAmount(e.target.value)}
+                    min="1"
+                    className="fame-donation-input"
+                  />
+                </div>
+                <button 
+                  className="donate-button"
+                  onClick={handleDonateToFame}
+                  disabled={stats.money < parseInt(fameDonationAmount, 10)}
+                >
+                  DONATE TO FAME
+                </button>
+              </div>
+            </div>
+
+            {/* Shop Grid */}
+            <div className="shop-items-grid">
+              {SHOP_ITEMS.map(item => (
+                <div key={item.id} className={`shop-item-card ${stats.purchasedShopItems?.includes(item.id) ? 'owned' : ''}`}>
+                  <div className="item-emoji">{item.emoji}</div>
+                  <div className="item-details">
+                    <h4 className="item-name">{item.name}</h4>
+                    <p className="item-desc">{item.description}</p>
+                    <button 
+                      className="buy-item-btn"
+                      onClick={() => handleBuyShopItem(item)}
+                      disabled={stats.money < item.price || stats.purchasedShopItems?.includes(item.id)}
+                    >
+                      {stats.purchasedShopItems?.includes(item.id) ? 'OWNED' : `BUY ($${item.price})`}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
@@ -2108,7 +2276,10 @@ Do not say you cannot do it; always provide a recipe.`;
                 <div className="account-info-card">
                   <div className="account-header-improved">
                     <div className="profile-image-container">
-                      <div className="relative group profile-avatar-wrapper">
+                      <div className={`relative group profile-avatar-wrapper ${
+                        (stats.purchasedShopItems || []).includes('border_gold') ? 'profile-border-gold' : 
+                        (stats.purchasedShopItems || []).includes('border_neon') ? 'profile-border-neon' : ''
+                      }`}>
                         {stats.profileImage || user.photoURL ? (
                           <img 
                             src={stats.profileImage || user.photoURL} 
@@ -3366,7 +3537,9 @@ function KitchenAppContainer({ user }: { user: User }) {
     musicPass: false,
     customTitle: null as string | null,
     profileImage: null as string | null,
-    leaderboardOptIn: false
+    leaderboardOptIn: false,
+    fameDonated: 0,
+    purchasedShopItems: [] as string[]
   });
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [showLevelError, setShowLevelError] = useState(false);

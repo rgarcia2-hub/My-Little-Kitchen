@@ -90,7 +90,14 @@ export class GenAIGeminiClient extends EventEmitter<GeminiClientEventTypes> {
 
 
   async generateContent(model: string, contents: Content[], config?: GenerateContentConfig): Promise<GenerateContentResponse> {
-    const generateContentParameters: GenerateContentParameters = { model, contents, config: config };
+    // some AI Studio environments expect systemInstruction at the top level of the parameters object
+    const { systemInstruction, ...generationConfig } = (config || {}) as any;
+    const generateContentParameters: any = { 
+      model, 
+      contents, 
+      config: generationConfig,
+      systemInstruction 
+    };
     console.log("client.generateContent", generateContentParameters);
     this.log({ type: 'generate-content', direction: 'send', message: generateContentParameters });
     const result = await this.genAI.models.generateContent(generateContentParameters);

@@ -89,6 +89,61 @@ export interface Upgrade {
   effect: string;
 }
 
+export interface FameLevel {
+  tier: string;
+  stage: number;
+  threshold: number; // total donated money needed for this stage
+  emoji: string;
+  color: string;
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  emoji: string;
+  type: 'decoration' | 'title' | 'skin';
+}
+
+export const FAME_LEVELS: FameLevel[] = [
+  { tier: 'Earth', stage: 1, threshold: 1000, emoji: '🌍', color: '#8d6e63' },
+  { tier: 'Earth', stage: 2, threshold: 2500, emoji: '🌍', color: '#8d6e63' },
+  { tier: 'Earth', stage: 3, threshold: 5000, emoji: '🌍', color: '#8d6e63' },
+  { tier: 'Moon', stage: 1, threshold: 10000, emoji: '🌑', color: '#9e9e9e' },
+  { tier: 'Moon', stage: 2, threshold: 20000, emoji: '🌓', color: '#9e9e9e' },
+  { tier: 'Moon', stage: 3, threshold: 35000, emoji: '🌕', color: '#9e9e9e' },
+  { tier: 'Sun', stage: 1, threshold: 50000, emoji: '🌅', color: '#fbc02d' },
+  { tier: 'Sun', stage: 2, threshold: 75000, emoji: '☀️', color: '#fbc02d' },
+  { tier: 'Sun', stage: 3, threshold: 100000, emoji: '🔆', color: '#fbc02d' },
+  { tier: 'Galaxy', stage: 1, threshold: 200000, emoji: '🌌', color: '#7e57c2' },
+  { tier: 'Galaxy', stage: 2, threshold: 350000, emoji: '🌀', color: '#7e57c2' },
+  { tier: 'Galaxy', stage: 3, threshold: 500000, emoji: '⚛️', color: '#7e57c2' },
+  { tier: 'Cosmos', stage: 1, threshold: 750000, emoji: '🌠', color: '#26c6da' },
+  { tier: 'Cosmos', stage: 2, threshold: 1000000, emoji: '🛸', color: '#26c6da' },
+  { tier: 'Cosmos', stage: 3, threshold: 2500000, emoji: '🛰️', color: '#26c6da' },
+  { tier: 'Infinite', stage: 1, threshold: 5000000, emoji: '♾️', color: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff)' },
+];
+
+export const getCurrentFameLevel = (donated: number) => {
+  let highest = null;
+  for (const level of FAME_LEVELS) {
+    if (donated >= level.threshold) {
+      highest = level;
+    } else {
+      break;
+    }
+  }
+  return highest;
+};
+
+export const SHOP_ITEMS: ShopItem[] = [
+  { id: 'border_neon', name: 'Neon Border', description: 'Give your profile image a futuristic neon glow.', price: 5000, emoji: '🖼️', type: 'decoration' },
+  { id: 'border_gold', name: 'Golden Frame', description: 'A solid gold frame for the elite chefs.', price: 15000, emoji: '👑', type: 'decoration' },
+  { id: 'title_legend', name: 'Legendary Title', description: 'Unlocks the preset title: "GOD OF FOOD".', price: 25000, emoji: '✍️', type: 'title' },
+  { id: 'skin_gold_knife', name: 'Golden Knife Skin', description: 'Makes your "Cut" action look shiny.', price: 10000, emoji: '🔪', type: 'skin' },
+];
+
 export const UPGRADES: Upgrade[] = [
   {
     id: 'faster_ai',
