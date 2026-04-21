@@ -1044,6 +1044,7 @@ function CombinationAgent({
   const isAdminUser = isSuperAdmin;
 
   const [recipeSteps, setRecipeSteps] = useState<RecipeStep[]>([]);
+  const [recipeCache, setRecipeCache] = useState<Record<string, RecipeStep[]>>({});
   const [isFetchingSteps, setIsFetchingSteps] = useState(false);
   const [showRecipeSteps, setShowRecipeSteps] = useState(false);
   const [isRecipePinned, setIsRecipePinned] = useState(false);
@@ -1247,6 +1248,13 @@ function CombinationAgent({
   }, [executeCombination, onExecuteActionRef]);
 
   const fetchRecipeSteps = async (orderName: string, difficulty: string = 'easy') => {
+    // Check cache first to save API quota
+    if (recipeCache[orderName]) {
+      setRecipeSteps(recipeCache[orderName]);
+      setShowRecipeSteps(true);
+      return;
+    }
+
     setIsFetchingSteps(true);
     setShowRecipeSteps(true);
     setRecipeSteps([]);
@@ -1270,7 +1278,7 @@ Do not say you cannot do it; always provide a recipe.`;
       const text = response?.text || '{}';
       
       if (!text || text === '{}') {
-        throw new Error('Emply response from AI');
+        throw new Error('Empty response from AI');
       }
 
       try {
@@ -1286,6 +1294,8 @@ Do not say you cannot do it; always provide a recipe.`;
         const result: { steps: RecipeStep[] } = JSON.parse(cleanedJson);
         if (result.steps && Array.isArray(result.steps)) {
           setRecipeSteps(result.steps);
+          // Save to cache
+          setRecipeCache(prev => ({ ...prev, [orderName]: result.steps }));
         } else {
           console.error('Recipe steps not found in result:', result);
           setRecipeSteps([]);
@@ -1300,7 +1310,11 @@ Do not say you cannot do it; always provide a recipe.`;
       }
     } catch (error: any) {
       console.error('Error fetching steps:', error);
-      alert(`Could not get recipe steps: ${error.message || 'Verification error'}. Ensure your Gemini API Key is correctly set in the settings menu.`);
+      let errorMsg = error.message || 'Verification error';
+      if (errorMsg.includes('429') || errorMsg.includes('quota') || errorMsg.includes('RESOURCE_EXHAUSTED')) {
+        errorMsg = "API Quota exceeded. Please wait about 1-2 minutes for the cooldown or upgrade your plan in Google Cloud Console.";
+      }
+      alert(`Could not get recipe steps: ${errorMsg}`);
     } finally {
       setIsFetchingSteps(false);
     }
@@ -1896,15 +1910,15 @@ Do not say you cannot do it; always provide a recipe.`;
             </button>
 
             <button 
-              className={`leaderboard-btn-header fame-btn ${stats.level >= 80 ? 'fame-unlocked' : 'fame-locked'}`}
+              className={`leaderboard-btn-header fame-btn ${(stats.level >= 80 || (stats.fameDonated || 0) > 0) ? 'fame-unlocked' : 'fame-locked'}`}
               onClick={() => {
-                if (stats.level < 80) {
+                if (stats.level < 80 && (stats.fameDonated || 0) <= 0) {
                   setShowFameLevelError(true);
                 } else {
                   setIsFameTerminalOpen(true);
                 }
               }}
-              title={stats.level >= 80 ? "Fame Terminal" : "Level 80 Required"}
+              title={(stats.level >= 80 || (stats.fameDonated || 0) > 0) ? "Fame Terminal" : "Level 80 Required"}
             >
               ✨
             </button>
