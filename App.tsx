@@ -1048,6 +1048,8 @@ function CombinationAgent({
   const [showRecipeSteps, setShowRecipeSteps] = useState(false);
   const [isRecipePinned, setIsRecipePinned] = useState(false);
   const [isShopExpanded, setIsShopExpanded] = useState(false);
+  const [isFameTerminalOpen, setIsFameTerminalOpen] = useState(false);
+  const [showFameLevelError, setShowFameLevelError] = useState(false);
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
 
@@ -1124,10 +1126,10 @@ function CombinationAgent({
 
       // Find if we crossed a new threshold
       if (newFame && (!oldFame || oldFame.tier !== newFame.tier || oldFame.stage !== newFame.stage)) {
-        alert(`✨ Your fame has reached: ${newFame.tier} Level ${newFame.stage}! ${newFame.emoji} ✨`);
+        alert(`✨ SYSTEM_ALERT: Your fame has reached ${newFame.tier.toUpperCase()} Stage ${newFame.stage}! ${newFame.emoji} ✨`);
       }
     } else {
-      alert("Insufficient funds for this donation.");
+      alert("ERROR: Insufficient credits for this fame addition.");
     }
   };
 
@@ -1890,6 +1892,20 @@ Do not say you cannot do it; always provide a recipe.`;
             </button>
 
             <button 
+              className={`leaderboard-btn-header fame-btn ${stats.level >= 80 ? 'fame-unlocked' : 'fame-locked'}`}
+              onClick={() => {
+                if (stats.level < 80) {
+                  setShowFameLevelError(true);
+                } else {
+                  setIsFameTerminalOpen(true);
+                }
+              }}
+              title={stats.level >= 80 ? "Fame Terminal" : "Level 80 Required"}
+            >
+              ✨
+            </button>
+
+            <button 
               className="user-profile-btn-top"
               onClick={() => {
                 setShowSkipModal(true);
@@ -1913,6 +1929,11 @@ Do not say you cannot do it; always provide a recipe.`;
                       className="flex-shrink-0" 
                       referrerPolicy="no-referrer"
                     />
+                  )}
+                  {currentFame && (
+                    <span className="fame-badge-mini" title={`${currentFame.tier} Fame`}>
+                      {currentFame.emoji}
+                    </span>
                   )}
                 </div>
                 <span className="settings-gear">⚙️</span>
@@ -2106,47 +2127,6 @@ Do not say you cannot do it; always provide a recipe.`;
           </div>
 
           <div className="shop-content-wrapper">
-            {/* Fame System Sub-section */}
-            <div className="fame-container-brutalist">
-              <div className="fame-header">
-                <div className="fame-badge-large" style={{ 
-                  background: currentFame ? (currentFame.color.startsWith('linear') ? currentFame.color : currentFame.color) : '#eee',
-                  color: 'white',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                }}>
-                  {currentFame ? currentFame.emoji : '🧱'}
-                </div>
-                <div className="fame-info">
-                  <h3 className="fame-title-text">{currentFame ? `${currentFame.tier} Fame` : 'No Fame Yet'}</h3>
-                  <p className="fame-subtitle-text">{currentFame ? `Stage ${currentFame.stage}` : 'Donate money to start your journey'}</p>
-                  <div className="fame-progress-track">
-                    <div className="fame-progress-fill" style={{ width: `${Math.min(100, (stats.fameDonated || 0) / (FAME_LEVELS[FAME_LEVELS.length - 1].threshold) * 100)}%` }}></div>
-                  </div>
-                  <span className="fame-total-label">Total Donated: ${stats.fameDonated || 0}</span>
-                </div>
-              </div>
-
-              <div className="fame-donation-controls">
-                <div className="donation-input-wrapper">
-                  <span className="dollar-sign">$</span>
-                  <input 
-                    type="number" 
-                    value={fameDonationAmount}
-                    onChange={(e) => setFameDonationAmount(e.target.value)}
-                    min="1"
-                    className="fame-donation-input"
-                  />
-                </div>
-                <button 
-                  className="donate-button"
-                  onClick={handleDonateToFame}
-                  disabled={stats.money < parseInt(fameDonationAmount, 10)}
-                >
-                  DONATE TO FAME
-                </button>
-              </div>
-            </div>
-
             {/* Shop Grid */}
             <div className="shop-items-grid">
               {SHOP_ITEMS.map(item => (
@@ -2330,6 +2310,11 @@ Do not say you cannot do it; always provide a recipe.`;
                             className="flex-shrink-0" 
                             referrerPolicy="no-referrer"
                           />
+                        )}
+                        {currentFame && (
+                          <span className="fame-badge-mini ml-1" title={`${currentFame.tier} Fame - Stage ${currentFame.stage}`}>
+                            {currentFame.emoji}
+                          </span>
                         )}
                       </div>
                       <p className="chef-email">{user.email}</p>
@@ -2889,6 +2874,112 @@ Do not say you cannot do it; always provide a recipe.`;
           isPinned={isRecipePinned}
           onPinToggle={() => setIsRecipePinned(!isRecipePinned)}
         />
+      )}
+
+      {/* Fame Level Requirement Error Modal */}
+      {showFameLevelError && (
+        <div className="os-modal-overlay" onClick={() => setShowFameLevelError(false)}>
+          <div className="os-modal-card red-theme" onClick={e => e.stopPropagation()}>
+            <div className="os-modal-header">
+              <span className="os-modal-emoji">🚫</span>
+              <span className="os-modal-title">ACCESS_DENIED</span>
+            </div>
+            <div className="os-modal-body">
+              <p className="text-large">
+                The <span className="text-highlight-red">FAME TERMINAL</span> is restricted to master chefs. 
+              </p>
+              <p className="text-muted mt-2">
+                Required Level: <span className="font-bold text-white">80</span><br />
+                Current Level: <span className="font-bold text-white">{stats.level || 1}</span>
+              </p>
+              <div className="os-error-code mt-4">
+                ERROR_CODE: LVL_INSUFFICIENT_FAME_PROTOCOL
+              </div>
+            </div>
+            <div className="os-modal-footer">
+              <button className="os-btn os-btn-danger" onClick={() => setShowFameLevelError(false)}>
+                ACKNOWLEDGE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Exclusive Fame Terminal (Kitchen OS Dark) */}
+      {isFameTerminalOpen && (
+        <div className="fame-os-overlay" onClick={() => setIsFameTerminalOpen(false)}>
+          <div className="fame-terminal-window" onClick={e => e.stopPropagation()}>
+            <div className="terminal-scanline"></div>
+            <div className="terminal-header">
+              <div className="terminal-dots">
+                <span className="dot red"></span>
+                <span className="dot yellow"></span>
+                <span className="dot green"></span>
+              </div>
+              <div className="terminal-title">KITCHEN_OS FAME_PROTOCOL v2.4</div>
+              <button className="terminal-close" onClick={() => setIsFameTerminalOpen(false)}>CLOSE_SESSION</button>
+            </div>
+
+            <div className="terminal-content">
+              <div className="terminal-fame-display">
+                <div className="fame-identity-section">
+                  <div className="fame-portal-badge" style={{ 
+                    background: currentFame ? (currentFame.color.startsWith('linear') ? currentFame.color : currentFame.color) : '#1a1a1a',
+                    boxShadow: currentFame ? `0 0 20px ${currentFame.color.startsWith('linear') ? '#00ff00' : currentFame.color}` : 'none'
+                  }}>
+                    {currentFame ? currentFame.emoji : '💀'}
+                  </div>
+                  <div className="fame-identity-info">
+                    <h2 className="terminal-h2">{currentFame ? currentFame.tier.toUpperCase() : 'COMA_STATE'}</h2>
+                    <p className="terminal-p">STAGE_{currentFame ? currentFame.stage : '00'}_ACTIVE</p>
+                    <div className="terminal-progress-container">
+                      <div className="terminal-progress-fill" style={{ width: `${Math.min(100, (stats.fameDonated || 0) / (FAME_LEVELS[FAME_LEVELS.length - 1].threshold) * 100)}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="terminal-stats-grid">
+                  <div className="t-stat">
+                    <span className="t-label">TOTAL_FAME_CREDITS</span>
+                    <span className="t-value">${stats.fameDonated || 0}</span>
+                  </div>
+                  <div className="t-stat">
+                    <span className="t-label">CURRENT_BALANCE</span>
+                    <span className="t-value">${stats.money}</span>
+                  </div>
+                </div>
+
+                <div className="terminal-action-zone">
+                  <h3 className="terminal-h3">INCREMENT_FAME_RESOURCES</h3>
+                  <div className="terminal-input-group">
+                    <span className="terminal-prompt">&gt; add_fame_amount:</span>
+                    <input 
+                      type="number" 
+                      value={fameDonationAmount}
+                      onChange={(e) => setFameDonationAmount(e.target.value)}
+                      className="terminal-input"
+                      autoFocus
+                    />
+                  </div>
+                  <button 
+                    className="terminal-execute-btn"
+                    onClick={handleDonateToFame}
+                    disabled={stats.money < parseInt(fameDonationAmount, 10)}
+                  >
+                    [ EXECUTE: ADD FAME ]
+                  </button>
+                </div>
+
+                <div className="terminal-log">
+                  <p className="log-line text-highlight-green">[SYSTEM] Connection established...</p>
+                  <p className="log-line text-highlight-green">[SYSTEM] User: {user.displayName || 'CHEF_UNNAMED'}</p>
+                  <p className="log-line text-highlight-green">[SYSTEM] Status: Level {stats.level} (Elite)</p>
+                  <p className="log-line text-muted">[INFO] Awaiting fame credits injection...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

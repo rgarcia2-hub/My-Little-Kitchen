@@ -28,20 +28,20 @@ import { createLoggerStore, LoggerStore } from "../../lib/create-logger-store";
 /**
  * API Key Configuration
  * 
- * This hook supports two runtime environments:
- * 
- * 1. Vite (local development)
- *    - Run with: npm run dev
- *    - Set your API key in .env file as: VITE_GEMINI_API_KEY=your_key_here
- * 
- * 2. AI Studio (browser-based IDE)
- *    - Copy the src/ folder into AI Studio
- *    - AI Studio automatically provides the API key via process.env.API_KEY
+ * 1. Manual Override (For external hosting)
+ *    - Replace 'YOUR_GEMINI_API_KEY_HERE' with your real key if you're not using environment variables.
  */
+const MANUAL_API_KEY_OVERRIDE = 'AIzaSyAOlBZ2rfVRs8MqF-w75HOsSpxwhrpIvsk';
+
 declare const process: { env?: { API_KEY?: string; GEMINI_API_KEY?: string } } | undefined;
 
 function getApiKey(): string {
-  // Try Vite environment first (local development)
+  // Try manual override first if the user has provided one
+  if (MANUAL_API_KEY_OVERRIDE && MANUAL_API_KEY_OVERRIDE !== 'YOUR_GEMINI_API_KEY_HERE') {
+    return MANUAL_API_KEY_OVERRIDE;
+  }
+
+  // Try Vite environment (local development)
   if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GEMINI_API_KEY) {
     return (import.meta as any).env.VITE_GEMINI_API_KEY;
   }
