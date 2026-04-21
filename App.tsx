@@ -1252,7 +1252,7 @@ function CombinationAgent({
     setRecipeSteps([]);
     try {
       // Use the current model from context to ensure compatibility with the provided API Key
-      const recipeModel = model || "gemini-3-flash-preview"; 
+      const recipeModel = model || "gemini-1.5-flash-latest"; 
       const prompt = `Dish: "${orderName}"
 Difficulty: ${difficulty}
 
@@ -1274,11 +1274,15 @@ Do not say you cannot do it; always provide a recipe.`;
       }
 
       try {
-        // Robust cleaning of the response text to extract only the JSON object
-        const cleanedJson = text.replace(/^[^{]*(\{.*\})[^}]*$/s, '$1')
-                               .replace(/```json\n?|```/g, '')
-                               .trim();
+        // Robust cleaning of the response text to extract the JSON object
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
         
+        if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+          throw new Error('No valid JSON object found in response');
+        }
+
+        const cleanedJson = text.substring(firstBrace, lastBrace + 1);
         const result: { steps: RecipeStep[] } = JSON.parse(cleanedJson);
         if (result.steps && Array.isArray(result.steps)) {
           setRecipeSteps(result.steps);
@@ -3651,8 +3655,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     if (!stats.godTier) return;
     setIsGeneratingImage(true);
     try {
-      // Use gemini-3-flash-preview which is standard in this environment
-      const response = await client.generateContent('gemini-3-flash-preview', [
+      // Use gemini-1.5-flash-latest which is standard in this environment
+      const response = await client.generateContent('gemini-1.5-flash-latest', [
         {
           role: 'user',
           parts: [{

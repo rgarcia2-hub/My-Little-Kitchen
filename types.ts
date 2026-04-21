@@ -123,8 +123,8 @@ export const responseModalityOptions = [
 ];
 
 export const modelOptions = [
-  { value: "gemini-3-flash-preview", label: "Gemini 3 Flash" },
-  { value: "gemini-flash-latest", label: "Gemini Flash Latest" },
+  { value: "gemini-1.5-flash-latest", label: "Gemini 1.5 Flash" },
+  { value: "gemini-1.5-pro-latest", label: "Gemini 1.5 Pro" },
   { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash" },
 ];
 
