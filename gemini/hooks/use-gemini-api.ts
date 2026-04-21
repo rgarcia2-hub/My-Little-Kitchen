@@ -104,7 +104,7 @@ export function useGeminiAPI(): UseCoreAPIResults {
   }, []);
 
   const client = useMemo(() => new GenAIGeminiClient({ apiKey }), [apiKey]);
-  const [model, setModel] = useState<string>("gemini-1.5-flash");
+  const [model, setModel] = useState<string>("gemini-3-flash-preview");
   const [config, setConfig] = useState<GenerateContentConfig>({});
   const [placeholder, setPlaceholder] = useState<string>("Type a message...");
   const [welcomeMessage, setWelcomeMessage] = useState<string>("");
