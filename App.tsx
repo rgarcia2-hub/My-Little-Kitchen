@@ -1252,7 +1252,7 @@ function CombinationAgent({
     setRecipeSteps([]);
     try {
       // Use the current model from context to ensure compatibility with the provided API Key
-      const recipeModel = model || "gemini-1.5-flash-latest"; 
+      const recipeModel = model || "gemini-3-flash-preview"; 
       const prompt = `Dish: "${orderName}"
 Difficulty: ${difficulty}
 
@@ -3655,8 +3655,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     if (!stats.godTier) return;
     setIsGeneratingImage(true);
     try {
-      // Use gemini-1.5-flash-latest which is standard in this environment
-      const response = await client.generateContent('gemini-1.5-flash-latest', [
+      // Use gemini-3-flash-preview which is standard in this environment
+      const response = await client.generateContent('gemini-3-flash-preview', [
         {
           role: 'user',
           parts: [{
