@@ -6070,3 +6070,211 @@ input:checked + .os-slider:before {
 
 .text-highlight-green { color: #00ff00; }
 .text-highlight-red { color: #ff5f56; }
+
+/* Announcement Modal Styling */
+.announcement-os-overlay {
+  background: rgba(0, 0, 0, 0.98);
+  backdrop-filter: blur(15px);
+  z-index: 10000;
+}
+
+.announcement-terminal {
+  max-width: 600px;
+  animation: crt-flicker 0.1s infinite alternate;
+}
+
+.glow-text {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 255, 0, 0.2);
+}
+
+.terminal-body-text {
+  font-family: var(--font-mono);
+}
+
+@keyframes crt-flicker {
+  0% { opacity: 0.99; }
+  100% { opacity: 1; }
+}
+
+/* News Archive Styling */
+.news-archive-card {
+  max-width: 500px;
+  background: #050505;
+  border: 1px solid #1a1a1a;
+}
+
+.news-archive-body {
+  padding: 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.news-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.news-item-row {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #111;
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 16px;
+}
+
+.news-item-row:hover {
+  background: #0f0f0f;
+}
+
+.news-item-row:hover .news-item-title {
+  color: #00ff00;
+  text-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
+}
+
+.news-item-status {
+  width: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.status-dot.pulsed {
+  width: 6px;
+  height: 6px;
+  background: #00ff00;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ff00;
+  animation: news-pulse 2s infinite;
+}
+
+@keyframes news-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.news-item-main {
+  flex: 1;
+}
+
+.news-item-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.news-item-badge {
+  font-size: 8px;
+  background: #1a1a1a;
+  color: #888;
+  padding: 1px 4px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+
+.news-item-date {
+  font-size: 10px;
+  color: #444;
+}
+
+.news-item-title {
+  font-size: 12px;
+  color: #aaa;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+
+.news-item-arrow {
+  color: #333;
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.news-btn-archive {
+  font-size: 16px !important;
+  opacity: 0.7;
+}
+
+.news-btn-archive:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  text-shadow: 0 0 10px #00ff00;
+}
+
+/* Ad Slot Styles */
+.os-ad-slot {
+  margin: 16px 12px;
+  border: 1px solid #1a1a1a;
+  background: #050505;
+  padding: 12px;
+  position: relative;
+}
+
+.ad-label {
+  font-size: 8px;
+  color: #444;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+}
+
+.ad-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.ad-content:hover {
+  transform: translateX(4px);
+}
+
+.ad-emoji {
+  font-size: 20px;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 0, 0.4));
+}
+
+.ad-title {
+  font-size: 11px;
+  color: #00ff00;
+  font-family: var(--font-mono);
+  font-weight: bold;
+}
+
+.ad-desc {
+  font-size: 10px;
+  color: #666;
+}
+
+/* Recipe Footer Ad */
+.recipe-ad-footer {
+  border-top: 1px solid #1a1a1a;
+  padding: 16px 24px;
+  background: #050505;
+}
+
+.ad-label-small {
+  font-size: 7px;
+  color: #333;
+  margin-bottom: 4px;
+  letter-spacing: 2px;
+}
+
+.recipe-ad-content {
+  font-size: 10px;
+  color: #666;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+}
+
+.adsense-container {
+  overflow: hidden;
+  margin-top: 5px;
+  background: rgba(0, 0, 255, 0.05); /* Hidden placeholder tint */
+}

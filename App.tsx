@@ -73,6 +73,42 @@ const VERIFIED_BADGE_URL = "/verified.png?v=3.0";
 const ADMIN_EMAILS = ['robert.garcia.alsina2012@gmail.com', 'gianlucaperalta555@gmail.com'];
 
 // ============================================================================
+// AdSense Component
+// ============================================================================
+
+interface AdSenseProps {
+  client: string;
+  slot: string;
+  format?: string;
+  responsive?: string;
+  style?: React.CSSProperties;
+}
+
+const AdSenseUnit: React.FC<AdSenseProps> = ({ client, slot, format = 'auto', responsive = 'true', style }) => {
+  useEffect(() => {
+    try {
+      // @ts-ignore
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+      console.error('AdSense error:', e);
+    }
+  }, []);
+
+  return (
+    <div className="adsense-container" style={style}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block', ...style }}
+        data-ad-client={client}
+        data-ad-slot={slot}
+        data-ad-format={format}
+        data-full-width-responsive={responsive}
+      />
+    </div>
+  );
+};
+
+// ============================================================================
 // Error Boundary Component
 // ============================================================================
 
@@ -861,6 +897,16 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
             <button onClick={onClose} className="recipe-steps-done">Got it!</button>
           </div>
         )}
+        
+        {/* Ad Slot: Recipe Footer */}
+        <div className="recipe-ad-footer">
+           <div className="ad-label-small">ADSENSE_DATA_FLOW</div>
+           <AdSenseUnit 
+             client="ca-pub-7391663215396578" 
+             slot="YOUR_SLOT_ID_2" 
+             style={{ minHeight: '50px' }}
+           />
+        </div>
       </div>
     </div>
   );
@@ -1051,10 +1097,24 @@ function CombinationAgent({
   const [isShopExpanded, setIsShopExpanded] = useState(false);
   const [isFameTerminalOpen, setIsFameTerminalOpen] = useState(false);
   const [showFameLevelError, setShowFameLevelError] = useState(false);
+  const [showAnnoucement, setShowAnnouncement] = useState(false);
+  const [showNewsFeed, setShowNewsFeed] = useState(false);
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
 
   const currentFame = getCurrentFameLevel(stats.fameDonated || 0);
+
+  // News Items Data
+  const NEWS_ITEMS = [
+    {
+      id: 'announcement_v1',
+      title: 'SYSTEM_MAINTENANCE_UPDATE',
+      date: '2026-04-22',
+      badge: 'URGENT',
+      icon: '⚠️'
+    }
+    // Add more news here in the future
+  ];
 
   // Refs for auto-scroll
   const ingredientsRef = useRef<HTMLDivElement>(null);
@@ -1076,6 +1136,12 @@ function CombinationAgent({
 
   // Load Ko-fi Widget
   useEffect(() => {
+    // Check if announcement was already acknowledged
+    const acknowledged = localStorage.getItem('announcementAck_v1');
+    if (!acknowledged) {
+      setTimeout(() => setShowAnnouncement(true), 1500);
+    }
+
     if (stats.proPlan) return;
     
     const script = document.createElement('script');
@@ -1924,6 +1990,14 @@ Do not say you cannot do it; always provide a recipe.`;
             </button>
 
             <button 
+              className="leaderboard-btn-header news-btn-archive"
+              onClick={() => setShowNewsFeed(true)}
+              title="System News"
+            >
+              📡
+            </button>
+
+            <button 
               className="user-profile-btn-top"
               onClick={() => {
                 setShowSkipModal(true);
@@ -2643,6 +2717,17 @@ Do not say you cannot do it; always provide a recipe.`;
                 ))
             )}
           </div>
+
+          {!stats.proPlan && (
+            <div className="os-ad-slot sidebar-ad">
+              <div className="ad-label">[GOOGLE_ADSENSE_SYSTEM]</div>
+              <AdSenseUnit 
+                client="ca-pub-7391663215396578" 
+                slot="YOUR_SLOT_ID_1" 
+                style={{ minHeight: '100px' }}
+              />
+            </div>
+          )}
         </section>
 
         {/* Tools Section */}
@@ -2993,6 +3078,105 @@ Do not say you cannot do it; always provide a recipe.`;
                   <p className="log-line text-highlight-green">[SYSTEM] User: {user.displayName || 'CHEF_UNNAMED'}</p>
                   <p className="log-line text-highlight-green">[SYSTEM] Status: Level {stats.level} (Elite)</p>
                   <p className="log-line text-muted">[INFO] Awaiting fame credits injection...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* News Feed Archive Modal */}
+      {showNewsFeed && (
+        <div className="os-modal-overlay system-news-overlay" onClick={() => setShowNewsFeed(false)}>
+          <div className="os-modal-card news-archive-card" onClick={e => e.stopPropagation()}>
+            <div className="os-modal-header news-header">
+              <span className="os-modal-icon">📡</span>
+              <span className="os-modal-title">SYSTEM_BROADCAST_ARCHIVE</span>
+              <button className="terminal-close ml-auto" onClick={() => setShowNewsFeed(false)}>X</button>
+            </div>
+            <div className="os-modal-body news-archive-body">
+              <div className="news-list">
+                {NEWS_ITEMS.map(item => (
+                  <div 
+                    key={item.id} 
+                    className="news-item-row"
+                    onClick={() => {
+                      setShowNewsFeed(false);
+                      setShowAnnouncement(true);
+                    }}
+                  >
+                    <div className="news-item-status">
+                      <span className="status-dot pulsed"></span>
+                    </div>
+                    <div className="news-item-main">
+                      <div className="news-item-header">
+                        <span className="news-item-badge">{item.badge}</span>
+                        <span className="news-item-date">{item.date}</span>
+                      </div>
+                      <div className="news-item-title">{item.title}</div>
+                    </div>
+                    <div className="news-item-arrow">
+                      &gt;
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emotional System Announcement (Kitchen OS Terminal Style) */}
+      {showAnnoucement && (
+        <div className="fame-os-overlay announcement-os-overlay">
+          <div className="fame-terminal-window announcement-terminal" onClick={e => e.stopPropagation()}>
+            <div className="terminal-scanline"></div>
+            <div className="terminal-header">
+              <div className="terminal-dots">
+                <span className="dot red"></span>
+                <span className="dot yellow"></span>
+                <span className="dot green"></span>
+              </div>
+              <div className="terminal-title">KITCHEN_OS SYSTEM_ANNOUNCEMENT v1.0.4</div>
+              <div style={{ width: '80px' }}></div>
+            </div>
+
+            <div className="terminal-content">
+              <div className="terminal-log">
+                <p className="log-line text-highlight-green">[LOAD] emotional_module_engaged...</p>
+                <p className="log-line text-muted">[INFO] Source: Architect_Recursion</p>
+              </div>
+
+              <div className="terminal-body-text mt-6">
+                <p className="terminal-p glow-text">&gt; CHEF_IDENTIFIED: {user.displayName || 'UNNAMED_ENTITY'}</p>
+                
+                <div className="terminal-action-zone mt-8">
+                  <p className="text-large text-highlight-green mb-4">SYSTEM_STATUS: CRITICAL_RESOURCE_DRAIN</p>
+                  
+                  <p className="terminal-p mb-4">
+                    Keeping <span className="text-highlight-green">Kitchen OS</span> online consumes massive computational heat. 
+                    Maintaining this culinary universe is becoming impossible for the system to handle in isolation.
+                  </p>
+
+                  <p className="terminal-p mb-4 font-bold">
+                    [!] To prevent total system shutdown, we will be integrating <span className="text-highlight-red uppercase">Ad_Protocols_v2</span> shortly.
+                  </p>
+
+                  <p className="terminal-p text-muted text-small italic">
+                    &gt; This is necessary to keep the system operative for all chefs.
+                  </p>
+                </div>
+
+                <div className="terminal-footer-actions mt-8">
+                  <button 
+                    className="terminal-execute-btn" 
+                    onClick={() => {
+                      setShowAnnouncement(false);
+                      localStorage.setItem('announcementAck_v1', 'true');
+                    }}
+                  >
+                    [ EXECUTE: ACKNOWLEDGE_REALITY ]
+                  </button>
                 </div>
               </div>
             </div>
