@@ -103,8 +103,72 @@ export interface ShopItem {
   description: string;
   price: number;
   emoji: string;
-  type: 'decoration' | 'title' | 'skin';
+  type: 'decoration' | 'title' | 'skin' | 'theme';
 }
+
+export interface OSTheme {
+  id: string;
+  name: string;
+  colors: {
+    primary: string;
+    border: string;
+    bg: string;
+    accent: string;
+    text: string;
+    muted: string;
+  }
+}
+
+export const OS_THEMES: Record<string, OSTheme> = {
+  green: {
+    id: 'green',
+    name: 'Matrix Green',
+    colors: {
+      primary: '#00ff00',
+      border: '#1a1a1a',
+      bg: '#000000',
+      accent: '#003300',
+      text: '#cccccc',
+      muted: '#444444'
+    }
+  },
+  amber: {
+    id: 'amber',
+    name: 'Vintage Amber',
+    colors: {
+      primary: '#ffb000',
+      border: '#2a1a00',
+      bg: '#0a0500',
+      accent: '#4d3300',
+      text: '#e69d00',
+      muted: '#664400'
+    }
+  },
+  blue: {
+    id: 'blue',
+    name: 'Blue Protocol',
+    colors: {
+      primary: '#00d2ff',
+      border: '#001a1a',
+      bg: '#000808',
+      accent: '#003344',
+      text: '#80eaff',
+      muted: '#004455'
+    }
+  },
+  cyber: {
+    id: 'cyber',
+    name: 'Cyber Magenta',
+    colors: {
+      primary: '#ff00ff',
+      border: '#1a001a',
+      bg: '#080008',
+      accent: '#440044',
+      text: '#ff80ff',
+      muted: '#550055'
+    }
+  }
+};
 
 export const FAME_LEVELS: FameLevel[] = [
   { tier: 'Earth', stage: 1, threshold: 1000, emoji: '🌍', color: '#8d6e63' },
@@ -142,6 +206,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'border_gold', name: 'Golden Frame', description: 'A solid gold frame for the elite chefs.', price: 15000, emoji: '👑', type: 'decoration' },
   { id: 'title_legend', name: 'Legendary Title', description: 'Unlocks the preset title: "GOD OF FOOD".', price: 25000, emoji: '✍️', type: 'title' },
   { id: 'skin_gold_knife', name: 'Golden Knife Skin', description: 'Makes your "Cut" action look shiny.', price: 10000, emoji: '🔪', type: 'skin' },
+  { id: 'theme_amber', name: 'Amber OS Theme', description: 'Switch to a vintage amber terminal aesthetic.', price: 5000, emoji: '📟', type: 'theme' },
+  { id: 'theme_blue', name: 'Blue OS Theme', description: 'A sleek blue corporate aesthetic.', price: 5000, emoji: '💎', type: 'theme' },
+  { id: 'theme_cyber', name: 'Cyber OS Theme', description: 'Vibrant magenta cyber-neon aesthetic.', price: 5000, emoji: '🎆', type: 'theme' },
 ];
 
 export const UPGRADES: Upgrade[] = [

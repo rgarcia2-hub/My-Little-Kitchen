@@ -22,7 +22,8 @@ import { MusicPlayer } from './src/components/MusicPlayer';
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -61,7 +62,10 @@ import {
   getCurrentFameLevel,
   ShopItem,
   FameLevel,
+  OSTheme,
+  OS_THEMES,
 } from './constants';
+import { soundService } from './src/services/soundService';
 
 import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp, query, orderBy, limit, getDocs, collection } from "firebase/firestore";
@@ -241,6 +245,131 @@ function TutorialOverlay({ step, onClose }: TutorialOverlayProps) {
         <div className="tutorial-footer">
           <span className="tutorial-step-indicator">Paso {step.id} de {TUTORIAL_STEPS.length}</span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Daily Challenge Components
+// ============================================================================
+
+function DailyChallenges({ challenges, onClaim }: { challenges: any[], onClaim: (id: string, reward: number) => void }) {
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'orders': return <Target size={14} className="text-blue-400" />;
+      case 'discovery': return <Zap size={14} className="text-yellow-400" />;
+      case 'money': return <Coins size={14} className="text-green-400" />;
+      default: return <Activity size={14} />;
+    }
+  };
+
+  return (
+    <div className="daily-challenges-widget">
+      <div className="challenges-header">
+        <div className="header-left">
+          <Award size={18} className="text-[#00ff00] animate-pulse" />
+          <h3 className="header-title">DAILY_PROTOCOLS</h3>
+        </div>
+        <div className="header-status">
+          <span className="live-dot"></span>
+          ACTIVE_SESSION
+        </div>
+      </div>
+      
+      <div className="status-marquee-container">
+        <div className="status-marquee">
+          <span>SYSTEM_STABLE // NO_LEAKS_DETECTED // MONITORING_CHEF_OUTPUT // FEEDBACK_LOOP_ACTIVE // ERROR_CHECK_OK // </span>
+          <span>SYSTEM_STABLE // NO_LEAKS_DETECTED // MONITORING_CHEF_OUTPUT // FEEDBACK_LOOP_ACTIVE // ERROR_CHECK_OK // </span>
+        </div>
+      </div>
+
+      <div className="challenges-list">
+        <AnimatePresence mode="popLayout">
+          {challenges.map((challenge, index) => {
+            const progress = Math.min(100, (challenge.current / challenge.target) * 100);
+            const isReady = challenge.current >= challenge.target && !challenge.completed;
+            
+            return (
+              <motion.div 
+                key={challenge.id} 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className={`challenge-row ${challenge.completed ? 'completed' : ''} ${isReady ? 'ready-to-claim' : ''}`}
+              >
+                <div className="challenge-index">{(index + 1).toString().padStart(2, '0')}</div>
+                <div className="challenge-main">
+                  <div className="challenge-name-row">
+                    <div className="challenge-label">
+                      {getIcon(challenge.type)}
+                      <span className="challenge-title">{challenge.title}</span>
+                    </div>
+                    
+                    {challenge.completed ? (
+                      <span className="status-badge completed">
+                        <CheckCircle2 size={10} />
+                        SYNC_SUCCESS
+                      </span>
+                    ) : isReady ? (
+                      <span className="status-badge ready">
+                        <TrendingUp size={10} />
+                        READY_FOR_EXTRACTION
+                      </span>
+                    ) : (
+                      <span className="status-badge pending">
+                        PROCESSING_{Math.floor(progress)}%
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="challenge-desc">
+                    {challenge.description}
+                  </div>
+
+                  <div className="challenge-progress-stack">
+                    <div className="challenge-progress-container">
+                      <motion.div 
+                        className={`challenge-progress-fill ${isReady ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-blue-400'}`}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${progress}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                      >
+                        <div className="scanline"></div>
+                      </motion.div>
+                    </div>
+                    <div className="progress-metrics">
+                      <span className="progress-digits">{challenge.current} <span className="text-white/30">/</span> {challenge.target}</span>
+                      <span className="reward-tag">
+                        <Coins size={10} />
+                        ${challenge.reward}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isReady && (
+                    <motion.button 
+                      initial={{ scale: 0.95, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="claim-challenge-btn-improved"
+                      onClick={() => onClaim(challenge.id, challenge.reward)}
+                    >
+                      <Zap size={14} className="mr-2" />
+                      <span>INITIALIZE_REWARD_TRANSFER</span>
+                    </motion.button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      <div className="challenges-footer-detail">
+        <Info size={10} />
+        <span>RESETS_EVERY_24H_UTC // PERFECTION_REQUIRED</span>
       </div>
     </div>
   );
@@ -979,6 +1108,7 @@ interface CombinationAgentProps {
   onEditIngredient: (ingredient: Ingredient) => void;
   manifestationResult: { name: string, emoji: string, isDuplicate: boolean } | null;
   setManifestationResult: React.Dispatch<React.SetStateAction<{ name: string, emoji: string, isDuplicate: boolean } | null>>;
+  currentFame: FameLevel | null;
 }
 
 function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
@@ -1073,6 +1203,7 @@ function CombinationAgent({
   onEditIngredient,
   manifestationResult,
   setManifestationResult,
+  currentFame,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -1099,21 +1230,28 @@ function CombinationAgent({
   const [showFameLevelError, setShowFameLevelError] = useState(false);
   const [showAnnoucement, setShowAnnouncement] = useState(false);
   const [showNewsFeed, setShowNewsFeed] = useState(false);
+  const [activeNewsId, setActiveNewsId] = useState<string | null>(null);
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
-
-  const currentFame = getCurrentFameLevel(stats.fameDonated || 0);
 
   // News Items Data
   const NEWS_ITEMS = [
     {
       id: 'announcement_v1',
       title: 'SYSTEM_MAINTENANCE_UPDATE',
+      content: 'Keeping Kitchen OS online consumes massive computational heat. Advertising protocols will be integrated to prevent total system shutdown.',
       date: '2026-04-22',
       badge: 'URGENT',
       icon: '⚠️'
+    },
+    {
+      id: 'sounds_v1',
+      title: 'AUDIO_ENGINE_INITIALIZED',
+      content: 'High-fidelity 8-bit sound engine is now operational. Experience the crunch of every ingredient.',
+      date: '2026-04-23',
+      badge: 'UPDATE',
+      icon: '🔊'
     }
-    // Add more news here in the future
   ];
 
   // Refs for auto-scroll
@@ -1181,6 +1319,7 @@ function CombinationAgent({
     const amount = parseInt(fameDonationAmount, 10);
     if (isNaN(amount) || amount <= 0) return;
     if (stats.money >= amount) {
+      soundService.playSuccess();
       const nextDonated = (stats.fameDonated || 0) + amount;
       const oldFame = getCurrentFameLevel(stats.fameDonated || 0);
       const newFame = getCurrentFameLevel(nextDonated);
@@ -1196,12 +1335,14 @@ function CombinationAgent({
         alert(`✨ SYSTEM_ALERT: Your fame has reached ${newFame.tier.toUpperCase()} Stage ${newFame.stage}! ${newFame.emoji} ✨`);
       }
     } else {
+      soundService.playError();
       alert("ERROR: Insufficient credits for this fame addition.");
     }
   };
 
   const handleBuyShopItem = (item: ShopItem) => {
     if (stats.money >= item.price) {
+      soundService.playSuccess();
       if ((stats.purchasedShopItems || []).includes(item.id)) {
         alert("You already own this item!");
         return;
@@ -1213,6 +1354,7 @@ function CombinationAgent({
       }));
       alert(`Successfully purchased ${item.name}! Check your settings to apply it.`);
     } else {
+      soundService.playError();
       alert("Insufficient funds for this item.");
     }
   };
@@ -1739,6 +1881,7 @@ Do not say you cannot do it; always provide a recipe.`;
 
   // Manual execution (UI click)
   const executeAction = useCallback(async (action: KitchenAction) => {
+    soundService.playClick();
     if (selectedIngredients.size === 0) return;
 
     const ingredientNames = Array.from(selectedIngredients);
@@ -1797,10 +1940,16 @@ Do not say you cannot do it; always provide a recipe.`;
 
       // Update stats for discovered ingredients
       if (!isDuplicate) {
+        soundService.playDiscover();
         setStats((prev: any) => ({
           ...prev,
-          discoveredIngredients: prev.discoveredIngredients + 1
+          discoveredIngredients: prev.discoveredIngredients + 1,
+          dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
+            c.type === 'discovery' ? { ...c, current: c.current + 1 } : c
+          )
         }));
+      } else {
+        soundService.playSuccess();
       }
 
       // Update stats for used tools
@@ -1831,6 +1980,7 @@ Do not say you cannot do it; always provide a recipe.`;
       });
     } else {
       // Show error if combination failed
+      soundService.playError();
       setManifestationResult({
         name: "Failed to Manifest",
         emoji: "❌",
@@ -1910,6 +2060,8 @@ Do not say you cannot do it; always provide a recipe.`;
   const currentLevelXP = getXPForLevel(stats.level || 1);
   const nextLevelXP = getXPForLevel((stats.level || 1) + 1);
   const xpProgress = Math.min(100, Math.max(0, (((stats.xp || 0) - currentLevelXP) / (nextLevelXP - currentLevelXP)) * 100));
+
+  // currentFame is defined above in the component body
 
   return (
     <div className="kitchen-app">
@@ -2045,12 +2197,19 @@ Do not say you cannot do it; always provide a recipe.`;
         
         <div className="challenge-content-grid">
           <div className="challenge-main-info">
-            <div className="challenge-badge">TUTORIAL PHASE</div>
-            <h1 className="challenge-title-massive">KITCHEN<br/>TUTORIAL</h1>
-            <p className="challenge-subtitle-refined">
-              Sequence tasks from 100 tools and 100 ingredients to prepare a meal.
-              Master the workflow to unlock advanced culinary agents.
-            </p>
+            <DailyChallenges 
+              challenges={stats.dailyChallenges || []} 
+              onClaim={(id, reward) => {
+                soundService.playSuccess();
+                setStats((prev: any) => ({
+                  ...prev,
+                  money: prev.money + reward,
+                  dailyChallenges: prev.dailyChallenges.map((c: any) => 
+                    c.id === id ? { ...c, completed: true } : c
+                  )
+                }));
+              }}
+            />
           </div>
           
           <div className="challenge-steps-container">
@@ -2093,6 +2252,7 @@ Do not say you cannot do it; always provide a recipe.`;
             <button 
               className={`view-achievements-btn ${isAchievementsExpanded ? 'active' : ''}`}
               onClick={() => {
+                soundService.playClick();
                 setIsAchievementsExpanded(!isAchievementsExpanded);
                 if (!isAchievementsExpanded) setIsUpgradesExpanded(false);
               }}
@@ -2104,6 +2264,7 @@ Do not say you cannot do it; always provide a recipe.`;
             <button 
               className={`view-achievements-btn ${isUpgradesExpanded ? 'active' : ''}`}
               onClick={() => {
+                soundService.playClick();
                 setIsUpgradesExpanded(!isUpgradesExpanded);
                 if (!isUpgradesExpanded) {
                   setIsAchievementsExpanded(false);
@@ -2118,6 +2279,7 @@ Do not say you cannot do it; always provide a recipe.`;
             <button 
               className={`view-achievements-btn ${isRecipeBookExpanded ? 'active' : ''}`}
               onClick={() => {
+                soundService.playClick();
                 setIsRecipeBookExpanded(!isRecipeBookExpanded);
                 if (!isRecipeBookExpanded) {
                   setIsAchievementsExpanded(false);
@@ -2133,6 +2295,7 @@ Do not say you cannot do it; always provide a recipe.`;
             <button 
               className={`view-achievements-btn store-btn ${isShopExpanded ? 'active' : ''}`}
               onClick={() => {
+                soundService.playClick();
                 setIsShopExpanded(!isShopExpanded);
                 if (!isShopExpanded) {
                   setIsAchievementsExpanded(false);
@@ -2432,6 +2595,56 @@ Do not say you cannot do it; always provide a recipe.`;
                     <div className="account-stat-item">
                       <span className="stat-label">Achievements</span>
                       <span className="stat-value">{unlockedAchievements.length}</span>
+                    </div>
+                  </div>
+
+                  <div className="themes-section mt-6">
+                    <h4>SYSTEM_THEME</h4>
+                    <div className="themes-grid">
+                      <button 
+                        className={`theme-selector-btn theme-green ${stats.currentTheme === 'green' ? 'active' : ''}`}
+                        onClick={() => {
+                          soundService.playClick();
+                          setStats((prev: any) => ({ ...prev, currentTheme: 'green' }));
+                        }}
+                        title="Classic Kitchen (Green)"
+                      >
+                        <div className="theme-preview bg-[#00ff00]"></div>
+                        <span>CLASSIC</span>
+                      </button>
+                      
+                      {Object.values(OS_THEMES).map(theme => {
+                        const isPurchased = (stats.purchasedShopItems || []).includes(`theme_${theme.id}`);
+                        if (!isPurchased || theme.id === 'green') return null;
+                        
+                        return (
+                          <button 
+                            key={theme.id}
+                            className={`theme-selector-btn theme-${theme.id} ${stats.currentTheme === theme.id ? 'active' : ''}`}
+                            onClick={() => {
+                              soundService.playClick();
+                              setStats((prev: any) => ({ ...prev, currentTheme: theme.id }));
+                            }}
+                            title={theme.name}
+                          >
+                            <div className="theme-preview" style={{ background: theme.colors.primary }}></div>
+                            <span>{theme.name.split(' ')[0].toUpperCase()}</span>
+                          </button>
+                        );
+                      })}
+
+                      <a 
+                        href="#shop" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowSkipModal(false);
+                          setIsShopExpanded(true);
+                          soundService.playClick();
+                        }}
+                        className="theme-shop-link"
+                      >
+                        Buy more in Shop &gt;
+                      </a>
                     </div>
                   </div>
 
@@ -3095,14 +3308,25 @@ Do not say you cannot do it; always provide a recipe.`;
               <button className="terminal-close ml-auto" onClick={() => setShowNewsFeed(false)}>X</button>
             </div>
             <div className="os-modal-body news-archive-body">
+            {activeNewsId ? (
+              <div className="active-news-detail">
+                <div className="flex items-center gap-2 mb-4">
+                  <button className="os-button-mini" onClick={() => setActiveNewsId(null)}>&lt; BACK</button>
+                  <h3 className="news-detail-title">{NEWS_ITEMS.find(n => n.id === activeNewsId)?.title}</h3>
+                </div>
+                <div className="news-detail-content">
+                  <p>{NEWS_ITEMS.find(n => n.id === activeNewsId)?.content}</p>
+                </div>
+              </div>
+            ) : (
               <div className="news-list">
                 {NEWS_ITEMS.map(item => (
                   <div 
                     key={item.id} 
                     className="news-item-row"
                     onClick={() => {
-                      setShowNewsFeed(false);
-                      setShowAnnouncement(true);
+                      soundService.playClick();
+                      setActiveNewsId(item.id);
                     }}
                   >
                     <div className="news-item-status">
@@ -3121,6 +3345,7 @@ Do not say you cannot do it; always provide a recipe.`;
                   </div>
                 ))}
               </div>
+            )}
             </div>
           </div>
         </div>
@@ -3832,9 +4057,25 @@ function KitchenAppContainer({ user }: { user: User }) {
     profileImage: null as string | null,
     leaderboardOptIn: false,
     fameDonated: 0,
-    purchasedShopItems: [] as string[]
+    purchasedShopItems: [] as string[],
+    currentTheme: 'green',
+    discoveredIngredientsList: STARTING_INGREDIENTS,
+    dailyChallenges: [
+      { id: 'orders_3', title: 'Feed the Crowd', description: 'Complete 3 orders', target: 3, current: 0, reward: 500, type: 'orders', completed: false },
+      { id: 'discover_5', title: 'New Flavors', description: 'Discover 5 new items', target: 5, current: 0, reward: 300, type: 'discovery', completed: false },
+      { id: 'money_1000', title: 'Greedy Chef', description: 'Earn $1000', target: 1000, current: 0, reward: 200, type: 'money', completed: false },
+    ]
   });
+
+  // Apply theme to body
+  useEffect(() => {
+    document.body.className = '';
+    if (stats.currentTheme && stats.currentTheme !== 'green') {
+      document.body.classList.add(`theme-${stats.currentTheme}`);
+    }
+  }, [stats.currentTheme]);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const currentFame = getCurrentFameLevel(stats.fameDonated || 0);
   const [showLevelError, setShowLevelError] = useState(false);
   const [showLeaderboardOptIn, setShowLeaderboardOptIn] = useState(false);
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
@@ -4089,12 +4330,28 @@ function KitchenAppContainer({ user }: { user: User }) {
 
     if (verifyServedDishRef.current) {
       const result = await verifyServedDishRef.current(servedDishName);
+      
+      if (result) {
+        soundService.playSuccess();
+        // Update stats and challenges
+        setStats((prev: any) => ({
+          ...prev,
+          money: prev.money + 50, // Base reward for success
+          dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
+            c.type === 'orders' ? { ...c, current: c.current + 1 } :
+            c.type === 'money' ? { ...c, current: c.current + 50 } : c
+          )
+        }));
+      } else {
+        soundService.playError();
+      }
+
       setIsCooking(false); // Clear cooking state after verification
       return result;
     }
     setIsCooking(false);
     return false;
-  }, [setInventory]);
+  }, [setInventory, setStats]);
 
   // Callback for adding a new custom order
   const handleAddOrder = useCallback((orderName: string) => {
@@ -4248,6 +4505,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           onEditIngredient={() => setShowCrumbleCustomizer(true)}
           manifestationResult={manifestationResult}
           setManifestationResult={setManifestationResult}
+          currentFame={currentFame}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
