@@ -23,7 +23,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -64,6 +64,12 @@ import {
   FameLevel,
   OSTheme,
   OS_THEMES,
+  SKILL_CHIPS,
+  PERSONALITIES,
+  GLOBAL_PROTOCOLS,
+  GlobalProtocol,
+  SousChefPersonality,
+  MarketplaceOffer,
 } from './constants';
 import { soundService } from './src/services/soundService';
 
@@ -254,7 +260,17 @@ function TutorialOverlay({ step, onClose }: TutorialOverlayProps) {
 // Daily Challenge Components
 // ============================================================================
 
-function DailyChallenges({ challenges, onClaim }: { challenges: any[], onClaim: (id: string, reward: number) => void }) {
+function DailyChallenges({ 
+  challenges, 
+  onClaim, 
+  isExpanded = false, 
+  onToggle 
+}: { 
+  challenges: any[], 
+  onClaim: (id: string, reward: number) => void,
+  isExpanded?: boolean,
+  onToggle?: () => void
+}) {
   const getIcon = (type: string) => {
     switch (type) {
       case 'orders': return <Target size={14} className="text-blue-400" />;
@@ -265,15 +281,24 @@ function DailyChallenges({ challenges, onClaim }: { challenges: any[], onClaim: 
   };
 
   return (
-    <div className="daily-challenges-widget">
+    <div className={`daily-challenges-widget ${isExpanded ? 'expanded-overlay' : ''}`}>
       <div className="challenges-header">
         <div className="header-left">
           <Award size={18} className="text-[#00ff00] animate-pulse" />
           <h3 className="header-title">DAILY_PROTOCOLS</h3>
         </div>
-        <div className="header-status">
-          <span className="live-dot"></span>
-          ACTIVE_SESSION
+        <div className="header-actions">
+          <div className="header-status mr-4">
+            <span className="live-dot"></span>
+            ACTIVE_SESSION
+          </div>
+          <button 
+            className="os-btn-mini" 
+            onClick={onToggle}
+            title={isExpanded ? "Collapse" : "Expand to full screen"}
+          >
+            {isExpanded ? 'COLLAPSE' : 'FULL_SCREEN'}
+          </button>
         </div>
       </div>
       
@@ -513,6 +538,9 @@ function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighli
       disabled={isDisabled}
     >
       <div className="rarity-indicator"></div>
+      {ingredient.trait && <div className="ingredient-trait-tag">{ingredient.trait}</div>}
+      {ingredient.price !== undefined && <div className="ingredient-price-tag">${ingredient.price}</div>}
+      
       {isCrumble && (
         <div 
           className="edit-cookie-trigger" 
@@ -954,8 +982,8 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
         )}
         <div className="recipe-steps-header">
           <div className="recipe-steps-header-text">
-            <h3 className="recipe-steps-title">Cooking Guide: {orderName}</h3>
-            <p className="recipe-steps-subtitle">Follow these steps using the tools and ingredients below</p>
+            <h3 className="recipe-steps-title">GUIDE_PROTOCOL: {orderName.toUpperCase()}</h3>
+            <p className="recipe-steps-subtitle">EXECUTION_STEPS // VERIFIED_PROCEDURE</p>
           </div>
           <div className="recipe-steps-header-actions">
             {canPin && (
@@ -964,7 +992,9 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
                 className={`recipe-steps-pin ${isPinned ? 'active' : ''}`}
                 title={isPinned ? "Unpin recipe" : "Pin recipe to screen"}
               >
-                <span className="material-symbols-outlined">{isPinned ? 'keep_off' : 'keep'}</span>
+                <div className="flex items-center justify-center">
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{isPinned ? 'keep_off' : 'keep'}</span>
+                </div>
               </button>
             )}
             <button onClick={onClose} className="recipe-steps-close">✕</button>
@@ -974,16 +1004,16 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
           {isLoading ? (
             <div className="recipe-steps-loading">
               <span className="spinner">⏳</span>
-              <p>Consulting the master chef...</p>
+              <p>CONSULTING_MASTER_CHEF_DATABASE...</p>
             </div>
           ) : steps.length === 0 ? (
             <div className="recipe-steps-empty">
-              <p>The master chef is stumped by this dish!</p>
+              <p>ERROR: RECIPE_NOT_FOUND_IN_DATABASE</p>
               <button 
-                className="os-btn os-btn-primary mt-4"
+                className="os-btn-mini"
                 onClick={onRetry}
               >
-                Ask again
+                RETRY_SCAN
               </button>
             </div>
           ) : (
@@ -995,13 +1025,13 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
                     <div className="step-formula">
                       <div className="step-ingredients">
                         {step.ingredients.map((ing, i) => (
-                          <span key={i} className="step-ingredient-tag">{ing}</span>
+                          <span key={i} className="step-ingredient-tag">{ing.toUpperCase()}</span>
                         ))}
                       </div>
-                      <span className="step-arrow">→</span>
-                      <span className="step-tool">{step.tool}()</span>
-                      <span className="step-arrow">→</span>
-                      <span className="step-result">{step.result}</span>
+                      <span className="step-arrow">{" >> "}</span>
+                      <span className="step-tool">{step.tool.toUpperCase()}()</span>
+                      <span className="step-arrow">{" >> "}</span>
+                      <span className="step-result">{step.result.toUpperCase()}</span>
                     </div>
                     <p className="step-description">{step.description}</p>
                   </div>
@@ -1011,11 +1041,11 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
                 <div className="step-number">✓</div>
                 <div className="step-content">
                   <div className="step-formula">
-                    <span className="step-ingredient-tag">{steps[steps.length - 1].result}</span>
-                    <span className="step-arrow">→</span>
-                    <span className="step-tool">serve()</span>
+                    <span className="step-ingredient-tag">{steps[steps.length - 1].result.toUpperCase()}</span>
+                    <span className="step-arrow">{" >> "}</span>
+                    <span className="step-tool">SERVE()</span>
                   </div>
-                  <p className="step-description">Serve your masterpiece to complete the order!</p>
+                  <p className="step-description">EXECUTE_FINAL_COMMAND: FULFILL_ORDER_PROTOCOL</p>
                 </div>
               </div>
             </div>
@@ -1109,6 +1139,41 @@ interface CombinationAgentProps {
   manifestationResult: { name: string, emoji: string, isDuplicate: boolean } | null;
   setManifestationResult: React.Dispatch<React.SetStateAction<{ name: string, emoji: string, isDuplicate: boolean } | null>>;
   currentFame: FameLevel | null;
+}
+
+function GlobalProtocolBanner({ protocol, countdown }: { protocol: GlobalProtocol, countdown: number }) {
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="protocol-banner" style={{ borderColor: protocol.color }}>
+      <div className="protocol-status-light animate-pulse" style={{ background: protocol.color }}></div>
+      <div className="protocol-content">
+        <span className="protocol-icon">{protocol.icon}</span>
+        <span className="protocol-name">{protocol.name}</span>
+        <span className="protocol-desc">[{protocol.description}]</span>
+      </div>
+      <div className="protocol-timer">
+        ROTATION_IN: {formatTime(countdown)}
+      </div>
+    </div>
+  );
+}
+
+function CookingWires() {
+  return (
+    <div className="cooking-table-wires">
+      <svg className="wire-svg" viewBox="0 0 400 400">
+        <path className="wire-path" d="M 0 100 Q 100 150 200 100 T 400 150" />
+        <path className="wire-path" d="M 0 250 Q 150 200 250 300 T 400 250" style={{ animationDelay: '-1s' }} />
+        <path className="wire-path" d="M 100 0 Q 150 150 100 250 T 150 400" style={{ animationDelay: '-2s' }} />
+        <path className="wire-path" d="M 300 0 Q 250 150 300 250 T 250 400" style={{ animationDelay: '-3s' }} />
+      </svg>
+    </div>
+  );
 }
 
 function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
@@ -1234,6 +1299,128 @@ function CombinationAgent({
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
 
+  // New OS States
+  const [activeProtocol, setActiveProtocol] = useState<GlobalProtocol>(GLOBAL_PROTOCOLS[0]);
+  const [protocolCountdown, setProtocolCountdown] = useState(3600); // 1 hour
+  const [selectedPersonality, setSelectedPersonality] = useState<SousChefPersonality>(PERSONALITIES[0]);
+  const [installedChips, setInstalledChips] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'ai' | 'chips' | 'protocols' | 'market'>('ai');
+  const [marketplaceOffers, setMarketplaceOffers] = useState<MarketplaceOffer[]>([]);
+
+  // Refs for auto-scrolling and state tracking
+  const ingredientsRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+  const prevInventoryLengthRef = useRef(inventory.length);
+
+  const [isChallengesExpanded, setIsChallengesExpanded] = useState(false);
+
+  const [isChallengesVisible, setIsChallengesVisible] = useState(true);
+
+  const handleDonateToFame = () => {
+    const amount = parseInt(fameDonationAmount, 10);
+    if (isNaN(amount) || amount <= 0) return;
+    if (stats.money >= amount) {
+      soundService.playSuccess();
+      const nextDonated = (stats.fameDonated || 0) + amount;
+      const oldFame = getCurrentFameLevel(stats.fameDonated || 0);
+      const newFame = getCurrentFameLevel(nextDonated);
+      
+      setStats((prev: any) => ({
+        ...prev,
+        money: prev.money - amount,
+        fameDonated: nextDonated
+      }));
+
+      // Find if we crossed a new threshold
+      if (newFame && (!oldFame || oldFame.tier !== newFame.tier || oldFame.stage !== newFame.stage)) {
+        alert(`✨ SYSTEM_ALERT: Your fame has reached ${newFame.tier.toUpperCase()} Stage ${newFame.stage}! ${newFame.emoji} ✨`);
+      }
+    } else {
+      soundService.playError();
+      alert("ERROR: Insufficient credits for this fame addition.");
+    }
+  };
+
+  // Marketplace Logic: Generate random offers
+  const refreshMarketplace = useCallback(() => {
+    const newOffers: MarketplaceOffer[] = [];
+    const pool = [...inventory, ...STARTING_INGREDIENTS];
+    
+    for (let i = 0; i < 6; i++) {
+      const type = Math.random() > 0.5 ? 'buy' : 'sell';
+      const randomIng = pool[Math.floor(Math.random() * pool.length)];
+      
+      newOffers.push({
+        id: `offer_${Date.now()}_${i}`,
+        type,
+        ingredientName: randomIng.name,
+        ingredientEmoji: randomIng.emoji,
+        price: Math.floor((randomIng.price || 5) * (0.8 + Math.random() * 0.4)),
+        traitRequirement: Math.random() > 0.7 ? (randomIng.trait || 'stable') : undefined
+      });
+    }
+    setMarketplaceOffers(newOffers);
+  }, [inventory]);
+
+  // Handle Trade
+  const handleTrade = (offer: MarketplaceOffer) => {
+    if (offer.type === 'buy') {
+      // System buys from player
+      const playerIng = inventory.find(ing => ing.name === offer.ingredientName);
+      if (!playerIng) {
+        alert(`You don't have enough ${offer.ingredientName}`);
+        return;
+      }
+      
+      setStats((prev: any) => ({ ...prev, money: prev.money + offer.price }));
+      setInventory(prev => {
+        const index = prev.findIndex(ing => ing.name === offer.ingredientName);
+        const next = [...prev];
+        next.splice(index, 1);
+        return next;
+      });
+      soundService.playSuccess();
+    } else {
+      // Player buys from system
+      if (stats.money < offer.price) {
+        alert("INSUFFICIENT_FUNDS_FOR_TRADE");
+        return;
+      }
+      
+      setStats((prev: any) => ({ ...prev, money: prev.money - offer.price }));
+      setInventory(prev => [...prev, { name: offer.ingredientName, emoji: offer.ingredientEmoji, price: offer.price, trait: offer.traitRequirement }]);
+      soundService.playSuccess();
+    }
+    
+    // Remove offer after trade
+    setMarketplaceOffers(prev => prev.filter(o => o.id !== offer.id));
+  };
+
+  // Effect for protocol rotation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setProtocolCountdown((prev) => {
+        if (prev <= 0) {
+          // Rotate protocol
+          const currentIndex = GLOBAL_PROTOCOLS.findIndex(p => p.id === activeProtocol.id);
+          const nextIndex = (currentIndex + 1) % GLOBAL_PROTOCOLS.length;
+          setActiveProtocol(GLOBAL_PROTOCOLS[nextIndex]);
+          return 3600;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activeProtocol]);
+
+  // Effect for marketplace refresh
+  useEffect(() => {
+    refreshMarketplace();
+    const interval = setInterval(refreshMarketplace, 10 * 60 * 1000); // 10 mins
+    return () => clearInterval(interval);
+  }, [refreshMarketplace]);
+
   // News Items Data
   const NEWS_ITEMS = [
     {
@@ -1253,12 +1440,6 @@ function CombinationAgent({
       icon: '🔊'
     }
   ];
-
-  // Refs for auto-scroll
-  const ingredientsRef = useRef<HTMLDivElement>(null);
-  const actionsRef = useRef<HTMLDivElement>(null);
-  const hasScrolledRef = useRef(false);
-  const prevInventoryLengthRef = useRef(inventory.length);
 
   // Set config on mount
   useEffect(() => {
@@ -1315,30 +1496,6 @@ function CombinationAgent({
     alert("ID copied! Paste it in the Ko-fi message.");
   };
 
-  const handleDonateToFame = () => {
-    const amount = parseInt(fameDonationAmount, 10);
-    if (isNaN(amount) || amount <= 0) return;
-    if (stats.money >= amount) {
-      soundService.playSuccess();
-      const nextDonated = (stats.fameDonated || 0) + amount;
-      const oldFame = getCurrentFameLevel(stats.fameDonated || 0);
-      const newFame = getCurrentFameLevel(nextDonated);
-      
-      setStats((prev: any) => ({
-        ...prev,
-        money: prev.money - amount,
-        fameDonated: nextDonated
-      }));
-
-      // Find if we crossed a new threshold
-      if (newFame && (!oldFame || oldFame.tier !== newFame.tier || oldFame.stage !== newFame.stage)) {
-        alert(`✨ SYSTEM_ALERT: Your fame has reached ${newFame.tier.toUpperCase()} Stage ${newFame.stage}! ${newFame.emoji} ✨`);
-      }
-    } else {
-      soundService.playError();
-      alert("ERROR: Insufficient credits for this fame addition.");
-    }
-  };
 
   const handleBuyShopItem = (item: ShopItem) => {
     if (stats.money >= item.price) {
@@ -1383,12 +1540,43 @@ function CombinationAgent({
     action: KitchenAction,
     ingredientNames: string[]
   ): Promise<Ingredient | null> => {
+    // 1. Apply Multipliers from chips and personality
+    let moneyMult = 1.0;
+    let fireReductNum = 1.0;
+    let speedMult = 1.0;
+    
+    installedChips.forEach(chipId => {
+      const chip = SKILL_CHIPS.find(c => c.id === chipId);
+      if (!chip) return;
+      if (chip.effectType === 'money') moneyMult *= chip.multiplier;
+      if (chip.effectType === 'safety') fireReductNum *= chip.multiplier;
+      if (chip.effectType === 'speed') speedMult *= chip.multiplier;
+    });
+
+    if (selectedPersonality.id === 'gordon') {
+      moneyMult *= 1.2;
+      fireReductNum *= 1.1; // Increases risk
+    } else if (selectedPersonality.id === 'zen') {
+      fireReductNum *= 0.8;
+      speedMult *= 0.85;
+    }
+
+    // Configure dynamic AI Personality and Protocol context
+    const personalityInstruction = selectedPersonality.systemInstruction;
+    const currentProtocolContext = `ACTIVE_SYSTEM_PROTOCOL: ${activeProtocol.name}. Context: ${activeProtocol.description}`;
+
+    setConfig({
+      systemInstruction: `${COMBINATION_SYSTEM_INSTRUCTION}\n\nAI_SUBPROCESSOR: ${personalityInstruction}\n\n${currentProtocolContext}`,
+      responseMimeType: 'application/json',
+      responseSchema: COMBINATION_RESPONSE_SCHEMA,
+    });
+
     // Apply safety_boost upgrade logic for "Kitchen Fire"
     if (stats.purchasedUpgrades?.includes('fusion_reactor') || stats.godTier) {
       // Fusion Reactor or God Tier eliminates fire risk
     } else {
       // Base 12% chance as requested by user
-      let fireChance = 0.12; 
+      let fireChance = 0.12 * fireReductNum; 
       
       // Upgrades reduce the risk
       if (stats.purchasedUpgrades?.includes('master_tools')) {
@@ -2188,62 +2376,79 @@ Do not say you cannot do it; always provide a recipe.`;
       </div>
 
       {/* Challenge Banner */}
-      <div className="challenge-banner-brutalist">
-        <div className="challenge-header-rail">
-          <span className="rail-text">KITCHEN PROTOCOL v1.0</span>
-          <span className="rail-text">SYSTEM READY</span>
-          <span className="rail-text">EST. 2024</span>
-        </div>
-        
-        <div className="challenge-content-grid">
-          <div className="challenge-main-info">
-            <DailyChallenges 
-              challenges={stats.dailyChallenges || []} 
-              onClaim={(id, reward) => {
-                soundService.playSuccess();
-                setStats((prev: any) => ({
-                  ...prev,
-                  money: prev.money + reward,
-                  dailyChallenges: prev.dailyChallenges.map((c: any) => 
-                    c.id === id ? { ...c, completed: true } : c
-                  )
-                }));
-              }}
-            />
+      {isChallengesVisible && (
+        <div className={`challenge-banner-brutalist ${isChallengesExpanded ? 'challenges-fullscreen' : ''}`}>
+          <div className="challenge-header-rail">
+            <span className="rail-text">KITCHEN PROTOCOL v1.0</span>
+            <div className="flex gap-4">
+              <span className="rail-text cursor-pointer hover:text-red-500" onClick={() => setIsChallengesVisible(false)}>CLOSE [X]</span>
+              <span className="rail-text">SYSTEM READY</span>
+            </div>
           </div>
           
-          <div className="challenge-steps-container">
-            <div className="how-to-step-brutalist">
-              <span className="step-number">01</span>
-              <div className="step-info">
-                <span className="step-label">INITIATE</span>
-                <span className="step-text">Start an order</span>
-              </div>
+          <div className="challenge-content-grid">
+            <div className="challenge-main-info" style={isChallengesExpanded ? { padding: '40px', borderRight: 'none', background: '#000' } : { background: '#000', alignItems: 'center' }}>
+              <DailyChallenges 
+                challenges={stats.dailyChallenges || []} 
+                isExpanded={isChallengesExpanded}
+                onToggle={() => setIsChallengesExpanded(!isChallengesExpanded)}
+                onClaim={(id, reward) => {
+                  soundService.playSuccess();
+                  setStats((prev: any) => ({
+                    ...prev,
+                    money: prev.money + reward,
+                    dailyChallenges: prev.dailyChallenges.map((c: any) => 
+                      c.id === id ? { ...c, completed: true } : c
+                    )
+                  }));
+                }}
+              />
             </div>
-            <div className="how-to-step-brutalist">
-              <span className="step-number">02</span>
-              <div className="step-info">
-                <span className="step-label">RESOURCES</span>
-                <span className="step-text">Select ingredients</span>
+            
+            {!isChallengesExpanded && (
+              <div className="challenge-steps-container">
+                <div className="how-to-step-brutalist">
+                  <span className="step-number">01</span>
+                  <div className="step-info">
+                    <span className="step-label">INITIATE</span>
+                    <span className="step-text">Start an order</span>
+                  </div>
+                </div>
+                <div className="how-to-step-brutalist">
+                  <span className="step-number">02</span>
+                  <div className="step-info">
+                    <span className="step-label">RESOURCES</span>
+                    <span className="step-text">Select ingredients</span>
+                  </div>
+                </div>
+                <div className="how-to-step-brutalist">
+                  <span className="step-number">03</span>
+                  <div className="step-info">
+                    <span className="step-label">PROCESS</span>
+                    <span className="step-text">Use a tool</span>
+                  </div>
+                </div>
+                <div className="how-to-step-brutalist">
+                  <span className="step-number">04</span>
+                  <div className="step-info">
+                    <span className="step-label">EXECUTE</span>
+                    <span className="step-text">Serve the result!</span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="how-to-step-brutalist">
-              <span className="step-number">03</span>
-              <div className="step-info">
-                <span className="step-label">PROCESS</span>
-                <span className="step-text">Use a tool</span>
-              </div>
-            </div>
-            <div className="how-to-step-brutalist">
-              <span className="step-number">04</span>
-              <div className="step-info">
-                <span className="step-label">EXECUTE</span>
-                <span className="step-text">Serve the result!</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
+      
+      {!isChallengesVisible && (
+        <button 
+          className="os-btn-mini mb-6"
+          onClick={() => setIsChallengesVisible(true)}
+        >
+          SHOW DAILY MISSIONS
+        </button>
+      )}
 
       {/* Achievements Top Bar */}
       <div className="achievements-top-bar">
@@ -2466,13 +2671,13 @@ Do not say you cannot do it; always provide a recipe.`;
           </div>
           {currentOrder && (
             <button
-              className="hint-button"
+              className="os-btn-mini ml-4 flex items-center gap-2"
               onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
               title={`Get steps for ${currentOrder.name}`}
               disabled={isCooking || isFetchingSteps}
             >
-              <Lightbulb size={18} />
-              <span>{isFetchingSteps ? 'Thinking...' : 'Get Steps'}</span>
+              <Lightbulb size={12} className={isFetchingSteps ? 'animate-pulse' : ''} />
+              <span>{isFetchingSteps ? 'THINKING...' : 'GET STEPS'}</span>
             </button>
           )}
         </div>
@@ -2841,210 +3046,378 @@ Do not say you cannot do it; always provide a recipe.`;
         />
       )}
 
-      <div className="ingredients-tools-row">
-        {/* Ingredients Section */}
-        <section className="kitchen-section ingredients-section">
-          <div className="section-header">
-            <div className="section-header-text">
-              <h2 className="section-title">Ingredients</h2>
-              <p className="section-subtitle">Select ingredients to use as function arguments</p>
+      {/* Global Protocol Emergency Banner */}
+      <GlobalProtocolBanner protocol={activeProtocol} countdown={protocolCountdown} />
+
+      <div className="ingredients-tools-row-lab">
+        {/* Left Column: Data Source / Inventory (Always Visible) */}
+        <div className="lab-column inventory-column">
+          <div className="column-technical-header">
+            <div className="flex justify-between items-center w-full">
+              <span className="tech-badge">DATA_SOURCE_01 // INVENTORY</span>
+              <span className="tech-badge opacity-50">{inventory.length} ENTITIES</span>
             </div>
-            <div className="section-header-right">
-              <button 
-                className="reset-basics-button" 
-                onClick={() => {
-                  if (window.confirm("Restore the 100 starting ingredients? Your discovered items will be kept.")) {
-                    setInventory(prev => {
-                      const merged = [...STARTING_INGREDIENTS];
-                      prev.forEach(ing => {
-                        if (!merged.some(m => m.name.toLowerCase() === ing.name.toLowerCase())) {
-                          merged.push(ing);
-                        }
-                      });
-                      return merged;
-                    });
-                  }
-                }}
-                title="Restore the 100 starting ingredients"
-              >
-                Reset to Basics
-              </button>
-              <span className="section-count">count: {inventory.length}</span>
-            </div>
-          </div>
-          <div className="ingredients-search-container">
-            <input
-              type="text"
-              className="ingredients-search-input"
-              placeholder="Search ingredients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchTerm && (
-              <button 
-                className="search-clear-button" 
-                onClick={() => setSearchTerm('')}
-                title="Clear search"
-              >
-                ✕
-              </button>
-            )}
-            {stats.godTier && (
-              <div className="god-tier-action search-integrated">
-                <input 
-                  type="text" 
-                  placeholder="✨ Manifest..." 
-                  value={manifestationName}
-                  onChange={(e) => setManifestationName(e.target.value)}
-                  className="god-input"
-                />
-                <button onClick={handleManifestIngredient} className="god-button">
-                  <span className="pro-badge">PRO</span>
-                  Manifest
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="ingredients-grid" ref={ingredientsRef}>
-            {inventory.length === 0 ? (
-              <div className="empty-state-hint">No ingredients in inventory.</div>
-            ) : inventory.filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 ? (
-              <div className="empty-state-hint">No ingredients match your search.</div>
-            ) : (
-              inventory
-                .filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                .map((ingredient, index) => (
-                  <IngredientTile
-                    key={`${ingredient.name}-${index}-${actionTriggerCount}`}
-                    ingredient={ingredient}
-                    isSelected={selectedIngredients.has(ingredient.name)}
-                    isActive={false}
-                    isDisabled={!currentOrder}
-                    isHighlighted={
-                      (tutorialStep === 2 && ingredient.name === 'eggs') ||
-                      (tutorialStep === 4 && ingredient.name === 'Fried Eggs')
-                    }
-                    onClick={() => toggleIngredient(ingredient.name)}
-                    onEdit={() => onEditIngredient(ingredient)}
-                  />
-                ))
-            )}
           </div>
 
-          {!stats.proPlan && (
-            <div className="os-ad-slot sidebar-ad">
-              <div className="ad-label">[GOOGLE_ADSENSE_SYSTEM]</div>
-              <AdSenseUnit 
-                client="ca-pub-7391663215396578" 
-                slot="YOUR_SLOT_ID_1" 
-                style={{ minHeight: '100px' }}
+          <div className="lab-module-content">
+            <div className="lab-search-container">
+              <Search size={14} className="lab-search-icon" />
+              <input 
+                type="text" 
+                placeholder="SCAN_POOL..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="lab-search-input"
               />
-            </div>
-          )}
-        </section>
-
-        {/* Tools Section */}
-        <section className="kitchen-section actions-section">
-          <div className="section-header">
-            <div className="section-header-text">
-              <h2 className="section-title">Tools</h2>
-              <p className="section-subtitle">Use function calls to combine ingredients</p>
-            </div>
-            <div className="section-header-right">
-              {hasSelection && (
-                <button 
-                  className="clear-selection-button" 
-                  onClick={() => setSelectedIngredients(new Set())}
-                  title="Clear all selected ingredients"
-                >
-                  Clear ({selectedIngredients.size})
-                </button>
+              {stats.godTier && (
+                <div className="god-manifest-mini">
+                  <input 
+                    type="text" 
+                    placeholder="Manifest..." 
+                    value={manifestationName}
+                    onChange={(e) => setManifestationName(e.target.value)}
+                  />
+                  <button onClick={handleManifestIngredient} className="god-btn-mini">M</button>
+                </div>
               )}
-              <span className="section-count">count: {COOKING_ACTIONS.length}</span>
             </div>
-          </div>
-          
-          <div className="ingredients-search-container">
-            <input
-              type="text"
-              className="ingredients-search-input"
-              placeholder="Search tools..."
-              value={toolsSearchTerm}
-              onChange={(e) => setToolsSearchTerm(e.target.value)}
-            />
-            {toolsSearchTerm && (
-              <button 
-                className="search-clear-button" 
-                onClick={() => setToolsSearchTerm('')}
-                title="Clear search"
-              >
-                ✕
-              </button>
-            )}
-            {stats.godTier && (
-              <div className="god-tier-action search-integrated">
-                <input 
-                  type="text" 
-                  placeholder="🛠️ New Tool..." 
-                  value={customToolName}
-                  onChange={(e) => setCustomToolName(e.target.value)}
-                  className="god-input"
-                />
-                <button onClick={handleCreateCustomTool} className="god-button">
-                  <span className="pro-badge">PRO</span>
-                  Create
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {hasSelection && (
-            <div className="selection-summary">
-              <span className="selection-label">Selected:</span>
-              <div className="selection-chips">
-                {Array.from(selectedIngredients).map(name => {
-                  const ing = findIngredientInInventory(name, inventory);
-                  return (
-                    <span key={name} className="selection-chip" onClick={() => toggleIngredient(name)}>
-                      {ing?.emoji} {name} ✕
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
-          <div className="actions-grid" ref={actionsRef}>
-            {!hasSelection && !isCooking && (
-              <div className="empty-state-hint tools-hint">
-                💡 Select ingredients on the left to enable tools
+            <div className="lab-ingredients-grid" ref={ingredientsRef}>
+              <AnimatePresence mode="popLayout">
+                {inventory
+                  .filter(ing => 
+                    ing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (ing.trait && ing.trait.toLowerCase().includes(searchTerm.toLowerCase()))
+                  )
+                  .map((ingredient, index) => (
+                    <IngredientTile
+                      key={`${ingredient.name}-${index}-${actionTriggerCount}`}
+                      ingredient={ingredient}
+                      isSelected={selectedIngredients.has(ingredient.name)}
+                      isActive={false}
+                      isDisabled={!currentOrder}
+                      isHighlighted={
+                        (tutorialStep === 2 && ingredient.name === 'eggs') ||
+                        (tutorialStep === 4 && ingredient.name === 'Fried Eggs')
+                      }
+                      onClick={() => toggleIngredient(ingredient.name)}
+                      onEdit={() => onEditIngredient(ingredient)}
+                    />
+                  ))}
+              </AnimatePresence>
+            </div>
+          </div>
+          
+          <div className="lab-column-footer">
+            <span className="label">SELECTED:</span>
+            <span className="value">{selectedIngredients.size}</span>
+          </div>
+        </div>
+
+        {/* Center Column: Operation Table */}
+        <div className="lab-column operation-column">
+          <div className="column-technical-header">
+            <div className="flex justify-between items-center w-full">
+              <span className="tech-badge">OPERATIONAL_TABLE</span>
+              <div className="flex gap-2">
+                {currentOrder && (
+                  <button 
+                    className={`os-btn-mini ${isCooking ? 'loading' : ''}`}
+                    onClick={() => onCookWithGemini(currentOrder.name)}
+                    disabled={isCooking}
+                  >
+                    {isCooking ? 'COOKING...' : `START: ${currentOrder.name.toUpperCase()}`}
+                  </button>
+                )}
+                {hasSelection && (
+                  <button 
+                    className="clear-lab-btn" 
+                    onClick={() => setSelectedIngredients(new Set())}
+                  >
+                    CLEAR
+                  </button>
+                )}
               </div>
-            )}
+            </div>
+          </div>
+
+          <div className="operation-table-surface">
+            <CookingWires />
+            
+            <AnimatePresence mode="wait">
+              {activeAction ? (
+                <motion.div 
+                  key="processing"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="processing-overlay"
+                >
+                  <div className="processing-scanline"></div>
+                  <div className="processing-text">PROCESSING_{activeAction.toUpperCase()}...</div>
+                </motion.div>
+              ) : manifestationResult ? (
+                <motion.div 
+                  key="manifest"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 1.2, opacity: 0 }}
+                  className={`lab-manifest ${manifestationResult.isDuplicate ? 'duplicate' : 'new'}`}
+                >
+                  <div className="manifest-ring"></div>
+                  <div className="manifest-box">
+                    <span className="text-4xl">{manifestationResult.emoji}</span>
+                  </div>
+                  <div className="manifest-info">
+                    <div className="manifest-rarity">ENTITY_MANIFESTED</div>
+                    <div className="manifest-name">{manifestationResult.name}</div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="operation-idle">
+                  <div className="operation-grid-pattern"></div>
+                  <div className="idle-content">
+                    {selectedIngredients.size > 0 ? (
+                      <div className="selection-preview-grid">
+                        <AnimatePresence mode="popLayout">
+                          {Array.from(selectedIngredients).map((ingName) => {
+                            const ing = inventory.find(i => i.name === ingName);
+                            return (
+                              <motion.div 
+                                key={ingName}
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0, opacity: 0 }}
+                                className="preview-item"
+                              >
+                                <span className="preview-emoji">{ing?.emoji || '❓'}</span>
+                                <span className="preview-name">{ingName.toUpperCase()}</span>
+                              </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="idle-cross"></div>
+                        <div className="idle-label">AWAITING_INPUT</div>
+                        <div className="selected-manifest-dots">
+                          {Array.from(selectedIngredients).slice(0, 5).map((_, i) => (
+                            <div key={i} className="dot animate-pulse"></div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="lab-tools-container" ref={actionsRef}>
             {[...COOKING_ACTIONS, ...customTools]
               .filter(action => action.displayName.toLowerCase().includes(toolsSearchTerm.toLowerCase()))
               .map(action => {
-                // Serve requires exactly one ingredient selected
-              const isServeDisabled = action.name === 'serve' && selectedIngredients.size !== 1;
-              // Don't disable tools while cooking agent is running
-              const isDisabled = isCooking ? false : (!hasSelection || activeAction !== null || isServeDisabled);
-
-              return (
-                <ActionTile
-                  key={`${action.name}-${actionTriggerCount}`}
-                  action={action}
-                  isActive={activeAction === action.name}
-                  isDisabled={isDisabled}
-                  isHighlighted={
-                    (tutorialStep === 3 && action.name === 'fry') ||
-                    (tutorialStep === 5 && action.name === 'serve')
-                  }
-                  onClick={() => executeAction(action)}
-                />
-              );
-            })}
+                const isServeDisabled = action.name === 'serve' && selectedIngredients.size !== 1;
+                const isDisabled = isCooking ? false : (!hasSelection || activeAction !== null || isServeDisabled);
+                return (
+                  <button
+                    key={action.name}
+                    data-action={action.name}
+                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                    onClick={() => !isDisabled && executeAction(action)}
+                    disabled={isDisabled}
+                  >
+                    <span className="btn-emoji">{action.emoji}</span>
+                    <span className="btn-label">{action.displayName.toUpperCase()}</span>
+                  </button>
+                );
+              })}
           </div>
-        </section>
+        </div>
       </div>
+
+      {/* New OS System Console Section */}
+      <section className="lab-system-console">
+        <div className="console-header">
+          <div className="console-title flex items-center gap-2">
+            <Zap size={14} className="text-[#00ff00]" />
+            <span>KITCHEN_OS_SYSTEM_CONTROL // MODULE_SELECTOR</span>
+          </div>
+          <div className="console-tabs">
+            <button 
+              className={`console-tab ${activeTab === 'ai' ? 'active' : ''}`}
+              onClick={() => setActiveTab('ai')}
+            >
+              <Bot size={12} />
+              <span>LOGIC_CORE</span>
+            </button>
+            <button 
+              className={`console-tab ${activeTab === 'chips' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chips')}
+            >
+              <Cpu size={12} />
+              <span>SKILL_CHIPS</span>
+            </button>
+            <button 
+              className={`console-tab ${activeTab === 'protocols' ? 'active' : ''}`}
+              onClick={() => setActiveTab('protocols')}
+            >
+              <Zap size={12} />
+              <span>PROTOCOLS</span>
+            </button>
+            <button 
+              className={`console-tab ${activeTab === 'market' ? 'active' : ''}`}
+              onClick={() => setActiveTab('market')}
+            >
+              <ShoppingBag size={12} />
+              <span>MARKETPLACE</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="console-content">
+          <AnimatePresence mode="wait">
+            {activeTab === 'ai' && (
+              <motion.div 
+                key="ai"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="modules-grid"
+              >
+                {PERSONALITIES.map(pers => (
+                  <div 
+                    key={pers.id} 
+                    className={`module-card ${selectedPersonality.id === pers.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedPersonality(pers)}
+                  >
+                    <div className="module-info">
+                      <div className="module-icon">{pers.modifierEmoji}</div>
+                      <div className="module-text">
+                        <div className="module-name">{pers.name}</div>
+                        <div className="module-desc">{pers.description}</div>
+                        <div className="module-benefit">{pers.benefit}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {activeTab === 'chips' && (
+              <motion.div 
+                key="chips"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="modules-grid"
+              >
+                {SKILL_CHIPS.map(chip => (
+                  <div 
+                    key={chip.id} 
+                    className={`module-card ${installedChips.includes(chip.id) ? 'selected' : ''}`}
+                    onClick={() => {
+                      if (installedChips.includes(chip.id)) {
+                        setInstalledChips(prev => prev.filter(id => id !== chip.id));
+                      } else if (stats.money >= chip.cost) {
+                        setStats((prev: any) => ({ ...prev, money: prev.money - chip.cost }));
+                        setInstalledChips(prev => [...prev, chip.id]);
+                        soundService.playSuccess();
+                      } else {
+                        soundService.playError();
+                        alert("INSUFFICIENT_FUNDS");
+                      }
+                    }}
+                  >
+                    <div className="module-info">
+                      <div className="module-icon">{chip.emoji}</div>
+                      <div className="module-text">
+                        <div className="module-name">
+                          <span>{chip.name}</span>
+                          {!installedChips.includes(chip.id) && <span className="module-cost text-amber-400 font-bold ml-auto">${chip.cost}</span>}
+                        </div>
+                        <div className="module-desc">{chip.description}</div>
+                        {installedChips.includes(chip.id) && <div className="module-benefit">::INSTALLED</div>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {activeTab === 'protocols' && (
+              <motion.div 
+                key="protocols"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="modules-grid"
+              >
+                {GLOBAL_PROTOCOLS.map(proto => (
+                  <div 
+                    key={proto.id} 
+                    className={`module-card protocol-card ${activeProtocol.id === proto.id ? 'active' : ''}`}
+                    onClick={() => setActiveProtocol(proto)}
+                  >
+                    <div className="module-info">
+                      <div className="module-icon"><Zap size={20} className={activeProtocol.id === proto.id ? 'text-[#00ff00]' : 'text-zinc-600'} /></div>
+                      <div className="module-text">
+                        <div className="module-name">{proto.name}</div>
+                        <div className="module-desc">{proto.description}</div>
+                        <div className="protocol-status">
+                          {activeProtocol.id === proto.id ? '::ACTIVE' : '::STANDBY'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+
+            {activeTab === 'market' && (
+              <motion.div 
+                key="market"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="modules-grid market"
+              >
+                <div className="market-header">
+                  <span>GLOBAL_MARKETPLACE_FEED</span>
+                  <button onClick={refreshMarketplace} className="market-refresh-btn"><RotateCcw size={10} /></button>
+                </div>
+                {marketplaceOffers.length === 0 ? (
+                  <div className="empty-market">NO_ACTIVE_OFFERS</div>
+                ) : marketplaceOffers.map(offer => (
+                  <div key={offer.id} className={`module-card market-card ${offer.type}`}>
+                    <div className="module-info">
+                      <div className="module-icon">{offer.ingredientEmoji}</div>
+                      <div className="module-text">
+                        <div className="module-name">
+                          {offer.type === 'buy' ? 'WANTED: ' : 'FOR SALE: '} {offer.ingredientName.toUpperCase()}
+                        </div>
+                        <div className="module-desc">
+                          {offer.type === 'buy' ? 'Trade your entity for Credits' : 'Purchase entity from local pool'}
+                        </div>
+                        <div className="market-footer">
+                          <span className="price">${offer.price}</span>
+                          <button 
+                            className={`trade-btn ${offer.type}`}
+                            onClick={() => handleTrade(offer)}
+                          >
+                            {offer.type === 'buy' ? 'SELL' : 'BUY'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
 
       {/* Agents Section */}
       <section className="agents-section-os">

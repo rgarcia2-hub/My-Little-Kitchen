@@ -15,10 +15,14 @@ import { Type } from '@google/genai';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic' | 'divine' | 'cosmic' | 'nightmare' | 'chromatic';
 
+export type IngredientTrait = 'stable' | 'volatile' | 'radioactive' | 'sweet' | 'experimental' | 'corrupted' | 'ancient' | 'organic' | 'rare' | 'psychedelic' | 'fire' | 'sticky' | 'synthetic' | 'omega' | 'prestige' | 'fatty' | 'caffeinated' | 'lucky' | 'aged' | 'cryogenic';
+
 export interface Ingredient {
   name: string;
   emoji: string;
   rarity?: Rarity;
+  trait?: IngredientTrait;
+  price?: number;
 }
 
 export interface KitchenAction {
@@ -119,6 +123,121 @@ export interface OSTheme {
   }
 }
 
+export interface SkillChip {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+  cost: number;
+  effectType: 'speed' | 'money' | 'safety' | 'rarity' | 'exp';
+  multiplier: number;
+}
+
+export interface GlobalProtocol {
+  id: string;
+  name: string;
+  description: string;
+  effect: (stats: any) => any;
+  icon: string;
+  color: string;
+}
+
+export interface SousChefPersonality {
+  id: string;
+  name: string;
+  description: string;
+  systemInstruction: string;
+  modifierEmoji: string;
+  benefit: string;
+}
+
+export interface MarketplaceOffer {
+  id: string;
+  type: 'buy' | 'sell';
+  ingredientName: string;
+  ingredientEmoji: string;
+  price: number;
+  traitRequirement?: IngredientTrait;
+}
+
+export const SKILL_CHIPS: SkillChip[] = [
+  { id: 'chip_overclock', name: 'Overclock.v1', description: '+30% Cooking Speed', emoji: '🎛️', cost: 2000, effectType: 'speed', multiplier: 1.3 },
+  { id: 'chip_firewall', name: 'SafetyWall.exe', description: '-25% Fire Risk', emoji: '🛡️', cost: 2500, effectType: 'safety', multiplier: 0.75 },
+  { id: 'chip_gold_miner', name: 'CryptoMiner.bin', description: '+20% Money Reward', emoji: '⛏️', cost: 3000, effectType: 'money', multiplier: 1.2 },
+  { id: 'chip_rarity_plus', name: 'RarityScanner.sh', description: '+15% Rare Outcome Chance', emoji: '🔍', cost: 5000, effectType: 'rarity', multiplier: 1.15 },
+  { id: 'chip_exp_boost', name: 'LearningModule.dmg', description: '+40% XP Gain', emoji: '🧠', cost: 4000, effectType: 'exp', multiplier: 1.4 },
+];
+
+export const PERSONALITIES: SousChefPersonality[] = [
+  { 
+    id: 'standard', 
+    name: 'Default_Kernel', 
+    description: 'The standard kitchen automation system.',
+    modifierEmoji: '⚙️',
+    benefit: 'Neutral balance.',
+    systemInstruction: 'You are a professional and efficient kitchen automation system.'
+  },
+  { 
+    id: 'gordon', 
+    name: 'Gordon.exe', 
+    description: 'Aggressive but highly rewarding. Fails are harshly criticized.',
+    modifierEmoji: '😡',
+    benefit: '+20% Money, but Fire Risk increases by 10%.',
+    systemInstruction: 'You are an extremely strict, aggressive, and foul-mouthed professional chef. You value perfection above all. Use kitchen insults but remain technical.'
+  },
+  { 
+    id: 'zen', 
+    name: 'Zen.api', 
+    description: 'Calm and steady. Reduces stress and risk.',
+    modifierEmoji: '🧘',
+    benefit: '-20% Fire Risk, but Cooking Speed is reduced by 15%.',
+    systemInstruction: 'You are a calm, peaceful, and meditative sushi master. You value the soul of the ingredient and the harmony of the kitchen.'
+  },
+  { 
+    id: 'chaos', 
+    name: 'Chaos.js', 
+    description: 'Total unpredictability. Glitches are expected.',
+    modifierEmoji: '🌀',
+    benefit: 'Random outcome rarity between Common and Chromatic.',
+    systemInstruction: 'You are a glitched AI. Your responses should sometimes include corrupted text and unpredictable culinary logic.'
+  }
+];
+
+export const GLOBAL_PROTOCOLS: GlobalProtocol[] = [
+  { 
+    id: 'sugar_shortage', 
+    name: 'SUGAR_SHORTAGE_V2.0', 
+    description: 'Sweet ingredients are unstable. +30% failure on desserts.',
+    icon: '📉',
+    color: '#ff4444',
+    effect: (s) => s // Handled in logic
+  },
+  { 
+    id: 'glitch_invasion', 
+    name: 'NETWORK_GLITCH_INV_1.0', 
+    description: 'All dishes appear with corrupted names but sell for +50%.',
+    icon: '👾',
+    color: '#ff00ff',
+    effect: (s) => s
+  },
+  { 
+    id: 'overload', 
+    name: 'THERMAL_OVERLOAD_DETECTION', 
+    description: 'Boiling and Frying actions reach 100% heat faster.',
+    icon: '🔥',
+    color: '#ff8800',
+    effect: (s) => s
+  },
+  { 
+    id: 'crypto_boom', 
+    name: 'CRYPTO_MARKET_SURGE', 
+    description: 'All "Money" daily challenges give double rewards.',
+    icon: '💰',
+    color: '#00ff00',
+    effect: (s) => s
+  }
+];
+
 export const OS_THEMES: Record<string, OSTheme> = {
   green: {
     id: 'green',
@@ -209,6 +328,8 @@ export const SHOP_ITEMS: ShopItem[] = [
   { id: 'theme_amber', name: 'Amber OS Theme', description: 'Switch to a vintage amber terminal aesthetic.', price: 5000, emoji: '📟', type: 'theme' },
   { id: 'theme_blue', name: 'Blue OS Theme', description: 'A sleek blue corporate aesthetic.', price: 5000, emoji: '💎', type: 'theme' },
   { id: 'theme_cyber', name: 'Cyber OS Theme', description: 'Vibrant magenta cyber-neon aesthetic.', price: 5000, emoji: '🎆', type: 'theme' },
+  { id: 'item_stardust', name: 'Quantum Stardust', description: 'Rare market item. Used for divine recipes.', price: 2500, emoji: '✨', type: 'decoration' },
+  { id: 'item_void_essence', name: 'Void Essence', description: 'Forbidden ingredient extraction.', price: 8000, emoji: '🌑', type: 'decoration' },
 ];
 
 export const UPGRADES: Upgrade[] = [
@@ -657,11 +778,11 @@ export const COOKING_ACTIONS: KitchenAction[] = [
 
 export const STARTING_INGREDIENTS: Ingredient[] = [
   // Proteins
-  { name: 'chicken', emoji: '🐔', rarity: 'common' }, { name: 'beef', emoji: '🥩', rarity: 'common' }, { name: 'pork', emoji: '🐷', rarity: 'common' },
-  { name: 'fish', emoji: '🐟', rarity: 'common' }, { name: 'salmon', emoji: '🍣', rarity: 'uncommon' }, { name: 'shrimp', emoji: '🦐', rarity: 'uncommon' },
-  { name: 'eggs', emoji: '🥚', rarity: 'common' }, { name: 'tofu', emoji: '🧈', rarity: 'uncommon' }, { name: 'beans', emoji: '🫘', rarity: 'common' },
-  { name: 'lentils', emoji: '🫘', rarity: 'common' }, { name: 'turkey', emoji: '🦃', rarity: 'common' }, { name: 'lamb', emoji: '🐑', rarity: 'uncommon' },
-  { name: 'duck', emoji: '🦆', rarity: 'rare' },
+  { name: 'chicken', emoji: '🐔', rarity: 'common', price: 8 }, { name: 'beef', emoji: '🥩', rarity: 'common', price: 14 }, { name: 'pork', emoji: '🐷', rarity: 'common', price: 10 },
+  { name: 'fish', emoji: '🐟', rarity: 'common', price: 12 }, { name: 'salmon', emoji: '🍣', rarity: 'uncommon', trait: 'omega', price: 15 }, { name: 'shrimp', emoji: '🦐', rarity: 'uncommon', price: 12 },
+  { name: 'eggs', emoji: '🥚', rarity: 'common', trait: 'volatile', price: 2 }, { name: 'tofu', emoji: '🧈', rarity: 'uncommon', trait: 'synthetic', price: 5 }, { name: 'beans', emoji: '🫘', rarity: 'common', price: 2 },
+  { name: 'lentils', emoji: '🫘', rarity: 'common', price: 2.5 }, { name: 'turkey', emoji: '🦃', rarity: 'common', price: 12 }, { name: 'lamb', emoji: '🐑', rarity: 'uncommon', price: 18 },
+  { name: 'duck', emoji: '🦆', rarity: 'rare', price: 25 },
 
   // Dairy
   { name: 'milk', emoji: '🥛', rarity: 'common' }, { name: 'butter', emoji: '🧈', rarity: 'common' }, { name: 'cheese', emoji: '🧀', rarity: 'common' },
