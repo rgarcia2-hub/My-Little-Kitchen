@@ -3557,43 +3557,59 @@ Do not say you cannot do it; always provide a recipe.`;
         />
       )}
 
-      {/* Fame Level Requirement Error Modal */}
+      {/* Fame Level Requirement Error Modal - Refined Brutalist Edition */}
       {showFameLevelError && (
         <div className="os-modal-overlay" onClick={() => setShowFameLevelError(false)}>
-          <div className="os-modal-card" style={{borderColor: '#ff4b2b', background: '#1a1a1a'}} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 p-4 bg-[#ff4b2b] text-white">
-              <span className="text-xl">🚫</span>
-              <span className="font-black tracking-widest text-sm">SECURITY_BREACH // ACCESS_DENIED</span>
-            </div>
-            
-            <div className="p-8 flex flex-col items-center text-center">
-              <div className="mb-6">
-                <div className="text-[10px] text-[#ff4b2b] font-bold mb-1 tracking-tighter uppercase">Protocol Restricted</div>
-                <h2 className="text-2xl font-black text-white leading-none">FAME TERMINAL</h2>
+          <div className="os-modal-card border-4 border-[#ff4b2b] bg-[#0a0a0a] max-w-[450px] shadow-[20px_20px_0px_rgba(255,75,43,0.3)]" onClick={e => e.stopPropagation()}>
+            {/* Top Bar */}
+            <div className="bg-[#ff4b2b] p-3 flex justify-between items-center text-white font-mono text-[9px] font-black tracking-widest">
+              <div className="flex items-center gap-2">
+                <span className="animate-pulse">●</span>
+                <span>SYSTEM_LOCKDOWN // LVL_GATE</span>
               </div>
-              
-              <div className="w-full bg-[#252525] p-6 border border-[#333] mb-6 flex justify-around items-center">
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-[#888] font-bold uppercase tracking-widest">Required</span>
-                  <span className="text-3xl font-black text-[#ff4b2b]">80</span>
-                </div>
-                <div className="h-10 w-px bg-[#333]"></div>
-                <div className="flex flex-col">
-                  <span className="text-[9px] text-[#888] font-bold uppercase tracking-widest">Current</span>
-                  <span className="text-3xl font-black text-white">{stats.level || 1}</span>
+              <span>UID: {user?.uid?.slice(0, 8) || 'ANON'}</span>
+            </div>
+
+            <div className="p-10 flex flex-col items-center">
+              <div className="relative mb-12">
+                <div className="text-[80px] leading-none select-none opacity-10 absolute -top-5 left-1/2 -translate-x-1/2 font-black text-[#ff4b2b]">403</div>
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-16 h-16 bg-[#ff4b2b] rounded-full flex items-center justify-center text-3xl mb-4 shadow-[0_0_20px_rgba(255,75,43,0.5)]">
+                    🚫
+                  </div>
+                  <h2 className="text-3xl font-black text-white tracking-tighter text-center uppercase">
+                    Protocol<br/><span className="text-[#ff4b2b]">Restricted</span>
+                  </h2>
                 </div>
               </div>
 
-              <div className="text-[10px] font-mono text-[#ff4b2b] opacity-60 mb-8 p-3 border border-[#ff4b2b22] w-full">
-                ERROR_CODE: LVL_INSUFFICIENT_FAME_PROTOCOL<br/>
-                SYSTEM_RESPONSE: ELEVATE_STANDING_TO_PROCEED
+              <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-[#151515] p-5 border-l-4 border-[#ff4b2b]">
+                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Target_Floor</p>
+                  <p className="text-4xl font-black text-white">80</p>
+                </div>
+                <div className="bg-[#151515] p-5 border-l-4 border-gray-600">
+                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Current_Auth</p>
+                  <p className="text-4xl font-black text-white">{stats.level || 1}</p>
+                </div>
+              </div>
+
+              <div className="w-full font-mono text-[10px] text-[#ff4b2b] mb-10 p-4 border border-[#ff4b2b33] bg-[#ff4b2b05] leading-relaxed">
+                <div className="flex justify-between border-b border-[#ff4b2b22] mb-2 pb-1">
+                  <span>LOG_ENTRY:</span>
+                  <span>{new Date().toISOString().split('T')[1].split('.')[0]}</span>
+                </div>
+                [!] Unauthorized access attempt to Fame_Terminal_v2.<br/>
+                [!] Standing insufficient for protocol engagement.<br/>
+                [!] Required Delta: <span className="font-bold underline">{80 - (stats.level || 1)}</span> levels.
               </div>
 
               <button 
-                className="w-full py-4 bg-white text-[#1a1a1a] font-black tracking-widest text-xs hover:bg-[#ff4b2b] hover:text-white transition-colors"
+                className="group w-full py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-[#ff4b2b] hover:text-white transition-all transform active:scale-95 flex items-center justify-center gap-3"
                 onClick={() => setShowFameLevelError(false)}
               >
-                ACKNOWLEDGE
+                <span>Confirm Lockdown</span>
+                <span className="group-hover:translate-x-1 transition-transform">→</span>
               </button>
             </div>
           </div>
