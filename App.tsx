@@ -284,7 +284,7 @@ function DailyChallenges({
     <div className={`daily-challenges-widget ${isExpanded ? 'expanded-overlay' : ''}`}>
       <div className="challenges-header">
         <div className="header-left">
-          <Award size={18} className="text-[#00ff00] animate-pulse" />
+          <Award size={18} className="text-[#1a1a1a]" />
           <h3 className="header-title">DAILY_PROTOCOLS</h3>
         </div>
         <div className="header-actions">
@@ -982,8 +982,8 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
         )}
         <div className="recipe-steps-header">
           <div className="recipe-steps-header-text">
-            <h3 className="recipe-steps-title">GUIDE_PROTOCOL: {orderName.toUpperCase()}</h3>
-            <p className="recipe-steps-subtitle">EXECUTION_STEPS // VERIFIED_PROCEDURE</p>
+            <h3 className="recipe-steps-title">Cooking Guide: {orderName}</h3>
+            <p className="recipe-steps-subtitle">Follow these steps using the tools and ingredients below</p>
           </div>
           <div className="recipe-steps-header-actions">
             {canPin && (
@@ -992,9 +992,7 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
                 className={`recipe-steps-pin ${isPinned ? 'active' : ''}`}
                 title={isPinned ? "Unpin recipe" : "Pin recipe to screen"}
               >
-                <div className="flex items-center justify-center">
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{isPinned ? 'keep_off' : 'keep'}</span>
-                </div>
+                <span className="material-symbols-outlined">{isPinned ? 'keep_off' : 'keep'}</span>
               </button>
             )}
             <button onClick={onClose} className="recipe-steps-close">✕</button>
@@ -1004,16 +1002,16 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
           {isLoading ? (
             <div className="recipe-steps-loading">
               <span className="spinner">⏳</span>
-              <p>CONSULTING_MASTER_CHEF_DATABASE...</p>
+              <p>Consulting the master chef...</p>
             </div>
           ) : steps.length === 0 ? (
             <div className="recipe-steps-empty">
-              <p>ERROR: RECIPE_NOT_FOUND_IN_DATABASE</p>
+              <p>The master chef is stumped by this dish!</p>
               <button 
-                className="os-btn-mini"
+                className="os-btn os-btn-primary mt-4"
                 onClick={onRetry}
               >
-                RETRY_SCAN
+                Ask again
               </button>
             </div>
           ) : (
@@ -1025,13 +1023,13 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
                     <div className="step-formula">
                       <div className="step-ingredients">
                         {step.ingredients.map((ing, i) => (
-                          <span key={i} className="step-ingredient-tag">{ing.toUpperCase()}</span>
+                          <span key={i} className="step-ingredient-tag">{ing}</span>
                         ))}
                       </div>
-                      <span className="step-arrow">{" >> "}</span>
-                      <span className="step-tool">{step.tool.toUpperCase()}()</span>
-                      <span className="step-arrow">{" >> "}</span>
-                      <span className="step-result">{step.result.toUpperCase()}</span>
+                      <span className="step-arrow">→</span>
+                      <span className="step-tool">{step.tool}()</span>
+                      <span className="step-arrow">→</span>
+                      <span className="step-result">{step.result}</span>
                     </div>
                     <p className="step-description">{step.description}</p>
                   </div>
@@ -1041,11 +1039,11 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
                 <div className="step-number">✓</div>
                 <div className="step-content">
                   <div className="step-formula">
-                    <span className="step-ingredient-tag">{steps[steps.length - 1].result.toUpperCase()}</span>
-                    <span className="step-arrow">{" >> "}</span>
-                    <span className="step-tool">SERVE()</span>
+                    <span className="step-ingredient-tag">{steps[steps.length - 1].result}</span>
+                    <span className="step-arrow">→</span>
+                    <span className="step-tool">serve()</span>
                   </div>
-                  <p className="step-description">EXECUTE_FINAL_COMMAND: FULFILL_ORDER_PROTOCOL</p>
+                  <p className="step-description">Serve your masterpiece to complete the order!</p>
                 </div>
               </div>
             </div>
@@ -2387,22 +2385,12 @@ Do not say you cannot do it; always provide a recipe.`;
           </div>
           
           <div className="challenge-content-grid">
-            <div className="challenge-main-info" style={isChallengesExpanded ? { padding: '40px', borderRight: 'none', background: '#000' } : { background: '#000', alignItems: 'center' }}>
-              <DailyChallenges 
-                challenges={stats.dailyChallenges || []} 
-                isExpanded={isChallengesExpanded}
-                onToggle={() => setIsChallengesExpanded(!isChallengesExpanded)}
-                onClaim={(id, reward) => {
-                  soundService.playSuccess();
-                  setStats((prev: any) => ({
-                    ...prev,
-                    money: prev.money + reward,
-                    dailyChallenges: prev.dailyChallenges.map((c: any) => 
-                      c.id === id ? { ...c, completed: true } : c
-                    )
-                  }));
-                }}
-              />
+            <div className="challenge-main-info" style={isChallengesExpanded ? { padding: '40px', borderRight: 'none', background: '#fff' } : { background: '#fff', alignItems: 'center', justifyContent: 'center' }}>
+              <h1 className="challenge-title-massive">KITCHEN<br/>PROTOCOL</h1>
+              <p className="challenge-subtitle-refined">
+                Welcome to the lab environment. Use the protocols on the right to master the production cycle. 
+                Efficiency is mandatory.
+              </p>
             </div>
             
             {!isChallengesExpanded && (
@@ -2441,14 +2429,15 @@ Do not say you cannot do it; always provide a recipe.`;
         </div>
       )}
       
-      {!isChallengesVisible && (
-        <button 
-          className="os-btn-mini mb-6"
-          onClick={() => setIsChallengesVisible(true)}
-        >
-          SHOW DAILY MISSIONS
-        </button>
-      )}
+          {/* Commented out daily missions as requested
+          {!isChallengesVisible && (
+            <button 
+              className="os-btn-mini mb-6"
+              onClick={() => setIsChallengesVisible(true)}
+            >
+              SHOW DAILY MISSIONS
+            </button>
+          )} */}
 
       {/* Achievements Top Bar */}
       <div className="achievements-top-bar">
@@ -2671,13 +2660,13 @@ Do not say you cannot do it; always provide a recipe.`;
           </div>
           {currentOrder && (
             <button
-              className="os-btn-mini ml-4 flex items-center gap-2"
+              className="hint-button"
               onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
               title={`Get steps for ${currentOrder.name}`}
               disabled={isCooking || isFetchingSteps}
             >
-              <Lightbulb size={12} className={isFetchingSteps ? 'animate-pulse' : ''} />
-              <span>{isFetchingSteps ? 'THINKING...' : 'GET STEPS'}</span>
+              <Lightbulb size={18} />
+              <span>{isFetchingSteps ? 'Thinking...' : 'Get Steps'}</span>
             </button>
           )}
         </div>
@@ -3059,7 +3048,7 @@ Do not say you cannot do it; always provide a recipe.`;
             </div>
           </div>
 
-          <div className="lab-module-content">
+          <div className="px-3 pt-3 bg-white border-b-2 border-[#1a1a1a]">
             <div className="lab-search-container">
               <Search size={14} className="lab-search-icon" />
               <input 
@@ -3074,6 +3063,7 @@ Do not say you cannot do it; always provide a recipe.`;
                   <input 
                     type="text" 
                     placeholder="Manifest..." 
+                    className="god-manifest-input"
                     value={manifestationName}
                     onChange={(e) => setManifestationName(e.target.value)}
                   />
@@ -3081,7 +3071,9 @@ Do not say you cannot do it; always provide a recipe.`;
                 </div>
               )}
             </div>
+          </div>
 
+          <div className="lab-module-content">
             <div className="lab-ingredients-grid" ref={ingredientsRef}>
               <AnimatePresence mode="popLayout">
                 {inventory
@@ -3241,7 +3233,7 @@ Do not say you cannot do it; always provide a recipe.`;
       <section className="lab-system-console">
         <div className="console-header">
           <div className="console-title flex items-center gap-2">
-            <Zap size={14} className="text-[#00ff00]" />
+            <Zap size={14} className="text-[#1a1a1a]" />
             <span>KITCHEN_OS_SYSTEM_CONTROL // MODULE_SELECTOR</span>
           </div>
           <div className="console-tabs">
@@ -3568,25 +3560,39 @@ Do not say you cannot do it; always provide a recipe.`;
       {/* Fame Level Requirement Error Modal */}
       {showFameLevelError && (
         <div className="os-modal-overlay" onClick={() => setShowFameLevelError(false)}>
-          <div className="os-modal-card red-theme" onClick={e => e.stopPropagation()}>
-            <div className="os-modal-header">
-              <span className="os-modal-emoji">🚫</span>
-              <span className="os-modal-title">ACCESS_DENIED</span>
+          <div className="os-modal-card" style={{borderColor: '#ff4b2b', background: '#1a1a1a'}} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 p-4 bg-[#ff4b2b] text-white">
+              <span className="text-xl">🚫</span>
+              <span className="font-black tracking-widest text-sm">SECURITY_BREACH // ACCESS_DENIED</span>
             </div>
-            <div className="os-modal-body">
-              <p className="text-large">
-                The <span className="text-highlight-red">FAME TERMINAL</span> is restricted to master chefs. 
-              </p>
-              <p className="text-muted mt-2">
-                Required Level: <span className="font-bold text-white">80</span><br />
-                Current Level: <span className="font-bold text-white">{stats.level || 1}</span>
-              </p>
-              <div className="os-error-code mt-4">
-                ERROR_CODE: LVL_INSUFFICIENT_FAME_PROTOCOL
+            
+            <div className="p-8 flex flex-col items-center text-center">
+              <div className="mb-6">
+                <div className="text-[10px] text-[#ff4b2b] font-bold mb-1 tracking-tighter uppercase">Protocol Restricted</div>
+                <h2 className="text-2xl font-black text-white leading-none">FAME TERMINAL</h2>
               </div>
-            </div>
-            <div className="os-modal-footer">
-              <button className="os-btn os-btn-danger" onClick={() => setShowFameLevelError(false)}>
+              
+              <div className="w-full bg-[#252525] p-6 border border-[#333] mb-6 flex justify-around items-center">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-[#888] font-bold uppercase tracking-widest">Required</span>
+                  <span className="text-3xl font-black text-[#ff4b2b]">80</span>
+                </div>
+                <div className="h-10 w-px bg-[#333]"></div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-[#888] font-bold uppercase tracking-widest">Current</span>
+                  <span className="text-3xl font-black text-white">{stats.level || 1}</span>
+                </div>
+              </div>
+
+              <div className="text-[10px] font-mono text-[#ff4b2b] opacity-60 mb-8 p-3 border border-[#ff4b2b22] w-full">
+                ERROR_CODE: LVL_INSUFFICIENT_FAME_PROTOCOL<br/>
+                SYSTEM_RESPONSE: ELEVATE_STANDING_TO_PROCEED
+              </div>
+
+              <button 
+                className="w-full py-4 bg-white text-[#1a1a1a] font-black tracking-widest text-xs hover:bg-[#ff4b2b] hover:text-white transition-colors"
+                onClick={() => setShowFameLevelError(false)}
+              >
                 ACKNOWLEDGE
               </button>
             </div>
