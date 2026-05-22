@@ -23,7 +23,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -77,7 +77,9 @@ import { onAuthStateChanged, User, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp, query, orderBy, limit, getDocs, collection } from "firebase/firestore";
 import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
+import { AntigravityBackground } from "./src/components/AntigravityBackground";
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
+import { StripeCheckoutModal } from "./src/components/StripeCheckoutModal";
 
 const VERIFIED_BADGE_URL = "/verified.png?v=3.0";
 const ADMIN_EMAILS = ['robert.garcia.alsina2012@gmail.com', 'gianlucaperalta555@gmail.com'];
@@ -192,7 +194,7 @@ interface TutorialStep {
   id: number;
   text: string;
   highlightId?: string; // ID of the element to highlight
-  targetType?: 'order' | 'ingredient' | 'action';
+  targetType?: 'order' | 'ingredient' | 'action' | 'other';
   targetName?: string;
 }
 
@@ -206,31 +208,31 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 2,
-    text: "¡Genial! Ahora selecciona un ingrediente. Vamos a cocinar unos huevos. Selecciona 'eggs'.",
-    highlightId: 'eggs',
-    targetType: 'ingredient',
-    targetName: 'eggs'
+    text: "¡Genial! Tienes un pedido en curso. La IA conoce todas las recetas, pulsa sobre 'Get Steps' (el icono con la bombilla) para ver las instrucciones.",
+    highlightId: 'get-steps',
+    targetType: 'other',
+    targetName: 'get-steps'
   },
   {
     id: 3,
-    text: "Ahora usa una herramienta para cocinarlos. Haz clic en 'fry'.",
-    highlightId: 'fry',
-    targetType: 'action',
-    targetName: 'fry'
+    text: "La IA te ha dado los pasos. Busca los ingredientes en tu inventario y combínalos utilizando la acción que te haya indicado.",
+    highlightId: 'inventory',
+    targetType: 'other',
+    targetName: 'inventory'
   },
   {
     id: 4,
-    text: "¡Perfecto! Has cocinado 'Fried Eggs'. Ahora selecciónalos en tu inventario.",
-    highlightId: 'Fried Eggs',
-    targetType: 'ingredient',
-    targetName: 'Fried Eggs'
-  },
-  {
-    id: 5,
-    text: "Finalmente, haz clic en 'serve' para completar el pedido y entregárselo al cliente.",
+    text: "Una vez completado el plato de 'Fried Eggs', selecciónalo en tu inventario y pulsa la tecla 'serve' para completar la comanda.",
     highlightId: 'serve',
     targetType: 'action',
     targetName: 'serve'
+  },
+  {
+    id: 5,
+    text: "¡Perfecto! Para progresar, usa 'KITCHEN_OS_SYSTEM_CONTROL // MODULE_SELECTOR'. En LOGIC_CORE cambias a la IA, en SKILL_CHIPS mejoras, en PROTOCOLS activas retos y en MARKETPLACE comercias con ingredientes. Puedes cerrar este tutorial.",
+    highlightId: 'system-control',
+    targetType: 'other',
+    targetName: 'system-control'
   }
 ];
 
@@ -792,6 +794,195 @@ function ManifestationToast({ result, onClose }: ManifestationToastProps) {
 // Crumble Cookie Customizer Component
 // ============================================================================
 
+interface ChromaticMinigameProps {
+  order: Order;
+  onSuccess: () => void;
+  onFail: () => void;
+}
+
+function ChromaticMinigame({ order, onSuccess, onFail }: ChromaticMinigameProps) {
+  const [phase, setPhase] = useState<'preview' | 'playing' | 'result'>('preview');
+  const [sequence, setSequence] = useState<number[]>([]);
+  const [playerSequence, setPlayerSequence] = useState<number[]>([]);
+  const [flashIndex, setFlashIndex] = useState<number | null>(null);
+  const [message, setMessage] = useState('Stabilize the Chromatic Singularity');
+  
+  const colors = [
+    { id: 0, name: 'Cyan', color: '#00ffff', pulse: 'shadow-[0_0_20px_rgba(0,255,255,0.8)]' },
+    { id: 1, name: 'Magenta', color: '#ff00ff', pulse: 'shadow-[0_0_20px_rgba(255,0,255,0.8)]' },
+    { id: 2, name: 'Yellow', color: '#ffff00', pulse: 'shadow-[0_0_20px_rgba(255,255,0,0.8)]' },
+    { id: 3, name: 'Lime', color: '#00ff00', pulse: 'shadow-[0_0_20px_rgba(0,255,0,0.8)]' },
+  ];
+
+  const startLevel = useCallback(() => {
+    const newSequence = Array.from({ length: 5 }, () => Math.floor(Math.random() * 4));
+    setSequence(newSequence);
+    setPlayerSequence([]);
+    setPhase('preview');
+    
+    // Play sequence
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i >= newSequence.length) {
+        clearInterval(interval);
+        setFlashIndex(null);
+        setPhase('playing');
+        setMessage('YOUR TURN: REPEAT PROTOCOL');
+        return;
+      }
+      setFlashIndex(newSequence[i]);
+      soundService.playType();
+      
+      setTimeout(() => {
+        setFlashIndex(null);
+      }, 400);
+      
+      i++;
+    }, 700);
+  }, []);
+
+  useEffect(() => {
+    setTimeout(startLevel, 1000);
+  }, [startLevel]);
+
+  const handleColorClick = (id: number) => {
+    if (phase !== 'playing') return;
+    
+    const newPlayerSeq = [...playerSequence, id];
+    setPlayerSequence(newPlayerSeq);
+    setFlashIndex(id);
+    soundService.playClick();
+    
+    setTimeout(() => {
+      setFlashIndex(null);
+    }, 200);
+
+    // Check if correct
+    if (id !== sequence[newPlayerSeq.length - 1]) {
+      setPhase('result');
+      setMessage('FREQUENCY_MISMATCH: STABILIZATION_FAILED');
+      soundService.playError();
+      setTimeout(onFail, 2000);
+      return;
+    }
+
+    // Check if won
+    if (newPlayerSeq.length === sequence.length) {
+      setPhase('result');
+      setMessage('HARMONY_ACHIEVED: SINGULARITY_STABLE');
+      soundService.playSuccess();
+      setTimeout(onSuccess, 1500);
+    }
+  };
+
+  return (
+    <div className="os-modal-overlay z-[11000]" onClick={(e) => e.stopPropagation()}>
+      <motion.div 
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="os-modal-card bg-[#050505] border-4 border-white p-0 overflow-hidden max-w-md w-full shadow-[0_0_100px_rgba(255,255,255,0.1)]"
+      >
+        <div className="bg-white text-black p-4 flex justify-between items-center font-black tracking-widest text-[10px]">
+          <span>CHROMATIC_STABILIZER_V1.0</span>
+          <span className="animate-pulse">● LIVE_FREQ</span>
+        </div>
+
+        <div className="p-10 flex flex-col items-center relative">
+          {/* Background Grid */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+          
+          <div className="text-center mb-8 relative z-10">
+            <h2 className="text-2xl font-black text-white italic tracking-tighter uppercase mb-1">
+              Spectral <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-400 via-white to-gray-400">Harmonizer</span>
+            </h2>
+            <div className="flex bg-[#111] px-3 py-1 rounded-full border border-[#222] items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <p className="text-[9px] font-mono text-gray-400 uppercase tracking-widest">{order.name}_PROTOCOL_042</p>
+            </div>
+          </div>
+
+          <div className="relative mb-10 p-8">
+             {/* Target Emoji in center */}
+             <motion.div 
+               animate={phase === 'playing' ? { scale: [1, 1.05, 1], rotate: [0, -2, 2, 0] } : {}}
+               transition={{ duration: 2, repeat: Infinity }}
+               className="relative z-20 text-7xl drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+             >
+               {order.emoji}
+             </motion.div>
+
+             {/* Circular scanner effect around emoji */}
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border-2 border-white/5 rounded-full"></div>
+             <motion.div 
+               animate={{ rotate: 360 }} 
+               transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 border-t-2 border-cyan-500/30 rounded-full"
+             ></motion.div>
+             <motion.div 
+               animate={{ rotate: -360 }} 
+               transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 border-b-2 border-magenta-500/30 rounded-full"
+             ></motion.div>
+
+             {/* Interaction Nodes */}
+             {colors.map((c, i) => {
+               // Position around the circle
+               const angle = (i * 90) - 45;
+               const radius = 85;
+               const x = Math.cos(angle * Math.PI / 180) * radius;
+               const y = Math.sin(angle * Math.PI / 180) * radius;
+
+               return (
+                 <motion.button
+                   key={c.id}
+                   whileHover={{ scale: 1.1 }}
+                   whileTap={{ scale: 0.9 }}
+                   onClick={() => handleColorClick(c.id)}
+                   className={`absolute w-12 h-12 rounded-full transition-all duration-200 border-2 z-30 flex items-center justify-center ${
+                     flashIndex === c.id ? 'border-white bg-white scale-125 ' + c.pulse : 'border-current opacity-60 hover:opacity-100 hover:scale-110'
+                   }`}
+                   style={{ 
+                     color: c.color, 
+                     left: `calc(50% + ${x}px)`, 
+                     top: `calc(50% + ${y}px)`,
+                     transform: 'translate(-50%, -50%)',
+                     boxShadow: flashIndex === c.id ? `0 0 30px ${c.color}` : 'none'
+                   }}
+                 >
+                   <div className="w-4 h-4 rounded-full border border-current opacity-50"></div>
+                 </motion.button>
+               );
+             })}
+          </div>
+
+          <div className="w-full bg-black/50 backdrop-blur-sm p-4 border border-white/10 rounded-sm font-mono text-center">
+            <p className={`text-[10px] font-bold tracking-[0.2em] uppercase ${phase === 'result' ? (message.includes('FAILED') ? 'text-red-500' : 'text-[#00ff00]') : 'text-gray-400'}`}>
+              <span className="opacity-50">&gt;&gt;</span> {message}
+            </p>
+            {phase === 'playing' && (
+              <div className="mt-3 flex justify-center gap-2">
+                {sequence.map((_, i) => (
+                  <motion.div 
+                    key={i} 
+                    initial={false}
+                    animate={{ 
+                      backgroundColor: i < playerSequence.length ? '#fff' : '#222',
+                      scale: i === playerSequence.length ? 1.2 : 1
+                    }}
+                    className="h-1.5 w-6 rounded-full"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="h-2 w-full bg-gradient-to-r from-cyan-500 via-magenta-500 to-yellow-500"></div>
+      </motion.div>
+    </div>
+  );
+}
+
 interface CrumbleCookieCustomizerProps {
   onClose: () => void;
   onSave: (customization: any) => void;
@@ -931,9 +1122,24 @@ interface RecipeStepsDisplayProps {
   difficulty?: string;
   isPinned: boolean;
   onPinToggle: () => void;
+  adsDisabled?: boolean;
+  proPlan?: boolean;
+  godTier?: boolean;
 }
 
-function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, difficulty, isPinned, onPinToggle }: RecipeStepsDisplayProps) {
+function RecipeStepsDisplay({ 
+  steps, 
+  onClose, 
+  onRetry, 
+  isLoading, 
+  orderName, 
+  difficulty, 
+  isPinned, 
+  onPinToggle,
+  adsDisabled,
+  proPlan,
+  godTier
+}: RecipeStepsDisplayProps) {
   const canPin = difficulty !== 'difficult' && difficulty !== 'nightmare';
   const isProtected = difficulty === 'difficult' || difficulty === 'nightmare';
   const [isBlackedOut, setIsBlackedOut] = useState(false);
@@ -1056,14 +1262,16 @@ function RecipeStepsDisplay({ steps, onClose, onRetry, isLoading, orderName, dif
         )}
         
         {/* Ad Slot: Recipe Footer */}
-        <div className="recipe-ad-footer">
-           <div className="ad-label-small">ADSENSE_DATA_FLOW</div>
-           <AdSenseUnit 
-             client="ca-pub-7391663215396578" 
-             slot="YOUR_SLOT_ID_2" 
-             style={{ minHeight: '50px' }}
-           />
-        </div>
+        {!adsDisabled && !proPlan && !godTier && (
+          <div className="recipe-ad-footer">
+             <div className="ad-label-small">ADSENSE_DATA_FLOW</div>
+             <AdSenseUnit 
+               client="ca-pub-7391663215396578" 
+               slot="YOUR_SLOT_ID_2" 
+               style={{ minHeight: '50px' }}
+             />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1109,6 +1317,13 @@ interface CombinationAgentProps {
   isUpgradesExpanded: boolean;
   setIsUpgradesExpanded: React.Dispatch<React.SetStateAction<boolean>>;
   onBuyUpgrade: (upgrade: Upgrade) => void;
+  terminalLogs: string[];
+  setTerminalLogs: React.Dispatch<React.SetStateAction<string[]>>;
+  addTerminalLog: (msg: string) => void;
+  showFameLevelError: boolean;
+  setShowFameLevelError: React.Dispatch<React.SetStateAction<boolean>>;
+  showFameRankUp: {tier: string, stage: number, emoji: string} | null;
+  setShowFameRankUp: React.Dispatch<React.SetStateAction<{tier: string, stage: number, emoji: string} | null>>;
   tutorialStep: number;
   setTutorialStep: React.Dispatch<React.SetStateAction<number>>;
   isRecipeBookExpanded: boolean;
@@ -1137,6 +1352,7 @@ interface CombinationAgentProps {
   manifestationResult: { name: string, emoji: string, isDuplicate: boolean } | null;
   setManifestationResult: React.Dispatch<React.SetStateAction<{ name: string, emoji: string, isDuplicate: boolean } | null>>;
   currentFame: FameLevel | null;
+  onPurchasePlan?: (planType: 'proPlan' | 'godTier' | 'musicPass') => void;
 }
 
 function GlobalProtocolBanner({ protocol, countdown }: { protocol: GlobalProtocol, countdown: number }) {
@@ -1239,6 +1455,13 @@ function CombinationAgent({
   isUpgradesExpanded,
   setIsUpgradesExpanded,
   onBuyUpgrade,
+  terminalLogs,
+  setTerminalLogs,
+  addTerminalLog,
+  showFameLevelError,
+  setShowFameLevelError,
+  showFameRankUp,
+  setShowFameRankUp,
   tutorialStep,
   setTutorialStep,
   isRecipeBookExpanded,
@@ -1267,6 +1490,7 @@ function CombinationAgent({
   manifestationResult,
   setManifestationResult,
   currentFame,
+  onPurchasePlan,
 }: CombinationAgentProps) {
   const { generateContent, setConfig, client, model } = useGeminiAPIContext();
   const [searchTerm, setSearchTerm] = useState('');
@@ -1290,7 +1514,7 @@ function CombinationAgent({
   const [isRecipePinned, setIsRecipePinned] = useState(false);
   const [isShopExpanded, setIsShopExpanded] = useState(false);
   const [isFameTerminalOpen, setIsFameTerminalOpen] = useState(false);
-  const [showFameLevelError, setShowFameLevelError] = useState(false);
+  
   const [showAnnoucement, setShowAnnouncement] = useState(false);
   const [showNewsFeed, setShowNewsFeed] = useState(false);
   const [activeNewsId, setActiveNewsId] = useState<string | null>(null);
@@ -1324,6 +1548,8 @@ function CombinationAgent({
       const oldFame = getCurrentFameLevel(stats.fameDonated || 0);
       const newFame = getCurrentFameLevel(nextDonated);
       
+      addTerminalLog(`[INJECTION] +$${amount} Fame Credits processed.`);
+      
       setStats((prev: any) => ({
         ...prev,
         money: prev.money - amount,
@@ -1331,9 +1557,11 @@ function CombinationAgent({
       }));
 
       // Find if we crossed a new threshold
-      if (newFame && (!oldFame || oldFame.tier !== newFame.tier || oldFame.stage !== newFame.stage)) {
-        alert(`✨ SYSTEM_ALERT: Your fame has reached ${newFame.tier.toUpperCase()} Stage ${newFame.stage}! ${newFame.emoji} ✨`);
-      }
+        if (newFame && (!oldFame || oldFame.tier !== newFame.tier || oldFame.stage !== newFame.stage)) {
+          soundService.playLevelUp();
+          setShowFameRankUp({ tier: newFame.tier, stage: newFame.stage, emoji: newFame.emoji });
+          addTerminalLog(`[SUCCESS] FAME_PROTOCOL: Standing elevated to ${newFame.tier} Stage ${newFame.stage}.`);
+        }
     } else {
       soundService.playError();
       alert("ERROR: Insufficient credits for this fame addition.");
@@ -1451,48 +1679,14 @@ function CombinationAgent({
     });
   }, [setConfig]);
 
-  // Load Ko-fi Widget
+  // Announcement Widget
   useEffect(() => {
     // Check if announcement was already acknowledged
     const acknowledged = localStorage.getItem('announcementAck_v1');
     if (!acknowledged) {
       setTimeout(() => setShowAnnouncement(true), 1500);
     }
-
-    if (stats.proPlan) return;
-    
-    const script = document.createElement('script');
-    script.src = 'https://storage.ko-fi.com/cdn/widget/Widget_2.js';
-    script.async = true;
-    script.onload = () => {
-      // @ts-ignore
-      if (window.kofiwidget2) {
-        try {
-          // @ts-ignore
-          window.kofiwidget2.init('Unlock it on ko-fi', '#f57373', 'X8X51WOFNJ');
-          // @ts-ignore
-          const widget = window.kofiwidget2.getHTML();
-          const container = document.getElementById('kofi-widget-container');
-          if (container) {
-            container.innerHTML = widget;
-          }
-        } catch (e) {
-          console.error("Ko-fi widget error:", e);
-        }
-      }
-    };
-    document.body.appendChild(script);
-    return () => {
-      try {
-        document.body.removeChild(script);
-      } catch (e) {}
-    };
-  }, [stats.proPlan]);
-
-  const handleCopyId = () => {
-    navigator.clipboard.writeText(user.uid);
-    alert("ID copied! Paste it in the Ko-fi message.");
-  };
+  }, []);
 
 
   const handleBuyShopItem = (item: ShopItem) => {
@@ -1516,12 +1710,6 @@ function CombinationAgent({
 
   // Toggle ingredient selection
   const toggleIngredient = useCallback((name: string) => {
-    if (tutorialStep === 2 && name === 'eggs') {
-      setTutorialStep(3);
-    } else if (tutorialStep === 4 && name === 'Fried Eggs') {
-      setTutorialStep(5);
-    }
-
     setSelectedIngredients(prev => {
       const next = new Set(prev);
       if (next.has(name)) {
@@ -1642,6 +1830,9 @@ function CombinationAgent({
   }, [executeCombination, onExecuteActionRef]);
 
   const fetchRecipeSteps = async (orderName: string, difficulty: string = 'easy') => {
+    if (tutorialStep === 2) {
+      setTutorialStep(3);
+    }
     // Check cache first to save API quota
     if (recipeCache[orderName]) {
       setRecipeSteps(recipeCache[orderName]);
@@ -1970,6 +2161,15 @@ Do not say you cannot do it; always provide a recipe.`;
     }
   };
 
+  const handleAdminToggleAds = () => {
+    if (isAdminUser) {
+      setStats((prev: any) => ({ ...prev, adsDisabled: !prev.adsDisabled }));
+      setSkipError('');
+    } else {
+      setSkipError('Unauthorized');
+    }
+  };
+
   const handleAdminSetCustomTitle = () => {
     if (isAdminUser) {
       const title = adminCustomTitle.trim();
@@ -2077,9 +2277,8 @@ Do not say you cannot do it; always provide a recipe.`;
 
     // Handle serve action specially - only triggers verification, no combination
     if (action.name === 'serve') {
-      if (tutorialStep === 5 && ingredientNames[0] === 'Fried Eggs') {
-        setTutorialStep(0);
-        localStorage.setItem('tutorialCompleted', 'true');
+      if (tutorialStep === 4 && ingredientNames[0]?.toLowerCase().includes('fried egg')) {
+        setTutorialStep(5);
       }
 
       // Serve takes only the first selected ingredient as the dish name
@@ -2092,11 +2291,11 @@ Do not say you cannot do it; always provide a recipe.`;
 
     setActiveAction(action.name);
 
-    if (tutorialStep === 3 && action.name === 'fry' && ingredientNames.includes('eggs')) {
+    const newIngredient = await executeCombination(action, ingredientNames);
+
+    if (tutorialStep === 3 && newIngredient && newIngredient.name.toLowerCase().includes('fried egg')) {
       setTutorialStep(4);
     }
-
-    const newIngredient = await executeCombination(action, ingredientNames);
 
     // Update total actions stat
     setStats((prev: any) => ({
@@ -2317,9 +2516,26 @@ Do not say you cannot do it; always provide a recipe.`;
               className={`leaderboard-btn-header fame-btn ${(stats.level >= 80 || (stats.fameDonated || 0) > 0) ? 'fame-unlocked' : 'fame-locked'}`}
               onClick={() => {
                 if (stats.level < 80 && (stats.fameDonated || 0) <= 0) {
+                  soundService.playError();
                   setShowFameLevelError(true);
                 } else {
+                  soundService.playClick();
                   setIsFameTerminalOpen(true);
+                  // Initialize boot sequence
+                  setTerminalLogs([]);
+                  const bootLogs = [
+                    "> INITIALIZING FAME_PROTOCOL_V2...",
+                    "> VERIFYING CULINARY_CERTIFICATE...",
+                    "> SYNCING WITH BLOCKCHAIN_LEDGER...",
+                    "> HANDSHAKE_SUCCESSFUL.",
+                    "> WELCOME, MASTER CHEF."
+                  ];
+                  bootLogs.forEach((log, i) => {
+                    setTimeout(() => {
+                      setTerminalLogs(prev => [...prev, log]);
+                      soundService.playType();
+                    }, (i + 1) * 400);
+                  });
                 }
               }}
               title={(stats.level >= 80 || (stats.fameDonated || 0) > 0) ? "Fame Terminal" : "Level 80 Required"}
@@ -2502,15 +2718,6 @@ Do not say you cannot do it; always provide a recipe.`;
               <span>Visual Shop</span>
               {currentFame && <span className="fame-badge-mini ml-2">{currentFame.emoji}</span>}
             </button>
-            <a 
-              href="https://ko-fi.com/X8X51WOFNJ" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="view-achievements-btn store-btn"
-            >
-              <span className="emoji">🛒</span>
-              <span>STORE</span>
-            </a>
           </div>
         </div>
       </div>
@@ -2660,7 +2867,8 @@ Do not say you cannot do it; always provide a recipe.`;
           </div>
           {currentOrder && (
             <button
-              className="hint-button"
+              id="get-steps"
+              className={`hint-button ${tutorialStep === 2 ? 'tutorial-highlight' : ''}`}
               onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
               title={`Get steps for ${currentOrder.name}`}
               disabled={isCooking || isFetchingSteps}
@@ -2990,6 +3198,14 @@ Do not say you cannot do it; always provide a recipe.`;
                         {stats.musicPass ? 'Revoke Music Pass' : 'Grant Music Pass'}
                       </button>
                     </div>
+                    <div className="flex gap-2">
+                       <button 
+                        className={`admin-action-btn flex-1 ${stats.adsDisabled ? 'active' : ''}`} 
+                        onClick={handleAdminToggleAds}
+                      >
+                        {stats.adsDisabled ? 'Enable Ads' : 'Disable Ads'}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="admin-section">
@@ -3040,7 +3256,7 @@ Do not say you cannot do it; always provide a recipe.`;
 
       <div className="ingredients-tools-row-lab">
         {/* Left Column: Data Source / Inventory (Always Visible) */}
-        <div className="lab-column inventory-column">
+        <div id="inventory" className={`lab-column inventory-column ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`}>
           <div className="column-technical-header">
             <div className="flex justify-between items-center w-full">
               <span className="tech-badge">DATA_SOURCE_01 // INVENTORY</span>
@@ -3089,8 +3305,7 @@ Do not say you cannot do it; always provide a recipe.`;
                       isActive={false}
                       isDisabled={!currentOrder}
                       isHighlighted={
-                        (tutorialStep === 2 && ingredient.name === 'eggs') ||
-                        (tutorialStep === 4 && ingredient.name === 'Fried Eggs')
+                        (tutorialStep === 4 && ingredient.name.toLowerCase().includes('fried egg'))
                       }
                       onClick={() => toggleIngredient(ingredient.name)}
                       onEdit={() => onEditIngredient(ingredient)}
@@ -3215,8 +3430,9 @@ Do not say you cannot do it; always provide a recipe.`;
                 return (
                   <button
                     key={action.name}
+                    id={action.name === 'serve' ? 'serve' : undefined}
                     data-action={action.name}
-                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''}`}
+                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${tutorialStep === 4 && action.name === 'serve' ? 'tutorial-highlight' : ''}`}
                     onClick={() => !isDisabled && executeAction(action)}
                     disabled={isDisabled}
                   >
@@ -3230,7 +3446,7 @@ Do not say you cannot do it; always provide a recipe.`;
       </div>
 
       {/* New OS System Console Section */}
-      <section className="lab-system-console">
+      <section id="system-control" className={`lab-system-console ${tutorialStep === 5 ? 'tutorial-highlight' : ''}`}>
         <div className="console-header">
           <div className="console-title flex items-center gap-2">
             <Zap size={14} className="text-[#1a1a1a]" />
@@ -3439,29 +3655,30 @@ Do not say you cannot do it; always provide a recipe.`;
             <div className="os-kofi-container">
               <div className="flex flex-col items-center gap-3 w-full">
                 <span className="text-[9px] text-[#00ff00] animate-pulse uppercase font-bold">
-                  ⚠️ COPY AUTH_ID BELOW BEFORE PAYING ⚠️
+                  ⚠️ SECURE IN-GAME PURCHASE AVAILABLE ⚠️
                 </span>
-                <div id="kofi-widget-container" className="flex justify-center">
-                  {/* Widget will be injected here */}
-                  <a 
-                    href="https://ko-fi.com/X8X51WOFNJ" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="bg-[#f57373] text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
+                <div className="flex justify-center flex-col gap-2">
+                  <button 
+                    onClick={() => {
+                        window.open(`https://buy.stripe.com/14A28sfbn3kQ7yVeHVf3a01?client_reference_id=${user.uid}`, '_blank');
+                    }}
+                    className="bg-[#00ff00] text-black px-6 py-3 rounded-sm font-bold flex items-center justify-center gap-2 hover:bg-white transition-colors uppercase tracking-widest border border-[#00ff00] hover:border-white shadow-[0_0_15px_rgba(0,255,0,0.3)]"
                   >
-                    <Coffee size={18} />
-                    Unlock it on ko-fi
-                  </a>
+                    <Lock size={16} />
+                    Unlock PRO Plan ($5.00)
+                  </button>
+                  <button 
+                    onClick={() => {
+                        window.open(`https://buy.stripe.com/9B66oIe7jbRmdXj7ftf3a02?client_reference_id=${user.uid}`, '_blank');
+                    }}
+                    className="bg-purple-600 text-white px-6 py-2 rounded-sm font-bold flex items-center justify-center gap-2 hover:bg-purple-500 transition-colors uppercase tracking-widest border border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)] text-xs"
+                  >
+                    <Coffee size={14} />
+                    Unlock GOD Tier ($15.00)
+                  </button>
                 </div>
               </div>
             </div>
-
-            <button 
-              onClick={handleCopyId}
-              className="os-copy-id"
-            >
-              [ COPY AUTH_ID: {user.uid.substring(0, 8)}... ]
-            </button>
           </div>
         )}
 
@@ -3554,71 +3771,159 @@ Do not say you cannot do it; always provide a recipe.`;
           difficulty={currentOrder.difficulty}
           isPinned={isRecipePinned}
           onPinToggle={() => setIsRecipePinned(!isRecipePinned)}
+          adsDisabled={stats.adsDisabled}
+          proPlan={stats.proPlan}
+          godTier={stats.godTier}
         />
       )}
 
-      {/* Fame Level Requirement Error Modal - Refined Brutalist Edition */}
+      {/* Fame Level Requirement Error Modal - Extreme Glitch Edition */}
       {showFameLevelError && (
         <div className="os-modal-overlay" onClick={() => setShowFameLevelError(false)}>
-          <div className="os-modal-card border-4 border-[#ff4b2b] bg-[#0a0a0a] max-w-[450px] shadow-[20px_20px_0px_rgba(255,75,43,0.3)]" onClick={e => e.stopPropagation()}>
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1, x: [0, -2, 2, -1, 1, 0] }}
+            transition={{ duration: 0.2 }}
+            className="os-modal-card border-4 border-[#ff4b2b] bg-[#0a0a0a] max-w-[450px] shadow-[0_0_50px_rgba(255,75,43,0.3)] relative overflow-hidden" 
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Glitch Overlay */}
+            <div className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay bg-[url('https://media.giphy.com/media/oEI9uWUicst3i/giphy.gif')]"></div>
+            
             {/* Top Bar */}
             <div className="bg-[#ff4b2b] p-3 flex justify-between items-center text-white font-mono text-[9px] font-black tracking-widest">
               <div className="flex items-center gap-2">
                 <span className="animate-pulse">●</span>
-                <span>SYSTEM_LOCKDOWN // LVL_GATE</span>
+                <span>SYSTEM_LOCKDOWN // GATEKEEPER_V3</span>
               </div>
-              <span>UID: {user?.uid?.slice(0, 8) || 'ANON'}</span>
+              <span>SECURITY_STATE: CRITICAL</span>
             </div>
 
-            <div className="p-10 flex flex-col items-center">
-              <div className="relative mb-12">
-                <div className="text-[80px] leading-none select-none opacity-10 absolute -top-5 left-1/2 -translate-x-1/2 font-black text-[#ff4b2b]">403</div>
+            <div className="p-10 flex flex-col items-center relative z-10">
+              <motion.div 
+                animate={{ 
+                  textShadow: [
+                    "2px 0 red, -2px 0 blue",
+                    "-2px 0 red, 2px 0 blue",
+                    "0px 0 red, 0px 0 blue"
+                  ]
+                }}
+                transition={{ duration: 0.1, repeat: Infinity, repeatType: "mirror" }}
+                className="relative mb-12"
+              >
+                <div className="text-[100px] leading-none select-none opacity-10 absolute -top-10 left-1/2 -translate-x-1/2 font-black text-[#ff4b2b] italic">403</div>
                 <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-16 h-16 bg-[#ff4b2b] rounded-full flex items-center justify-center text-3xl mb-4 shadow-[0_0_20px_rgba(255,75,43,0.5)]">
+                  <div className="w-20 h-20 bg-[#ff4b2b] rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(255,75,43,1)] border-4 border-white animate-bounce">
                     🚫
                   </div>
-                  <h2 className="text-3xl font-black text-white tracking-tighter text-center uppercase">
-                    Protocol<br/><span className="text-[#ff4b2b]">Restricted</span>
+                  <h2 className="text-4xl font-black text-white tracking-tighter text-center uppercase leading-[0.8] mb-2">
+                    Access<br/><span className="text-[#ff4b2b]">Rejected</span>
                   </h2>
+                  <div className="h-1 w-12 bg-[#ff4b2b] mb-1"></div>
+                </div>
+              </motion.div>
+
+              <div className="w-full grid grid-cols-2 gap-px bg-[#333] border border-[#333] mb-8 overflow-hidden rounded-sm">
+                <div className="bg-[#0f0f0f] p-6 text-center">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Required</p>
+                  <p className="text-5xl font-black text-white">80</p>
+                  <p className="text-[9px] text-[#ff4b2b] mt-1 font-mono">LEVEL_MIN</p>
+                </div>
+                <div className="bg-[#0f0f0f] p-6 text-center">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Current</p>
+                  <p className="text-5xl font-black text-white">{stats.level || 1}</p>
+                  <p className="text-[9px] text-gray-400 mt-1 font-mono">LEVEL_AUTH</p>
                 </div>
               </div>
 
-              <div className="w-full grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-[#151515] p-5 border-l-4 border-[#ff4b2b]">
-                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Target_Floor</p>
-                  <p className="text-4xl font-black text-white">80</p>
+              <div className="w-full font-mono text-[11px] text-[#ff4b2b] mb-10 p-5 border-2 border-[#ff4b2b55] bg-[#ff4b2b11] shadow-[inset_0_0_20px_rgba(255,75,43,0.1)]">
+                <div className="flex justify-between border-b border-[#ff4b2b33] mb-3 pb-1 font-black opacity-80">
+                  <span>ERROR_CODE:</span>
+                  <span>LVL_INSUFFICIENT</span>
                 </div>
-                <div className="bg-[#151515] p-5 border-l-4 border-gray-600">
-                  <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1">Current_Auth</p>
-                  <p className="text-4xl font-black text-white">{stats.level || 1}</p>
+                <div className="space-y-1 opacity-90 italic">
+                  <p className="flex items-center gap-2"><span className="text-white">»</span> Unauthorized access to terminal...</p>
+                  <p className="flex items-center gap-2"><span className="text-white">»</span> Credentials verification: FAILED</p>
+                  <p className="flex items-center gap-2"><span className="text-white">»</span> Mandatory Delta: {80 - (stats.level || 1)} levels</p>
                 </div>
-              </div>
-
-              <div className="w-full font-mono text-[10px] text-[#ff4b2b] mb-10 p-4 border border-[#ff4b2b33] bg-[#ff4b2b05] leading-relaxed">
-                <div className="flex justify-between border-b border-[#ff4b2b22] mb-2 pb-1">
-                  <span>LOG_ENTRY:</span>
-                  <span>{new Date().toISOString().split('T')[1].split('.')[0]}</span>
-                </div>
-                [!] Unauthorized access attempt to Fame_Terminal_v2.<br/>
-                [!] Standing insufficient for protocol engagement.<br/>
-                [!] Required Delta: <span className="font-bold underline">{80 - (stats.level || 1)}</span> levels.
               </div>
 
               <button 
-                className="group w-full py-5 bg-white text-black font-black uppercase tracking-[0.2em] text-xs hover:bg-[#ff4b2b] hover:text-white transition-all transform active:scale-95 flex items-center justify-center gap-3"
-                onClick={() => setShowFameLevelError(false)}
+                className="group relative w-full overflow-hidden"
+                onClick={() => {
+                  soundService.playClick();
+                  setShowFameLevelError(false);
+                }}
               >
-                <span>Confirm Lockdown</span>
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
+                <div className="absolute inset-0 bg-[#ff4b2b] translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <div className="relative py-5 border-2 border-white bg-white text-black font-black uppercase tracking-[0.3em] text-[10px] group-hover:text-white transition-colors duration-300 flex items-center justify-center gap-4">
+                  <span>Acknowledge Error</span>
+                  <RotateCcw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
+                </div>
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
+      {/* Fame Rank Up Announcement Modal */}
+      <AnimatePresence>
+        {showFameRankUp && (
+          <div className="os-modal-overlay z-[10000]" onClick={() => setShowFameRankUp(null)}>
+            <motion.div 
+              initial={{ y: 100, opacity: 0, scale: 0.5 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -100, opacity: 0, scale: 1.5 }}
+              className="os-modal-card bg-white p-12 text-center rounded-none border-[12px] border-black shadow-[30px_30px_0px_rgba(0,0,0,0.2)] max-w-lg"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="mb-8">
+                <motion.div 
+                  animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  className="text-[120px] leading-none mb-6"
+                >
+                  {showFameRankUp.emoji}
+                </motion.div>
+                <h2 className="text-6xl font-black text-black tracking-tighter uppercase mb-2">RANK UP</h2>
+                <div className="h-2 w-32 bg-black mx-auto mb-6"></div>
+              </div>
+
+              <div className="bg-black text-white p-8 mb-8 inline-block rotate-[-2deg] shadow-xl">
+                <p className="text-sm font-bold opacity-60 mb-1 uppercase tracking-widest">New Fame Standing</p>
+                <p className="text-4xl font-black tracking-tighter">
+                  {showFameRankUp.tier.toUpperCase()} <span className="text-[#00ff00]">STAGE_{showFameRankUp.stage}</span>
+                </p>
+              </div>
+
+              <p className="text-gray-500 font-medium mb-10 max-w-sm mx-auto">
+                Your culinary frequency has resonated with the universe. 
+                New digital horizons are now authorized for exploration.
+              </p>
+
+              <button 
+                className="w-full py-5 bg-black text-white font-black uppercase tracking-[0.4em] text-xs hover:bg-[#00ff00] hover:text-black transition-all active:scale-95"
+                onClick={() => {
+                  soundService.playSuccess();
+                  setShowFameRankUp(null);
+                }}
+              >
+                EMBRACE DESTINY
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Exclusive Fame Terminal (Kitchen OS Dark) */}
       {isFameTerminalOpen && (
-        <div className="fame-os-overlay" onClick={() => setIsFameTerminalOpen(false)}>
+        <div className="fame-os-overlay overflow-hidden" onClick={() => setIsFameTerminalOpen(false)}>
+          <AntigravityBackground 
+            count={25} 
+            emojis={['✨', '⭐', '💎', '💰', '💸', '🏆', currentFame?.emoji || '🍳']} 
+            opacityRange={[0.08, 0.2]}
+            zIndex={1}
+          />
           <div className="fame-terminal-window" onClick={e => e.stopPropagation()}>
             <div className="terminal-scanline"></div>
             <div className="terminal-header">
@@ -3628,7 +3933,7 @@ Do not say you cannot do it; always provide a recipe.`;
                 <span className="dot green"></span>
               </div>
               <div className="terminal-title">KITCHEN_OS FAME_PROTOCOL v2.4</div>
-              <button className="terminal-close" onClick={() => setIsFameTerminalOpen(false)}>CLOSE_SESSION</button>
+              <button className="terminal-close" onClick={() => setIsFameTerminalOpen(false)}>TERMINATE_SESSION</button>
             </div>
 
             <div className="terminal-content">
@@ -3636,56 +3941,93 @@ Do not say you cannot do it; always provide a recipe.`;
                 <div className="fame-identity-section">
                   <div className="fame-portal-badge" style={{ 
                     background: currentFame ? (currentFame.color.startsWith('linear') ? currentFame.color : currentFame.color) : '#1a1a1a',
-                    boxShadow: currentFame ? `0 0 20px ${currentFame.color.startsWith('linear') ? '#00ff00' : currentFame.color}` : 'none'
+                    boxShadow: currentFame ? `0 0 30px ${currentFame.color.startsWith('linear') ? '#00ff00' : currentFame.color}` : 'none',
+                    border: '2px solid rgba(255,255,255,0.1)'
                   }}>
                     {currentFame ? currentFame.emoji : '💀'}
                   </div>
                   <div className="fame-identity-info">
-                    <h2 className="terminal-h2">{currentFame ? currentFame.tier.toUpperCase() : 'COMA_STATE'}</h2>
-                    <p className="terminal-p">STAGE_{currentFame ? currentFame.stage : '00'}_ACTIVE</p>
-                    <div className="terminal-progress-container">
-                      <div className="terminal-progress-fill" style={{ width: `${Math.min(100, (stats.fameDonated || 0) / (FAME_LEVELS[FAME_LEVELS.length - 1].threshold) * 100)}%` }}></div>
+                    <div className="flex justify-between items-end mb-1">
+                      <h2 className="terminal-h2">{currentFame ? currentFame.tier.toUpperCase() : 'INITIATE'}</h2>
+                      <span className="text-[9px] font-mono text-[#00ff00] opacity-70">
+                        {currentFame ? `STAGE_${currentFame.stage}` : 'UNRANKED'}
+                      </span>
                     </div>
+                    
+                    {/* Progress to next level */}
+                    {(() => {
+                      const nextLevel = FAME_LEVELS.find(l => l.threshold > (stats.fameDonated || 0));
+                      const lastTierThreshold = FAME_LEVELS.filter(l => l.threshold <= (stats.fameDonated || 0)).pop()?.threshold || 0;
+                      
+                      if (!nextLevel) return (
+                        <div className="mt-2">
+                          <div className="terminal-progress-container h-2">
+                            <div className="terminal-progress-fill w-full" />
+                          </div>
+                          <p className="text-[9px] text-[#00ff00] mt-1 uppercase font-bold text-center">MAX_FAME_ACHIEVED</p>
+                        </div>
+                      );
+
+                      const progress = ((stats.fameDonated || 0) - lastTierThreshold) / (nextLevel.threshold - lastTierThreshold) * 100;
+                      
+                      return (
+                        <div className="mt-2">
+                          <div className="flex justify-between text-[8px] text-gray-500 mb-1 font-mono uppercase">
+                            <span>{lastTierThreshold}cr</span>
+                            <span>{nextLevel.threshold}cr</span>
+                          </div>
+                          <div className="terminal-progress-container h-2">
+                            <div className="terminal-progress-fill" style={{ width: `${progress}%` }} />
+                          </div>
+                          <p className="text-[9px] text-gray-400 mt-1 uppercase">Next: {nextLevel.tier} St_{nextLevel.stage}</p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                <div className="terminal-stats-grid">
-                  <div className="t-stat">
-                    <span className="t-label">TOTAL_FAME_CREDITS</span>
-                    <span className="t-value">${stats.fameDonated || 0}</span>
+                <div className="terminal-stats-grid grid grid-cols-2 gap-4 mb-6">
+                  <div className="t-stat border border-[#222] bg-[#0c0c0c] p-4 rounded-sm">
+                    <span className="t-label text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Donated Credits</span>
+                    <span className="t-value text-2xl font-black text-[#00ff00] tabular-nums">${stats.fameDonated || 0}</span>
                   </div>
-                  <div className="t-stat">
-                    <span className="t-label">CURRENT_BALANCE</span>
-                    <span className="t-value">${stats.money}</span>
+                  <div className="t-stat border border-[#222] bg-[#0c0c0c] p-4 rounded-sm">
+                    <span className="t-label text-[10px] text-gray-500 uppercase tracking-wider block mb-1">Available Funds</span>
+                    <span className="t-value text-2xl font-black text-[#00ff00] tabular-nums">${stats.money}</span>
                   </div>
                 </div>
 
-                <div className="terminal-action-zone">
-                  <h3 className="terminal-h3">INCREMENT_FAME_RESOURCES</h3>
-                  <div className="terminal-input-group">
-                    <span className="terminal-prompt">&gt; add_fame_amount:</span>
-                    <input 
-                      type="number" 
-                      value={fameDonationAmount}
-                      onChange={(e) => setFameDonationAmount(e.target.value)}
-                      className="terminal-input"
-                      autoFocus
-                    />
+                <div className="terminal-action-zone bg-[#0f0f0f] border-2 border-[#1a1a1a] p-6 rounded-sm mb-6">
+                  <h3 className="terminal-h3 text-xs text-gray-400 uppercase tracking-[0.2em] mb-4">Transfer Protocol</h3>
+                  <div className="flex gap-2">
+                    <div className="terminal-input-group flex-1 flex items-center bg-black border border-[#333] px-3 gap-2">
+                      <span className="terminal-prompt text-[#00ff00] font-mono">$</span>
+                      <input 
+                        type="number" 
+                        value={fameDonationAmount}
+                        onChange={(e) => setFameDonationAmount(e.target.value)}
+                        className="terminal-input bg-transparent border-none text-white font-mono text-sm w-full py-3 focus:outline-none"
+                        placeholder="Amount..."
+                      />
+                    </div>
+                    <button 
+                      className="terminal-execute-btn flex-[0.8] bg-transparent border-2 border-[#00ff00] text-[#00ff00] font-black uppercase text-[10px] tracking-widest hover:bg-[#00ff00] hover:text-black transition-all disabled:opacity-30 disabled:grayscale"
+                      onClick={handleDonateToFame}
+                      disabled={stats.money < parseInt(fameDonationAmount, 10) || parseInt(fameDonationAmount, 10) <= 0}
+                    >
+                      Process_Injection
+                    </button>
                   </div>
-                  <button 
-                    className="terminal-execute-btn"
-                    onClick={handleDonateToFame}
-                    disabled={stats.money < parseInt(fameDonationAmount, 10)}
-                  >
-                    [ EXECUTE: ADD FAME ]
-                  </button>
                 </div>
 
-                <div className="terminal-log">
-                  <p className="log-line text-highlight-green">[SYSTEM] Connection established...</p>
-                  <p className="log-line text-highlight-green">[SYSTEM] User: {user.displayName || 'CHEF_UNNAMED'}</p>
-                  <p className="log-line text-highlight-green">[SYSTEM] Status: Level {stats.level} (Elite)</p>
-                  <p className="log-line text-muted">[INFO] Awaiting fame credits injection...</p>
+                <div className="terminal-log bg-[#000] p-4 border border-[#333] font-mono text-[9px] text-[#00ff00] h-40 overflow-y-auto custom-scrollbar shadow-[inset_0_0_20px_rgba(0,0,0,0.5)]">
+                  {terminalLogs.map((log, i) => (
+                    <div key={i} className="mb-1 flex gap-3 items-start border-l border-[#00ff0022] pl-2">
+                      <span className="text-[#004400] opacity-40 select-none shrink-0">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                      <motion.span initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}>{log}</motion.span>
+                    </div>
+                  ))}
+                  <div className="animate-pulse bg-[#00ff00] w-1.5 h-3 inline-block align-middle ml-1"></div>
                 </div>
               </div>
             </div>
@@ -4130,6 +4472,7 @@ interface VerificationAgentProps {
   setCompletedRecipes: React.Dispatch<React.SetStateAction<CompletedRecipe[]>>;
   setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
   generateDivineImage: (dishName: string) => Promise<void>;
+  setChromaticMinigameOrder: React.Dispatch<React.SetStateAction<{order: Order, servedEmoji: string, reward: number} | null>>;
 }
 
 function VerificationAgent({
@@ -4143,6 +4486,7 @@ function VerificationAgent({
   setCompletedRecipes,
   setCurrentOrderSteps,
   generateDivineImage,
+  setChromaticMinigameOrder,
 }: VerificationAgentProps) {
   const { generateContent, setConfig } = useGeminiAPIContext();
 
@@ -4261,6 +4605,13 @@ function VerificationAgent({
 
             const reward = Math.round(baseReward * priceMultiplier);
 
+            // Special case for Chromatic: Trigger Minigame
+            if (order.rarity === 'chromatic' || order.difficulty === 'chromatic') {
+              setChromaticMinigameOrder({ order, servedEmoji, reward });
+              // We return true so CookingAgent handles it as success, but we don't finalize order here
+              return true;
+            }
+
             // Save recipe
             setCompletedRecipes(prev => {
               if (prev.some(r => r.orderName === order.name)) return prev;
@@ -4369,6 +4720,16 @@ function KitchenAppContainer({ user }: { user: User }) {
   const isSuperAdmin = ADMIN_EMAILS.includes(user.email || '');
   const isAdminUser = isSuperAdmin;
 
+  const [terminalLogs, setTerminalLogs] = useState<string[]>(["[SYSTEM] Kernel loaded.", "[INFO] Awaiting authorization..."]);
+  const [chromaticMinigameOrder, setChromaticMinigameOrder] = useState<{order: Order, servedEmoji: string, reward: number} | null>(null);
+  const [showFameLevelError, setShowFameLevelError] = useState(false);
+  const [showFameRankUp, setShowFameRankUp] = useState<{tier: string, stage: number, emoji: string} | null>(null);
+
+  const addTerminalLog = (msg: string) => {
+    setTerminalLogs(prev => [...prev.slice(-49), msg]);
+    soundService.playType();
+  };
+
   // Tutorial State
   const [tutorialStep, setTutorialStep] = useState<number>(1);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -4397,6 +4758,9 @@ function KitchenAppContainer({ user }: { user: User }) {
   // God Tier State
   const [manifestationName, setManifestationName] = useState('');
   const [manifestationEmoji, setManifestationEmoji] = useState('✨');
+  
+  // Stripe Checkout
+  const [checkoutPassType, setCheckoutPassType] = useState<'proPlan' | 'godTier' | 'musicPass' | null>(null);
   const [customToolName, setCustomToolName] = useState('');
   const [customToolEmoji, setCustomToolEmoji] = useState('🛠️');
   const [showCrumbleCustomizer, setShowCrumbleCustomizer] = useState(false);
@@ -4452,6 +4816,7 @@ function KitchenAppContainer({ user }: { user: User }) {
     profileImage: null as string | null,
     leaderboardOptIn: false,
     fameDonated: 0,
+    adsDisabled: false,
     purchasedShopItems: [] as string[],
     currentTheme: 'green',
     discoveredIngredientsList: STARTING_INGREDIENTS,
@@ -4573,7 +4938,7 @@ function KitchenAppContainer({ user }: { user: User }) {
             unlockedAchievements: [],
             purchasedUpgrades: [],
             customTools: [],
-            stats: isAdminUser ? { ...stats, proPlan: true, godTier: true, musicPass: true } : stats,
+            stats: isAdminUser ? { ...stats, proPlan: true, godTier: true, musicPass: true, adsDisabled: true } : stats,
             tutorialStep: 1,
             lastUpdated: Timestamp.now()
           }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
@@ -4775,7 +5140,7 @@ function KitchenAppContainer({ user }: { user: User }) {
 
     if (tutorialStep === 1) {
       const order = orders.find(o => o.id === orderId);
-      if (order?.name === 'Fried Eggs') {
+      if (order?.name?.toLowerCase() === 'fried eggs') {
         setTutorialStep(2);
       }
     }
@@ -4799,7 +5164,7 @@ function KitchenAppContainer({ user }: { user: User }) {
         order.id === orderId ? { ...order, status: 'in_progress' as const } : order
       );
     });
-  }, [stats.purchasedUpgrades]);
+  }, [stats.purchasedUpgrades, orders, tutorialStep]);
 
   // Callback for passing on an order (marks it as failed)
   const handlePass = useCallback(() => {
@@ -4809,6 +5174,35 @@ function KitchenAppContainer({ user }: { user: User }) {
         : order
     ));
   }, []);
+
+  const finalizeChromaticOrder = (success: boolean) => {
+    if (!chromaticMinigameOrder) return;
+    
+    const { order, servedEmoji, reward } = chromaticMinigameOrder;
+    
+    if (success) {
+      soundService.playSuccess();
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'completed' as const, emoji: servedEmoji } : o));
+      setStats((prev: any) => ({
+        ...prev,
+        money: prev.money + reward,
+        xp: prev.xp + 2500,
+        completedOrders: prev.completedOrders + 1,
+        completedDishes: Array.from(new Set([...(prev.completedDishes || []), order.name])),
+        dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
+          c.type === 'orders' ? { ...c, current: c.current + 1 } :
+          c.type === 'money' ? { ...c, current: c.current + reward } : c
+        )
+      }));
+      addTerminalLog(`[SUCCESS] CHROMATIC_HARMONY: ${order.name} stabilized and served.`);
+    } else {
+      soundService.playError();
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'failed' as const, servedDish: 'Stabilization Failed' } : o));
+      addTerminalLog(`[ERROR] CHROMATIC_FAILURE: Resonance lost. ${order.name} collapsed.`);
+    }
+    
+    setChromaticMinigameOrder(null);
+  };
 
   return (
     <div className="app-container">
@@ -4873,6 +5267,13 @@ function KitchenAppContainer({ user }: { user: User }) {
           isUpgradesExpanded={isUpgradesExpanded}
           setIsUpgradesExpanded={setIsUpgradesExpanded}
           onBuyUpgrade={buyUpgrade}
+          terminalLogs={terminalLogs}
+          setTerminalLogs={setTerminalLogs}
+          addTerminalLog={addTerminalLog}
+          showFameLevelError={showFameLevelError}
+          setShowFameLevelError={setShowFameLevelError}
+          showFameRankUp={showFameRankUp}
+          setShowFameRankUp={setShowFameRankUp}
           tutorialStep={tutorialStep}
           setTutorialStep={setTutorialStep}
           isRecipeBookExpanded={isRecipeBookExpanded}
@@ -4901,6 +5302,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           manifestationResult={manifestationResult}
           setManifestationResult={setManifestationResult}
           currentFame={currentFame}
+          onPurchasePlan={setCheckoutPassType}
         />
         <GeminiDebug
           agentName="Alchemy Agent"
@@ -4952,6 +5354,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           setCompletedRecipes={setCompletedRecipes}
           setCurrentOrderSteps={setCurrentOrderSteps}
           generateDivineImage={generateDivineImage}
+          setChromaticMinigameOrder={setChromaticMinigameOrder}
         />
         <GeminiDebug
           agentName="Judge Agent"
@@ -5065,6 +5468,14 @@ function KitchenAppContainer({ user }: { user: User }) {
         />
       )}
 
+      {chromaticMinigameOrder && (
+        <ChromaticMinigame 
+          order={chromaticMinigameOrder.order}
+          onSuccess={() => finalizeChromaticOrder(true)}
+          onFail={() => finalizeChromaticOrder(false)}
+        />
+      )}
+
       {showLevelError && (
         <div className="os-modal-overlay" onClick={() => setShowLevelError(false)}>
           <div className="os-modal-card" onClick={e => e.stopPropagation()}>
@@ -5089,7 +5500,26 @@ function KitchenAppContainer({ user }: { user: User }) {
         </div>
       )}
 
-      <MusicPlayer hasMusicPass={stats.musicPass} />
+      {checkoutPassType && (
+        <StripeCheckoutModal
+          uid={user.uid}
+          passType={checkoutPassType}
+          onClose={() => setCheckoutPassType(null)}
+          onSuccess={() => {
+            setCheckoutPassType(null);
+            addTerminalLog("[STRIPE] Transaction confirmed. Waiting for sync...");
+            alert("Payment successful! Synchronizing clearance levels...");
+          }}
+        />
+      )}
+
+      <MusicPlayer 
+        hasMusicPass={stats.musicPass} 
+        onPurchasePass={() => {
+          // Open Stripe Payment Link with client_reference_id
+          window.open(`https://buy.stripe.com/fZu7sM2oB6x206tgQ3f3a00?client_reference_id=${user.uid}`, '_blank');
+        }} 
+      />
     </div>
   );
 }

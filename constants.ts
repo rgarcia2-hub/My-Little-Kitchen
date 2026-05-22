@@ -627,28 +627,60 @@ export const ACHIEVEMENTS: Achievement[] = [
 ];
 
 export const EXAMPLE_ORDERS: Order[] = [
+  // Easy
   { id: 'order-1', name: 'Fried Eggs', emoji: '🍳', difficulty: 'easy', status: 'not_started' },
   { id: 'order-6', name: 'Avocado Toast', emoji: '🥑', difficulty: 'easy', status: 'not_started' },
   { id: 'order-13', name: 'Buttered Toast', emoji: '🍞', difficulty: 'easy', status: 'not_started' },
   { id: 'order-14', name: 'Simple Salad', emoji: '🥗', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-e5', name: 'Scrambled Eggs', emoji: '🍳', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-e6', name: 'Cheese Omelette', emoji: '🧀', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-e7', name: 'Boiled Corn', emoji: '🌽', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-e8', name: 'Grilled Sausage', emoji: '🌭', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-e9', name: 'Mashed Potatoes', emoji: '🥔', difficulty: 'easy', status: 'not_started' },
+  { id: 'order-e10', name: 'Steamed Broccoli', emoji: '🥦', difficulty: 'easy', status: 'not_started' },
+
+  // Intermediate
   { id: 'order-4', name: 'Lemon Sponge Cake', emoji: '🍰', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-2', name: 'Tonkotsu Ramen', emoji: '🍜', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-7', name: 'Spicy Tuna Roll', emoji: '🍣', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-15', name: 'Eggs Benedict', emoji: '🥚', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-16', name: 'Chicken Tikka Masala', emoji: '🍛', difficulty: 'intermediate', status: 'not_started' },
   { id: 'order-5', name: 'Lasagna', emoji: '🍝', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-i7', name: 'Mushroom Risotto', emoji: '🍄', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-i8', name: 'Beef Tacos', emoji: '🌮', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-i9', name: 'Berry Smoothie', emoji: '🫐', difficulty: 'intermediate', status: 'not_started' },
+  { id: 'order-i10', name: 'Clam Chowder', emoji: '🥣', difficulty: 'intermediate', status: 'not_started' },
+
+  // Difficult
   { id: 'order-3', name: 'Itek Tim', emoji: '🍲', difficulty: 'difficult', status: 'not_started' },
   { id: 'order-8', name: 'Beef Wellington', emoji: '🥩', difficulty: 'difficult', status: 'not_started' },
   { id: 'order-9', name: 'Peking Duck', emoji: '🦆', difficulty: 'difficult', status: 'not_started' },
   { id: 'order-17', name: 'Chocolate Soufflé', emoji: '🍫', difficulty: 'difficult', status: 'not_started' },
   { id: 'order-18', name: 'Lobster Thermidor', emoji: '🦞', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-d6', name: 'Sushi Grand Platter', emoji: '🍱', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-d7', name: 'Seafood Paella', emoji: '🥘', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-d8', name: 'Rack of Lamb', emoji: '🐑', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-d9', name: 'Baked Alaska', emoji: '🍦', difficulty: 'difficult', status: 'not_started' },
+  { id: 'order-d10', name: 'Coq au Vin', emoji: '🍷', difficulty: 'difficult', status: 'not_started' },
+
+  // Nightmare
   { id: 'order-10', name: '12-Course Tasting Menu', emoji: '🍽️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-11', name: 'Molecular Truffle Sphere', emoji: '🔮', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-12', name: 'Intergalactic Star-Soup', emoji: '🌌', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-19', name: 'The Singularity Cake', emoji: '🕳️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-20', name: 'Quantum Soup', emoji: '⚛️', difficulty: 'nightmare', status: 'not_started' },
   { id: 'order-21', name: 'Phoenix Down Omelette', emoji: '🔥', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-n7', name: "Dragon's Breath Soup", emoji: '🐲', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-n8', name: 'Eternal Soul Soufflé', emoji: '👻', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-n9', name: 'Multiversal Pizza', emoji: '🍕', difficulty: 'nightmare', status: 'not_started' },
+  { id: 'order-n10', name: "Void-Steak", emoji: '🥩', difficulty: 'nightmare', status: 'not_started' },
+
+  // Chromatic
   { id: 'order-22', name: 'Crumble Cookie', emoji: '🍪', difficulty: 'chromatic', rarity: 'chromatic', status: 'not_started' },
+  { id: 'order-c2', name: 'Rainbow Galaxy Cake', emoji: '🌈', difficulty: 'chromatic', rarity: 'chromatic', status: 'not_started' },
+  { id: 'order-c3', name: 'Prism Punch', emoji: '🍹', difficulty: 'chromatic', rarity: 'chromatic', status: 'not_started' },
+  { id: 'order-c4', name: 'Holographic Honey', emoji: '🍯', difficulty: 'chromatic', rarity: 'chromatic', status: 'not_started' },
+  { id: 'order-c5', name: 'Neon Noodle Bowl', emoji: '🍜', difficulty: 'chromatic', rarity: 'chromatic', status: 'not_started' },
 ];
 
 // ============================================================================
@@ -831,6 +863,19 @@ export const STARTING_INGREDIENTS: Ingredient[] = [
   { name: 'broccoli', emoji: '🥦' }, { name: 'cauliflower', emoji: '🥦' }, { name: 'cabbage', emoji: '🥬' },
   { name: 'zucchini', emoji: '🥒' }, { name: 'cucumber', emoji: '🥒' }, { name: 'eggplant', emoji: '🍆' },
   { name: 'avocado', emoji: '🥑' }, { name: 'jalapeño', emoji: '🌶️' }, { name: 'ginger', emoji: '🫚' },
+  
+  // Luxury & Exotic
+  { name: 'truffle', emoji: '🍄', rarity: 'rare', price: 150 },
+  { name: 'saffron', emoji: '🧶', rarity: 'rare', price: 200 },
+  { name: 'dragon fruit', emoji: '🌵', rarity: 'uncommon', price: 30 },
+  { name: 'gold leaf', emoji: '✨', rarity: 'epic', price: 500 },
+  { name: 'caviar', emoji: '🐟', rarity: 'epic', price: 400 },
+  
+  // Experimental & Sci-Fi
+  { name: 'liquid nitrogen', emoji: '🧊', rarity: 'legendary', trait: 'cryogenic', price: 1000 },
+  { name: 'quantum foam', emoji: '⚛️', rarity: 'cosmic', trait: 'psychedelic', price: 5000 },
+  { name: 'void crystal', emoji: '🔮', rarity: 'nightmare', trait: 'corrupted', price: 10000 },
+  { name: 'stardust', emoji: '✨', rarity: 'divine', trait: 'ancient', price: 25000 },
 ];
 
 // ============================================================================

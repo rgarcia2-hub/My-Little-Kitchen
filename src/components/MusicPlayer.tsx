@@ -51,9 +51,10 @@ const PLAYLIST: Track[] = [
 
 interface MusicPlayerProps {
   hasMusicPass?: boolean;
+  onPurchasePass?: () => void;
 }
 
-export function MusicPlayer({ hasMusicPass = false }: MusicPlayerProps) {
+export function MusicPlayer({ hasMusicPass = false, onPurchasePass }: MusicPlayerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -178,7 +179,14 @@ export function MusicPlayer({ hasMusicPass = false }: MusicPlayerProps) {
                   <Lock size={32} className="mb-2 text-green-500" />
                   <p className="text-[11px] font-bold text-center uppercase text-white tracking-widest">Access Restricted</p>
                   <p className="text-[9px] text-green-500/70 text-center mt-2 font-mono">MUSIC_PASS_REQUIRED</p>
-                  <p className="text-[8px] text-gray-500 text-center mt-4 uppercase">Unlock via Ko-fi to manifest this audio</p>
+                  {onPurchasePass && (
+                    <button 
+                      onClick={onPurchasePass}
+                      className="mt-4 px-3 py-1 border border-green-500 text-green-500 text-[10px] uppercase font-bold hover:bg-green-500/20 transition-colors"
+                    >
+                      Purchase Music Pass
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>

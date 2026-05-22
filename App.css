@@ -327,17 +327,17 @@ body.theme-cyber {
   vertical-align: middle;
 }
 
-.twitter-auth-btn {
-  background: #1d9bf0 !important;
-  color: white !important;
+.google-auth-btn {
+  background: #ffffff !important;
+  color: #141414 !important;
   border: 2px solid #141414 !important;
 }
 
-.twitter-auth-btn:hover:not(:disabled) {
-  background: #1a8cd8 !important;
+.google-auth-btn:hover:not(:disabled) {
+  background: #f1f3f4 !important;
 }
 
-.twitter-icon-container {
+.google-icon-container {
   width: 24px;
   height: 24px;
   display: flex;
@@ -345,7 +345,7 @@ body.theme-cyber {
   justify-content: center;
 }
 
-.twitter-svg {
+.google-svg {
   width: 18px;
   height: 18px;
   fill: currentColor;
@@ -1914,171 +1914,127 @@ input:-webkit-autofill:active {
 .rarity-cosmic .rarity-indicator { background: #6366f1; }
 .rarity-nightmare .rarity-indicator { background: #000000; }
 .rarity-chromatic .rarity-indicator { 
-  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-  background-size: 200% 200%;
-  animation: chromatic-bg 3s linear infinite;
-}
-
-.rarity-uncommon { background: #f0fdf4; }
-.rarity-rare { background: #eff6ff; }
-.rarity-epic { background: #faf5ff; }
-.rarity-legendary { background: #fefce8; }
-.rarity-mythic { background: #fef2f2; }
-.rarity-divine { background: #ecfeff; }
-.rarity-cosmic { background: #eef2ff; }
-.rarity-chromatic { 
-  background: linear-gradient(135deg, #fff5f5 0%, #f5fff5 50%, #f5f5ff 100%);
-  border-color: transparent !important;
-  position: relative;
-}
-
-.rarity-chromatic::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-  background-size: 200% 200%;
-  animation: chromatic-bg 3s linear infinite;
-  z-index: -1;
-  border-radius: 2px;
-}
-
-.rarity-nightmare { 
-  background: #0a0a0a; 
-  color: #ff4444; 
-  border-color: #ff0000;
-  animation: nightmarePulse 2s infinite ease-in-out;
-}
-
-@keyframes nightmarePulse {
-  0% { box-shadow: inset 0 0 10px #000; }
-  50% { box-shadow: inset 0 0 20px #ff000033; }
-  100% { box-shadow: inset 0 0 10px #000; }
-}
-
-.rarity-nightmare .name { color: #ff4444 !important; text-shadow: 0 0 5px #ff0000; }
-.rarity-nightmare .emoji { filter: drop-shadow(0 0 5px #ff0000); }
-
-.rarity-chromatic { 
-  background: #fff !important;
-  color: #1a1a1a !important;
-  border-width: 3px !important;
-  border-style: solid !important;
-  border-image: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff) 1;
-  box-shadow: 0 0 15px rgba(255, 0, 255, 0.5), inset 0 0 8px rgba(0, 255, 255, 0.3) !important;
+  background: white;
   position: relative;
   overflow: hidden;
-  animation: chromatic-glimmer 2s linear infinite;
 }
 
-.rarity-chromatic::before {
+.rarity-chromatic .rarity-indicator::after {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
+  inset: 0;
   background: linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0) 45%,
-    rgba(255, 255, 255, 0.8) 50%,
-    rgba(255, 255, 255, 0) 55%
+    180deg,
+    #ff0000 0%,
+    #ffff00 17%,
+    #00ff00 33%,
+    #00ffff 50%,
+    #0000ff 67%,
+    #ff00ff 83%,
+    #ff0000 100%
   );
-  animation: chromatic-shine 3s infinite;
-  pointer-events: none;
+  background-size: 100% 300%;
+  animation: chromatic-bg-vertical 5s linear infinite;
 }
 
-@keyframes chromatic-glimmer {
-  0% { filter: hue-rotate(0deg) saturate(1); }
-  50% { filter: hue-rotate(180deg) saturate(1.5); }
-  100% { filter: hue-rotate(360deg) saturate(1); }
+@keyframes chromatic-bg-vertical {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 0% 100%; }
 }
 
-@keyframes chromatic-shine {
-  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-}
-
-.rarity-chromatic {
-  border: 5px solid #000 !important;
-  box-shadow: 8px 8px 0px #000 !important;
-  position: relative;
-  overflow: hidden;
+.rarity-chromatic { 
   background: white !important;
+  color: #000 !important;
+  border: 4px solid #000 !important;
+  box-shadow: 6px 6px 0px #000 !important;
+  position: relative;
+  overflow: hidden !important;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .rarity-chromatic::before {
   content: '';
   position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-  z-index: 0;
-  background-size: 400%;
-  animation: chromatic-border-glow 10s linear infinite;
-  opacity: 0.2;
+  inset: -100%;
+  background: linear-gradient(
+    115deg, 
+    transparent 20%, 
+    rgba(255, 255, 255, 0.7) 25%, 
+    rgba(255, 255, 255, 0) 30%, 
+    rgba(255, 255, 255, 0.7) 35%, 
+    transparent 40%,
+    transparent 60%,
+    rgba(0, 255, 255, 0.1) 65%,
+    rgba(255, 0, 255, 0.1) 70%,
+    transparent 75%
+  );
+  background-size: 200% 200%;
+  animation: holographic-foil 6s ease-in-out infinite;
   pointer-events: none;
+  z-index: 0;
 }
 
-@keyframes chromatic-border-glow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@keyframes holographic-foil {
+  0% { transform: translateX(-50%) translateY(-50%) rotate(0deg); }
+  50% { transform: translateX(0%) translateY(0%) rotate(5deg); }
+  100% { transform: translateX(-50%) translateY(-50%) rotate(0deg); }
 }
 
 .rarity-chromatic .name {
-  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: chromatic-bg 2s linear infinite;
-  font-weight: 950 !important;
-  font-style: italic;
-  letter-spacing: 1px;
+  color: #000 !important;
+  font-weight: 900 !important;
   text-transform: uppercase;
-  z-index: 1;
+  letter-spacing: 1px;
   position: relative;
+  z-index: 1;
 }
 
 .rarity-chromatic .difficulty-badge {
-  background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff) !important;
-  background-size: 200% auto !important;
-  color: white !important;
-  font-weight: 950 !important;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-  animation: chromatic-bg 2s linear infinite;
-  border: 4px solid #000 !important;
-  padding: 4px 16px !important;
-  transform: rotate(-3deg);
-  box-shadow: 4px 4px 0 #000;
+  background: #000 !important;
+  color: #fff !important;
+  border: 2px solid #000 !important;
+  transform: rotate(-2deg);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  font-weight: 800 !important;
   z-index: 2;
-  text-transform: uppercase;
 }
 
-.rarity-chromatic .emoji {
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1));
-  animation: chromatic-pulse 2s ease-in-out infinite;
+.rarity-chromatic .emoji,
+.rarity-chromatic .order-emoji {
+  filter: drop-shadow(0 0 8px rgba(0,0,0,0.1));
   z-index: 1;
   position: relative;
-  font-size: 48px;
+  transition: transform 0.3s ease;
+  animation: chromatic-float 4s ease-in-out infinite;
 }
 
-@keyframes chromatic-bg {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+@keyframes chromatic-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.05); }
 }
 
-@keyframes chromatic-pulse {
-  0%, 100% { transform: scale(1); filter: hue-rotate(0deg); }
-  50% { transform: scale(1.1); filter: hue-rotate(180deg); }
+.rarity-chromatic:hover {
+  transform: scale(1.02) translateY(-4px);
+  box-shadow: 12px 12px 0px #000 !important;
 }
+
+.rarity-chromatic:hover .emoji,
+.rarity-chromatic:hover .order-emoji {
+  transform: scale(1.2) rotate(5deg);
+}
+
 
 .rarity-mythic, .rarity-divine, .rarity-cosmic, .rarity-nightmare, .rarity-chromatic {
   box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
 }
+
+.rarity-uncommon-bg { background: #f0fdf4; }
+.rarity-rare-bg { background: #eff6ff; }
+.rarity-epic-bg { background: #faf5ff; }
+.rarity-legendary-bg { background: #fefce8; }
+.rarity-mythic-bg { background: #fef2f2; }
+.rarity-divine-bg { background: #ecfeff; }
+.rarity-cosmic-bg { background: #eef2ff; }
 
 .ingredient-tile.selected.rarity-uncommon,
 .ingredient-tile.selected.rarity-rare,
@@ -3167,7 +3123,7 @@ input:-webkit-autofill:active {
 }
 
 .ingredient-tile.rarity-chromatic:hover .edit-cookie-trigger {
-  animation: chromatic-bg 1s linear infinite;
+  animation: pulse 1s infinite alternate;
 }
 
 /* Stats Display Container removed and replaced by stats-group */
@@ -7625,4 +7581,19 @@ input:checked + .os-slider:before {
 
 .claim-challenge-btn-improved:active {
   transform: translateY(1px);
+}
+
+/* Custom UI Additions */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #000;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #444;
 }
