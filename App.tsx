@@ -23,7 +23,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lightbulb, LogOut, Coffee, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Heart, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -78,6 +78,121 @@ import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp, query, or
 import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { AntigravityBackground } from "./src/components/AntigravityBackground";
+
+const COSMETICS_LIST = [
+  {
+    id: 'banner_discord',
+    type: 'banner',
+    name: 'Estándar Blurple',
+    price: 0,
+    desc: 'El clásico color azul de Discord.',
+    style: { bg: '#5865F2' }
+  },
+  {
+    id: 'banner_neon',
+    type: 'banner',
+    name: 'Luces de Neón',
+    price: 80,
+    desc: 'Un gradiente cibernético animado con destellos.',
+    style: { bg: 'linear-gradient(135deg, #ff007f, #7f00ff, #00f0ff)' }
+  },
+  {
+    id: 'banner_sakura',
+    type: 'banner',
+    name: 'Pétalos de Sakura',
+    price: 100,
+    desc: 'Suaves tonos pastel rosados estilo cerezo en flor.',
+    style: { bg: 'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)' }
+  },
+  {
+    id: 'banner_cosmic',
+    type: 'banner',
+    name: 'Nebulosa Cósmica',
+    price: 150,
+    desc: 'Fondo espacial profundo con estrellas brillantes.',
+    style: { bg: 'linear-gradient(220deg, #0d1b2a, #1b263b, #415a77)' }
+  },
+  {
+    id: 'banner_gold',
+    type: 'banner',
+    name: 'Resplandor Dorado',
+    price: 200,
+    desc: 'Prestigio dorado de lujo para chefs consolidados.',
+    style: { bg: 'linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7)' }
+  },
+  {
+    id: 'banner_matrix',
+    type: 'banner',
+    name: 'Código Hacker Matrix',
+    price: 180,
+    desc: 'Líneas cayendo en cascada en tu terminal de cocina.',
+    style: { bg: 'linear-gradient(180deg, #0f0c20, #001a00, #050d05)' }
+  },
+  {
+    id: 'border_none',
+    type: 'border',
+    name: 'Sin Decoración',
+    price: 0,
+    desc: 'Borde limpio, estilo clásico.',
+    className: ''
+  },
+  {
+    id: 'border_gaming',
+    type: 'border',
+    name: 'Chroma Gamer RGB',
+    price: 120,
+    desc: 'Un aro con luces RGB rotatorias súper fluidas.',
+    className: 'border-gaming-chroma'
+  },
+  {
+    id: 'border_cute',
+    type: 'border',
+    name: 'Orejas de Gato Pink',
+    price: 100,
+    desc: 'Adorables orejitas de gato rosadas colocadas sobre tu avatar.',
+    className: 'border-cute-cat'
+  },
+  {
+    id: 'border_fire',
+    type: 'border',
+    name: 'Corona de Fuego Brutal',
+    price: 150,
+    desc: 'Aro envuelto en llamas intensas animadas.',
+    className: 'border-fire-ring'
+  },
+  {
+    id: 'border_frost',
+    type: 'border',
+    name: 'Cristal de Escarcha',
+    price: 150,
+    desc: 'Un helado marco de hielo ártico resplandeciente.',
+    className: 'border-frost-crystals'
+  },
+  {
+    id: 'border_gold',
+    type: 'border',
+    name: 'Corona Real de Oro',
+    price: 220,
+    desc: 'Borde áureo enjoyado con la máxima suntuosidad.',
+    className: 'border-gold-crown'
+  },
+  {
+    id: 'border_early',
+    type: 'border',
+    name: 'Gorra de Cocinero',
+    price: 80,
+    desc: 'Una preciosa gorrita de cocinero decorativa.',
+    className: 'border-chef-hat'
+  },
+  {
+    id: 'badge_nitro',
+    type: 'badge',
+    name: 'Booster Nitro Chef',
+    price: 100,
+    desc: 'La codiciada insignia del rayo rosa de Discord para tu tarjeta de perfil (suscripción ficticia).',
+    className: ''
+  }
+];
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
 import { StripeCheckoutModal } from "./src/components/StripeCheckoutModal";
 
@@ -555,6 +670,7 @@ function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighli
           <Edit3 size={12} />
         </div>
       )}
+      <div className="hover-tooltip">{ingredient.name}</div>
       <span className="emoji">{ingredient.emoji}</span>
       <span className="name">{ingredient.name}</span>
     </button>
@@ -599,9 +715,12 @@ interface OrderCardProps {
   onPickUp: (orderId: string) => void;
   onCookWithGemini: (orderName: string) => void;
   onOpenVerificationAgent?: () => void;
+  onTogglePin?: (order: Order) => void;
+  pinCost?: number;
+  canAffordPin?: boolean;
 }
 
-function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent }: OrderCardProps) {
+function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent, onTogglePin, pinCost, canAffordPin }: OrderCardProps) {
   const statusClass = order.status === 'completed' ? 'completed' :
     order.status === 'failed' ? 'failed' :
       order.status === 'in_progress' ? 'in-progress' : 'not-started';
@@ -612,6 +731,19 @@ function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemin
 
   return (
     <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass}`}>
+      {onTogglePin && order.status === 'not_started' && (
+        <button 
+          title={order.isPinned ? "Unpin order" : `Pin order (Cost: $${pinCost})`}
+          className={`pin-order-btn ${order.isPinned ? 'pinned' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onTogglePin(order); }}
+          disabled={!order.isPinned && !canAffordPin}
+        >
+          <Heart 
+            size={16} 
+            className="pin-heart-icon"
+          />
+        </button>
+      )}
       {order.difficulty && (
         <div className={`order-difficulty ${difficultyClass}`}>
           {order.difficulty === 'chromatic' || order.rarity === 'chromatic' ? 'Chromatic' : order.difficulty}
@@ -1332,6 +1464,8 @@ interface CombinationAgentProps {
   setCompletedRecipes: React.Dispatch<React.SetStateAction<CompletedRecipe[]>>;
   setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
   user: User;
+  onTogglePin?: (order: Order) => void;
+  getPinCost?: (order: Order) => number;
   manifestationName: string;
   setManifestationName: React.Dispatch<React.SetStateAction<string>>;
   manifestationEmoji: string;
@@ -1470,6 +1604,8 @@ function CombinationAgent({
   setCompletedRecipes,
   setCurrentOrderSteps,
   user,
+  onTogglePin,
+  getPinCost,
   manifestationName,
   setManifestationName,
   manifestationEmoji,
@@ -1497,6 +1633,8 @@ function CombinationAgent({
   const [toolsSearchTerm, setToolsSearchTerm] = useState('');
   
   const [showSkipModal, setShowSkipModal] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'discord' | 'system'>('discord');
+  const [activeDiscordTab, setActiveDiscordTab] = useState<'customize' | 'shop'>('customize');
   const [debugMode, setDebugMode] = useState(false);
   const [skipAmount, setSkipAmount] = useState('1');
   const [skipCompleteOrder, setSkipCompleteOrder] = useState(false);
@@ -1521,9 +1659,176 @@ function CombinationAgent({
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
 
+  const getPlayerBadges = () => {
+    const list: { id: string; name: string; emoji: string; category: string; desc: string; isDifficult?: boolean }[] = [];
+    
+    if (ADMIN_EMAILS.includes(user.email || '') || stats.godTier) {
+      list.push({
+        id: 'badge_dev_staff',
+        name: 'Early Chef Dev',
+        emoji: '🛠️',
+        category: 'staff',
+        desc: 'Desarrollador / Early Contributor del sistema culinario Discord.'
+      });
+    }
+    
+    if ((stats.discoveredIngredients || 0) >= 25) {
+      list.push({
+        id: 'badge_combo_god',
+        name: 'Master Combinador',
+        emoji: '🌀',
+        category: 'achievement',
+        desc: '¡Logro Súper Difícil! Encontraste +25 ingredientes diferentes.',
+        isDifficult: true
+      });
+    }
+    
+    if ((stats.completedNightmareOrders || 0) >= 3) {
+      list.push({
+        id: 'badge_nightmare',
+        name: 'Pesadilla Dominada',
+        emoji: '💀',
+        category: 'achievement',
+        desc: '¡Logro Súper Difícil! Completaste 3 o más órdenes en dificultad Pesadilla.',
+        isDifficult: true
+      });
+    }
+    
+    if ((stats.money || 0) >= 3000) {
+      list.push({
+        id: 'badge_millionaire',
+        name: 'Chef Millonario',
+        emoji: '💎',
+        category: 'achievement',
+        desc: '¡Logro Súper Difícil! Acumulaste un saldo superior a $3,000 cash.',
+        isDifficult: true
+      });
+    }
+    
+    if ((stats.purchasedCosmetics || []).includes('badge_nitro')) {
+      list.push({
+        id: 'badge_nitro_active',
+        name: 'Nitro Chef Booster',
+        emoji: '⚡',
+        category: 'subscription',
+        desc: 'Insignia de Suscriptor Booster de Cooking Discord. ¡Gracias por el apoyo!'
+      });
+    }
+    
+    if ((stats.completedOrders || 0) >= 15) {
+      list.push({
+        id: 'badge_active_cook',
+        name: 'Cocinero Activo',
+        emoji: '🔥',
+        category: 'game',
+        desc: 'Completaste más de 15 comandas culinarias con éxito.'
+      });
+    }
+    
+    if (stats.equippedHypeSquad === 'hype_bravery') {
+      list.push({
+        id: 'badge_hype_bravery',
+        name: 'HypeSquad Bravery',
+        emoji: '🛡️',
+        category: 'hypesquad',
+        desc: 'Miembro de la Casa de Bravery de Discord.'
+      });
+    } else if (stats.equippedHypeSquad === 'hype_brilliance') {
+      list.push({
+        id: 'badge_hype_brilliance',
+        name: 'HypeSquad Brilliance',
+        emoji: '🔮',
+        category: 'hypesquad',
+        desc: 'Miembro de la Casa de Brilliance de Discord.'
+      });
+    } else if (stats.equippedHypeSquad === 'hype_balance') {
+      list.push({
+        id: 'badge_hype_balance',
+        name: 'HypeSquad Balance',
+        emoji: '⚖️',
+        category: 'hypesquad',
+        desc: 'Miembro de la Casa de Balance de Discord.'
+      });
+    }
+    
+    if ((stats.fameDonated || 0) >= 500) {
+      list.push({
+        id: 'badge_fame_titan',
+        name: 'Titán de la Fama',
+        emoji: '✨',
+        category: 'game',
+        desc: 'Donaste más de $500 en la terminal de Fama.'
+      });
+    }
+    
+    return list;
+  };
+
+  const handleBuyCosmetic = (itemId: string, cost: number) => {
+    soundService.playClick();
+    if ((stats.purchasedCosmetics || []).includes(itemId)) {
+      const item = COSMETICS_LIST.find(c => c.id === itemId);
+      if (!item) return;
+      
+      setStats((prev: any) => {
+        if (item.type === 'banner') {
+          return { ...prev, discordBanner: itemId };
+        } else if (item.type === 'border') {
+          return { ...prev, discordBorder: itemId };
+        }
+        return prev;
+      });
+      addTerminalLog(`[DISCORD] Equipado cosmético: ${item.name}`);
+      return;
+    }
+    
+    const currentCredits = stats.credits ?? 150;
+    if (currentCredits < cost) {
+      soundService.playError();
+      addTerminalLog(`[ERROR] Créditos insuficientes para comprar este cosmético (${cost} CRED requeridos)`);
+      return;
+    }
+    
+    setStats((prev: any) => {
+      const owned = [...(prev.purchasedCosmetics || ['banner_discord', 'border_none'])];
+      if (!owned.includes(itemId)) {
+        owned.push(itemId);
+      }
+      
+      let updatedStats = {
+        ...prev,
+        credits: currentCredits - cost,
+        purchasedCosmetics: owned
+      };
+      
+      const item = COSMETICS_LIST.find(c => c.id === itemId);
+      if (item) {
+        if (item.type === 'banner') {
+          updatedStats.discordBanner = itemId;
+        } else if (item.type === 'border') {
+          updatedStats.discordBorder = itemId;
+        }
+      }
+      
+      return updatedStats;
+    });
+    
+    soundService.playSuccess();
+    const item = COSMETICS_LIST.find(c => c.id === itemId);
+    addTerminalLog(`[DISCORD] ¡Compra exitosa! Adquirido: ${item?.name || itemId} por ${cost} créditos.`);
+  };
+
   // New OS States
-  const [activeProtocol, setActiveProtocol] = useState<GlobalProtocol>(GLOBAL_PROTOCOLS[0]);
-  const [protocolCountdown, setProtocolCountdown] = useState(3600); // 1 hour
+  const getProtocolInfo = useCallback(() => {
+    const cycleDuration = 3600; // 1 hour in seconds
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const index = Math.floor(nowSeconds / cycleDuration) % GLOBAL_PROTOCOLS.length;
+    const remaining = cycleDuration - (nowSeconds % cycleDuration);
+    return { protocol: GLOBAL_PROTOCOLS[index], remaining };
+  }, []);
+
+  const [activeProtocol, setActiveProtocol] = useState<GlobalProtocol>(() => getProtocolInfo().protocol);
+  const [protocolCountdown, setProtocolCountdown] = useState(() => getProtocolInfo().remaining);
   const [selectedPersonality, setSelectedPersonality] = useState<SousChefPersonality>(PERSONALITIES[0]);
   const [installedChips, setInstalledChips] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'ai' | 'chips' | 'protocols' | 'market'>('ai');
@@ -1626,19 +1931,12 @@ function CombinationAgent({
   // Effect for protocol rotation
   useEffect(() => {
     const interval = setInterval(() => {
-      setProtocolCountdown((prev) => {
-        if (prev <= 0) {
-          // Rotate protocol
-          const currentIndex = GLOBAL_PROTOCOLS.findIndex(p => p.id === activeProtocol.id);
-          const nextIndex = (currentIndex + 1) % GLOBAL_PROTOCOLS.length;
-          setActiveProtocol(GLOBAL_PROTOCOLS[nextIndex]);
-          return 3600;
-        }
-        return prev - 1;
-      });
+      const info = getProtocolInfo();
+      setActiveProtocol(info.protocol);
+      setProtocolCountdown(info.remaining);
     }, 1000);
     return () => clearInterval(interval);
-  }, [activeProtocol]);
+  }, [getProtocolInfo]);
 
   // Effect for marketplace refresh
   useEffect(() => {
@@ -1926,6 +2224,16 @@ Do not say you cannot do it; always provide a recipe.`;
             let newPurchasedUpgrades = [...(prev.purchasedUpgrades || [])];
             let newTitle = prev.title || 'Kitchen Hand';
 
+            const difficultyToCredits: { [key: string]: number } = {
+              easy: 20,
+              intermediate: 35,
+              difficult: 60,
+              nightmare: 150
+            };
+            const orderCredits = difficultyToCredits[currentOrder.difficulty] || 20;
+            const lvlUpCredits = leveledUp ? (newLevel * 25) : 0;
+            const newCredits = (prev.credits || 0) + orderCredits + lvlUpCredits;
+
             if (leveledUp) {
               newMoney += newLevel * 100;
               const applicableTitle = [...TITLES].reverse().find(t => newLevel >= t.level);
@@ -1943,6 +2251,7 @@ Do not say you cannot do it; always provide a recipe.`;
               level: newLevel,
               title: newTitle,
               purchasedUpgrades: newPurchasedUpgrades,
+              credits: newCredits
             };
           });
 
@@ -2377,6 +2686,61 @@ Do not say you cannot do it; always provide a recipe.`;
     setActiveAction(null);
   }, [selectedIngredients, executeCombination, setActiveAction, setSelectedIngredients, setInventory, onServe, inventory, stats.usedTools, stats.maxIngredientsUsed, setCurrentOrderSteps, setStats]);
 
+  // Global Keyboard Shortcuts Hook
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't fire shortcuts if the user is currently typing in an input or textarea
+      const activeElement = document.activeElement;
+      if (activeElement) {
+        const tagName = activeElement.tagName;
+        const isContentEditable = (activeElement as HTMLElement).isContentEditable;
+        if (
+          tagName === 'INPUT' || 
+          tagName === 'TEXTAREA' || 
+          tagName === 'SELECT' || 
+          isContentEditable
+        ) {
+          return;
+        }
+      }
+
+      const key = event.key.toLowerCase();
+
+      // 'c' to clear selection
+      if (key === 'c') {
+        event.preventDefault();
+        if (selectedIngredients.size > 0) {
+          setSelectedIngredients(new Set());
+          soundService.playClick();
+          addTerminalLog("[SYSTEM] Key [C] detected: Selected ingredients cleared.");
+        }
+      }
+
+      // 's' to serve dish
+      if (key === 's') {
+        event.preventDefault();
+        const serveAction = [...COOKING_ACTIONS, ...customTools].find(a => a.name === 'serve');
+        if (serveAction) {
+          if (selectedIngredients.size === 1) {
+            executeAction(serveAction);
+            addTerminalLog(`[SYSTEM] Key [S] detected: Attempting to serve dish "${Array.from(selectedIngredients)[0]}".`);
+          } else if (selectedIngredients.size === 0) {
+            soundService.playError();
+            addTerminalLog("[ERROR] Keyboard [S] failed: No dish selected to serve. Select 1 item from your inventory first.");
+          } else {
+            soundService.playError();
+            addTerminalLog("[ERROR] Keyboard [S] failed: Multiple ingredients selected. Select exactly 1 dish to serve.");
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedIngredients, executeAction, customTools, addTerminalLog, setSelectedIngredients]);
+
   // Auto-scroll ingredients and tools sections on first load to show length
   useEffect(() => {
     if (hasScrolledRef.current) return;
@@ -2465,9 +2829,14 @@ Do not say you cannot do it; always provide a recipe.`;
           
           <div className="header-center">
             <div className="stats-group">
-              <div className="money-display-bar">
+              <div className="money-display-bar" title="In-game cash">
                 <span className="money-icon">💰</span>
                 <span className="money-amount">${stats.money}</span>
+              </div>
+
+              <div className="money-display-bar credits-display-bar" title="Chef Credits (Créditos para cosméticos de Discord)">
+                <span className="money-icon">🪙</span>
+                <span className="money-amount">{stats.credits ?? 150} CRED</span>
               </div>
               
               <div className="level-status-card">
@@ -2892,6 +3261,9 @@ Do not say you cannot do it; always provide a recipe.`;
                     onPickUp={onPickUp}
                     onCookWithGemini={onCookWithGemini}
                     onOpenVerificationAgent={onOpenVerificationAgent}
+                    onTogglePin={onTogglePin}
+                    pinCost={getPinCost ? (stats.godTier ? 0 : getPinCost(order)) : 0}
+                    canAffordPin={getPinCost ? (stats.godTier || stats.money >= getPinCost(order)) : false}
                   />
                 ))}
                 <AddOrderCard onAddOrder={onAddOrder} isDisabled={hasInProgressOrder} />
@@ -2904,9 +3276,374 @@ Do not say you cannot do it; always provide a recipe.`;
       {/* Settings & Account Modal */}
       {showSkipModal && (
         <div className="skip-modal-overlay">
-          <div className="skip-modal">
-            <h3 className="skip-modal-title">Settings & Account {debugMode && <span className="debug-badge">DEBUG</span>}</h3>
-            <div className="skip-modal-body">
+          <div className={`skip-modal ${activeSettingsTab === 'discord' ? 'discord-modal-wide' : ''}`}>
+            
+            {/* Header with Segmented Tabs */}
+            <div className="settings-tabs-header">
+              <button 
+                type="button"
+                className={`settings-tab-btn ${activeSettingsTab === 'discord' ? 'active' : ''}`}
+                onClick={() => { soundService.playClick(); setActiveSettingsTab('discord'); }}
+              >
+                🎮 Perfil de Discord y Tienda
+              </button>
+              <button 
+                type="button"
+                className={`settings-tab-btn ${activeSettingsTab === 'system' ? 'active' : ''}`}
+                onClick={() => { soundService.playClick(); setActiveSettingsTab('system'); }}
+              >
+                ⚙️ Ajustes y Cuenta
+              </button>
+            </div>
+
+            {/* TAB 1: DISCORD PROFILE CUSTOMIZER & SHOP */}
+            {activeSettingsTab === 'discord' && (
+              <div className="p-4 bg-[#2b2d31]/40 border border-[#1a1a1a] rounded-lg">
+                <div className="discord-customizer-grid">
+                  
+                  {/* Left Column: Live Card Preview */}
+                  <div className="discord-profile-preview-card">
+                    {/* Banner Preview */}
+                    <div 
+                      className={`discord-banner-preview ${
+                        stats.discordBanner === 'banner_neon' ? 'preview-banner-neon' :
+                        stats.discordBanner === 'banner_sakura' ? 'preview-banner-sakura' :
+                        stats.discordBanner === 'banner_cosmic' ? 'preview-banner-cosmic' :
+                        stats.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
+                        stats.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
+                      }`}
+                      style={stats.discordBanner === 'banner_discord' ? { backgroundColor: '#5865F2' } : {}}
+                    />
+                    
+                    {/* Avatar and status dot */}
+                    <div className="discord-avatar-container">
+                      <div className={`discord-avatar-inner ${
+                        stats.discordBorder === 'border_gaming' ? 'border-gaming-chroma' :
+                        stats.discordBorder === 'border_cute' ? 'border-cute-cat' :
+                        stats.discordBorder === 'border_fire' ? 'border-fire-ring' :
+                        stats.discordBorder === 'border_frost' ? 'border-frost-crystals' :
+                        stats.discordBorder === 'border_gold' ? 'border-gold-crown' :
+                        stats.discordBorder === 'border_early' ? 'border-chef-hat' : ''
+                      }`}>
+                        {stats.profileImage || user.photoURL ? (
+                          <img 
+                            src={stats.profileImage || user.photoURL} 
+                            alt="Profile" 
+                            className="discord-avatar-img"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#313338] text-white flex items-center justify-center font-bold text-2xl uppercase">
+                            {user.displayName?.[0] || user.email?.[0] || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className={`discord-status-dot-badge ${
+                        stats.discordStatus === 'online' ? 'status-online' :
+                        stats.discordStatus === 'idle' ? 'status-idle' :
+                        stats.discordStatus === 'dnd' ? 'status-dnd' : 'status-offline'
+                      }`} />
+                    </div>
+                    
+                    {/* Details */}
+                    <div className="discord-profile-details">
+                      <div className="discord-card-username">
+                        <span>{user.displayName || 'Chef'}</span>
+                        {isSuperAdmin && (
+                          <img 
+                            src={VERIFIED_BADGE_URL} 
+                            alt="Verified" 
+                            style={{ width: '16px', height: '16px' }}
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        {stats.proPlan && (
+                          <span className="text-[9px] bg-[#5865F2] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro</span>
+                        )}
+                      </div>
+                      
+                      {stats.discordStatusText && (
+                        <div className="discord-card-custom-status">
+                          <span>{stats.discordStatusEmoji || '💭'}</span>
+                          <span>{stats.discordStatusText}</span>
+                        </div>
+                      )}
+                      
+                      {/* Badges container */}
+                      <div className="discord-user-badge-container">
+                        {getPlayerBadges().length > 0 ? (
+                          getPlayerBadges().map((badge) => (
+                            <div 
+                              key={badge.id} 
+                              className={`discord-profile-badge ${badge.isDifficult ? 'badge-difficult' : ''}`}
+                            >
+                              <span>{badge.emoji}</span>
+                              <div className="badge-tooltip">
+                                <p className="font-bold border-b border-white/20 pb-1 mb-1">{badge.name}</p>
+                                <p>{badge.desc}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-gray-400 italic px-1">Sin insignias equipo</span>
+                        )}
+                      </div>
+                      
+                      <div className="discord-card-separator" />
+                      
+                      <div className="discord-card-section-title">Sobre Mí</div>
+                      <p className="discord-card-bio mb-4 text-[12px]">{stats.discordBio || 'Este chef no ha escrito una biografía todavía. ¡Presiona Personalizar para agregar una!'}</p>
+                      
+                      {/* Active Activity Frame */}
+                      <div className="discord-activity-card">
+                        <div className="discord-activity-header">Jugando a un juego</div>
+                        <div className="discord-activity-body">
+                          <div className="discord-activity-game-icon">🍳</div>
+                          <div className="discord-activity-details">
+                            <p className="discord-activity-game-name">My Little Kitchen</p>
+                            <p className="discord-activity-game-stats">Rango: {stats.title || 'Kitchen Hand'}</p>
+                            <p className="discord-activity-game-stats">Nivel: {stats.level || 1} • XP: {Math.floor(stats.xp || 0)}</p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => { soundService.playClick(); setShowSkipModal(false); }}
+                          className="discord-activity-action-btn"
+                        >
+                          Continuar Cocinando
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right Column: Customizer inputs & shop sub-tabs */}
+                  <div>
+                    <div className="discord-subtabs-nav">
+                      <button 
+                        type="button"
+                        className={`discord-subtab-btn ${activeDiscordTab === 'customize' ? 'active' : ''}`}
+                        onClick={() => { soundService.playClick(); setActiveDiscordTab('customize'); }}
+                      >
+                        ✏️ Personalizar Perfil
+                      </button>
+                      <button 
+                        type="button"
+                        className={`discord-subtab-btn ${activeDiscordTab === 'shop' ? 'active' : ''}`}
+                        onClick={() => { soundService.playClick(); setActiveDiscordTab('shop'); }}
+                      >
+                        🪙 Tienda de Cosméticos
+                      </button>
+                    </div>
+                    
+                    {/* Tab 1.1: Customize Form */}
+                    {activeDiscordTab === 'customize' && (
+                      <div className="discord-form-panel">
+                        <div className="discord-form-group">
+                          <label>Nombre de Usuario (Apodo de Cocina)</label>
+                          <input 
+                            type="text"
+                            className="discord-input-fancy"
+                            value={user.displayName || 'Chef'}
+                            onChange={(e) => {
+                              const newName = e.target.value;
+                              setStats((prev: any) => ({ ...prev, displayName: newName }));
+                            }}
+                            placeholder="Tu alias culinario..."
+                          />
+                        </div>
+                        
+                        <div className="discord-form-group">
+                          <label>Estado de Conexión</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { id: 'online', name: 'Conectado', color: 'bg-[#23a55a]' },
+                              { id: 'idle', name: 'Ausente', color: 'bg-[#f0b232]' },
+                              { id: 'dnd', name: 'No Molestar', color: 'bg-[#f23f43]' },
+                              { id: 'offline', name: 'Invisible', color: 'bg-[#80848e]' },
+                            ].map(st => (
+                              <button
+                                key={st.id}
+                                type="button"
+                                onClick={() => {
+                                  soundService.playClick();
+                                  setStats((prev: any) => ({ ...prev, discordStatus: st.id }));
+                                }}
+                                className={`flex items-center gap-1.5 justify-center p-2 text-[10px] font-bold border-2 rounded-md ${
+                                  stats.discordStatus === st.id ? 'border-[#5865F2] bg-[#5865F2]/10' : 'border-[#1a1a1a] bg-[#1e1f22]'
+                                }`}
+                                style={{ color: '#fff' }}
+                              >
+                                <div className={`w-2 h-2 rounded-full ${st.color}`} />
+                                <span>{st.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-2 discord-form-group">
+                          <div className="col-span-4 flex flex-col gap-1">
+                            <label>Emoji de Estado</label>
+                            <select 
+                              className="discord-input-fancy text-center p-1"
+                              value={stats.discordStatusEmoji || '💭'}
+                              onChange={(e) => setStats((prev: any) => ({ ...prev, discordStatusEmoji: e.target.value }))}
+                            >
+                              {['💭', '🍳', '🔥', '🔪', '🍔', '🍕', '🍰', '🍣', '💀', '👽', '🎮', '👑', '💸', '✨', '⭐', '🌈', '⚡', '☕'].map(em => (
+                                <option key={em} value={em}>{em}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-span-8 flex flex-col gap-1">
+                            <label>Texto de Estado</label>
+                            <input 
+                              type="text"
+                              className="discord-input-fancy"
+                              value={stats.discordStatusText || ''}
+                              onChange={(e) => setStats((prev: any) => ({ ...prev, discordStatusText: e.target.value }))}
+                              placeholder="¿Qué estás tramando?"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="discord-form-group">
+                          <label>Biografía (Sobre Mí)</label>
+                          <textarea 
+                            className="discord-input-fancy h-16 resize-none"
+                            value={stats.discordBio || ''}
+                            onChange={(e) => setStats((prev: any) => ({ ...prev, discordBio: e.target.value }))}
+                            placeholder="Cuéntale a todos sobre tus mejores descubrimientos culinarios..."
+                          />
+                        </div>
+
+                        <div className="discord-form-group">
+                          <label>Casa HypeSquad (¡Gratis!)</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { id: null, name: 'Ninguna', emoji: '❌' },
+                              { id: 'hype_bravery', name: 'Bravery', emoji: '🛡️' },
+                              { id: 'hype_brilliance', name: 'Brilliance', emoji: '🔮' },
+                              { id: 'hype_balance', name: 'Balance', emoji: '⚖️' }
+                            ].map(hs => (
+                              <button
+                                key={hs.id || 'none'}
+                                type="button"
+                                onClick={() => {
+                                  soundService.playClick();
+                                  setStats((prev: any) => ({ ...prev, equippedHypeSquad: hs.id }));
+                                }}
+                                className={`flex flex-col items-center justify-center p-1.5 border-2 rounded-md transition-all ${
+                                  stats.equippedHypeSquad === hs.id ? 'border-[#5865F2] bg-[#5865F2]/10 scale-[1.03]' : 'border-[#1a1a1a] bg-[#1e1f22]'
+                                }`}
+                                style={{ color: '#fff' }}
+                              >
+                                <span className="text-lg">{hs.emoji}</span>
+                                <span className="text-[9px] font-extrabold mt-1">{hs.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <button 
+                            type="button"
+                            className="settings-tab-btn flex items-center justify-center gap-1 text-[11px]"
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                            }}
+                          >
+                            <Camera size={14} /> Foto de Avatar
+                          </button>
+                          
+                          {stats.profileImage && (
+                            <button 
+                              type="button"
+                              className="settings-tab-btn"
+                              onClick={() => {
+                                soundService.playClick();
+                                setStats((prev: any) => ({ ...prev, profileImage: null }));
+                              }}
+                              style={{ fontSize: '11px', background: '#fee2e2', color: '#ef4444', borderColor: '#ef4444' }}
+                            >
+                              Eliminar Foto
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Tab 1.2: Cosmetic Credits Shop */}
+                    {activeDiscordTab === 'shop' && (
+                      <div>
+                        <div className="discord-cosmetics-balance-row">
+                          <span className="text-xs font-bold text-gray-300">Créditos de Discord:</span>
+                          <div className="credits-highlight-amount">
+                            <span>🪙</span>
+                            <span>{stats.credits ?? 150} CRED</span>
+                          </div>
+                        </div>
+                        
+                        <div className="discord-shop-showcase-grid custom-scrollbar">
+                          {COSMETICS_LIST.map((item) => {
+                            const isOwned = (stats.purchasedCosmetics || []).includes(item.id);
+                            const isEquipped = item.type === 'banner' 
+                              ? stats.discordBanner === item.id 
+                              : item.type === 'border' 
+                              ? stats.discordBorder === item.id 
+                              : false;
+                            
+                            const canAfford = (stats.credits ?? 150) >= item.price;
+                            
+                            let btnClass = "buy-unacquired";
+                            let btnText = `Comprar (${item.price} 🪙)`;
+                            
+                            if (isOwned) {
+                              if (item.type === 'badge') {
+                                btnClass = "buy-equipped";
+                                btnText = "✓ COMPRADO";
+                              } else if (isEquipped) {
+                                btnClass = "buy-equipped";
+                                btnText = "✓ EQUIPADO";
+                              } else {
+                                btnClass = "buy-unequipped";
+                                btnText = "EQUIPAR";
+                              }
+                            } else if (!canAfford) {
+                              btnClass = "buy-locked";
+                              btnText = "BLOQUEADO";
+                            }
+                            
+                            return (
+                              <div key={item.id} className="discord-shop-item-card">
+                                <div>
+                                  <div className="discord-shop-item-name">
+                                    <span className="text-xs font-bold">{item.name}</span>
+                                    {item.price > 0 && <span className="discord-shop-item-price">🪙 {item.price}</span>}
+                                  </div>
+                                  <p className="discord-shop-item-desc text-[10px]">{item.desc}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={`discord-shop-buy-btn ${btnClass}`}
+                                  disabled={item.price > 0 && !isOwned && !canAfford}
+                                  onClick={() => handleBuyCosmetic(item.id, item.price)}
+                                >
+                                  {btnText}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: ORIGINAL ACCOUNT CONFIG */}
+            {activeSettingsTab === 'system' && (
+              <div className="skip-modal-body">
               
               <div className="admin-section">
                 <h4>Account</h4>
@@ -3235,7 +3972,8 @@ Do not say you cannot do it; always provide a recipe.`;
               )}
 
               {skipError && <p className="skip-error">{skipError}</p>}
-            </div>
+              </div>
+            )}
             <div className="skip-modal-footer">
               <button className="skip-cancel-btn" onClick={() => setShowSkipModal(false)}>Close Panel</button>
             </div>
@@ -3340,8 +4078,9 @@ Do not say you cannot do it; always provide a recipe.`;
                   <button 
                     className="clear-lab-btn" 
                     onClick={() => setSelectedIngredients(new Set())}
+                    title="Press 'C' key to clear selection"
                   >
-                    CLEAR
+                    CLEAR <kbd className="ml-1 px-1 py-0.5 text-[9px] font-mono border border-black/20 rounded bg-white/90 text-black shadow-sm select-none">C</kbd>
                   </button>
                 )}
               </div>
@@ -3427,6 +4166,7 @@ Do not say you cannot do it; always provide a recipe.`;
               .map(action => {
                 const isServeDisabled = action.name === 'serve' && selectedIngredients.size !== 1;
                 const isDisabled = isCooking ? false : (!hasSelection || activeAction !== null || isServeDisabled);
+                const isServeAction = action.name === 'serve';
                 return (
                   <button
                     key={action.name}
@@ -3435,9 +4175,15 @@ Do not say you cannot do it; always provide a recipe.`;
                     className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${tutorialStep === 4 && action.name === 'serve' ? 'tutorial-highlight' : ''}`}
                     onClick={() => !isDisabled && executeAction(action)}
                     disabled={isDisabled}
+                    title={isServeAction ? "Press 'S' key to serve the selected dish" : undefined}
                   >
                     <span className="btn-emoji">{action.emoji}</span>
-                    <span className="btn-label">{action.displayName.toUpperCase()}</span>
+                    <span className="btn-label">
+                      {action.displayName.toUpperCase()}
+                      {isServeAction && (
+                        <kbd className="ml-1 px-1 py-0.5 text-[9px] font-mono border border-black/20 rounded bg-white text-black shadow-sm select-none">S</kbd>
+                      )}
+                    </span>
                   </button>
                 );
               })}
@@ -3657,25 +4403,40 @@ Do not say you cannot do it; always provide a recipe.`;
                 <span className="text-[9px] text-[#00ff00] animate-pulse uppercase font-bold">
                   ⚠️ SECURE IN-GAME PURCHASE AVAILABLE ⚠️
                 </span>
-                <div className="flex justify-center flex-col gap-2">
-                  <button 
+                <div className="flex justify-center flex-col gap-4 w-full px-4">
+                  <motion.button 
+                    whileHover={{ scale: 1.05, boxShadow: "0 0 25px rgba(16, 185, 129, 0.4)" }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                         window.open(`https://buy.stripe.com/14A28sfbn3kQ7yVeHVf3a01?client_reference_id=${user.uid}`, '_blank');
                     }}
-                    className="bg-[#00ff00] text-black px-6 py-3 rounded-sm font-bold flex items-center justify-center gap-2 hover:bg-white transition-colors uppercase tracking-widest border border-[#00ff00] hover:border-white shadow-[0_0_15px_rgba(0,255,0,0.3)]"
+                    className="relative overflow-hidden bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-700 text-black px-6 py-4 rounded-xl font-black flex items-center justify-center gap-3 transition-all uppercase tracking-widest shadow-[0_4px_15px_rgba(16,185,129,0.3)] group border border-emerald-300 z-10"
                   >
-                    <Lock size={16} />
-                    Unlock PRO Plan ($5.00)
-                  </button>
-                  <button 
+                    <div className="absolute inset-0 bg-white/30 w-full translate-x-[-150%] skew-x-[-20deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] ease-in-out -z-10" />
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-transparent via-white/40 to-transparent blur-md transition-opacity duration-300" />
+                    <span className="relative z-20 flex items-center gap-2 drop-shadow-md">
+                      <Lock size={18} className="group-hover:animate-bounce" />
+                      Unlock PRO Plan ($5.00)
+                    </span>
+                  </motion.button>
+
+                  <motion.button 
+                    whileHover={{ scale: 1.05, boxShadow: "0 0 35px rgba(168, 85, 247, 0.6)" }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={() => {
                         window.open(`https://buy.stripe.com/9B66oIe7jbRmdXj7ftf3a02?client_reference_id=${user.uid}`, '_blank');
                     }}
-                    className="bg-purple-600 text-white px-6 py-2 rounded-sm font-bold flex items-center justify-center gap-2 hover:bg-purple-500 transition-colors uppercase tracking-widest border border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)] text-xs"
+                    className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-fuchsia-600 px-6 py-4 rounded-xl font-black flex items-center justify-center transition-all uppercase tracking-widest shadow-[0_0_20px_rgba(168,85,247,0.4)] group border border-purple-400/50 z-10"
                   >
-                    <Coffee size={14} />
-                    Unlock GOD Tier ($15.00)
-                  </button>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[200%] translate-x-[-100%] skew-x-[-20deg] group-hover:transition-all group-hover:duration-1000 group-hover:translate-x-[50%] ease-in-out -z-10" />
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent rounded-b-xl -z-10" />
+                    <div className="relative z-20 flex items-center gap-2 drop-shadow-lg text-white">
+                      <Coffee size={18} className="group-hover:animate-pulse text-yellow-300" />
+                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-purple-200 drop-shadow-[0_2px_2px_rgba(0,0,0,0.5)]">
+                        Unlock GOD Tier ($15.00)
+                      </span>
+                    </div>
+                  </motion.button>
                 </div>
               </div>
             </div>
@@ -4644,6 +5405,16 @@ function VerificationAgent({
               let newMoney = (prev.money || 0) + reward;
               let newPurchasedUpgrades = [...(prev.purchasedUpgrades || [])];
               let newTitle = prev.title || 'Kitchen Hand';
+              
+              const difficultyToCredits: { [key: string]: number } = {
+                easy: 20,
+                intermediate: 35,
+                difficult: 60,
+                nightmare: 150
+              };
+              const orderCredits = difficultyToCredits[order.difficulty] || 20;
+              const lvlUpCredits = leveledUp ? (newLevel * 25) : 0;
+              const newCredits = (prev.credits || 0) + orderCredits + lvlUpCredits;
 
               if (leveledUp) {
                 newMoney += newLevel * 100;
@@ -4674,7 +5445,9 @@ function VerificationAgent({
                 maxConfidence: Math.max(prev.maxConfidence || 0, finalConfidence),
                 completedDishes: prev.completedDishes?.includes(order.name) 
                   ? prev.completedDishes 
-                  : [...(prev.completedDishes || []), order.name]
+                  : [...(prev.completedDishes || []), order.name],
+                pinnedOrders: (prev.pinnedOrders || []).filter((o: Order) => o.id !== order.id),
+                credits: newCredits
               };
             });
 
@@ -4804,6 +5577,7 @@ function KitchenAppContainer({ user }: { user: User }) {
     maxIngredientsUsed: 0,
     completedDishes: [] as string[],
     completedNightmareOrders: 0,
+    pinnedOrders: [] as Order[],
     totalActions: 0,
     xp: 0,
     level: 1,
@@ -4820,6 +5594,15 @@ function KitchenAppContainer({ user }: { user: User }) {
     purchasedShopItems: [] as string[],
     currentTheme: 'green',
     discoveredIngredientsList: STARTING_INGREDIENTS,
+    credits: 150,
+    discordStatus: 'online',
+    discordStatusText: 'Cooking up a storm 🍳',
+    discordStatusEmoji: '🟢',
+    discordBio: 'Professional chef combining cooking actions and ingredients on Discord!',
+    discordBanner: 'banner_discord',
+    discordBorder: 'border_none',
+    purchasedCosmetics: ['banner_discord', 'border_none'] as string[],
+    equippedHypeSquad: 'hype_bravery' as string | null,
     dailyChallenges: [
       { id: 'orders_3', title: 'Feed the Crowd', description: 'Complete 3 orders', target: 3, current: 0, reward: 500, type: 'orders', completed: false },
       { id: 'discover_5', title: 'New Flavors', description: 'Discover 5 new items', target: 5, current: 0, reward: 300, type: 'discovery', completed: false },
@@ -4906,6 +5689,18 @@ function KitchenAppContainer({ user }: { user: User }) {
             setStats({ ...loadedStats, proPlan: true, godTier: true, musicPass: true });
           } else {
             setStats(loadedStats);
+          }
+          
+          if (loadedStats.pinnedOrders && loadedStats.pinnedOrders.length > 0) {
+            setOrders(prev => {
+              const newOrders = [...prev];
+              loadedStats.pinnedOrders.forEach((pinned: Order) => {
+                if (!newOrders.some(o => o.id === pinned.id)) {
+                  newOrders.unshift(pinned); // Add pinned to the top
+                }
+              });
+              return newOrders;
+            });
           }
           
           setUnlockedAchievements(data.unlockedAchievements || []);
@@ -5175,6 +5970,64 @@ function KitchenAppContainer({ user }: { user: User }) {
     ));
   }, []);
 
+  const getPinCost = (order: Order) => {
+    const difficultyOrRarity = order.rarity || order.difficulty;
+    switch (difficultyOrRarity) {
+      case 'chromatic':
+      case 'nightmare': return 500;
+      case 'mythic': return 350;
+      case 'divine': return 250;
+      case 'legendary': return 150;
+      case 'epic': return 100;
+      case 'rare': return 50;
+      case 'uncommon': return 25;
+      case 'difficult': return 100;
+      case 'intermediate': return 25;
+      case 'easy':
+      case 'common': return 10;
+      default: return 10;
+    }
+  };
+
+  const handleTogglePin = useCallback((order: Order) => {
+    if (order.isPinned) {
+      soundService.playType();
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, isPinned: false } : o));
+      setStats(prev => ({
+        ...prev,
+        pinnedOrders: (prev.pinnedOrders || []).filter((o: Order) => o.id !== order.id)
+      }));
+      addTerminalLog(`[SYSTEM] Order unpinned: ${order.name}`);
+    } else {
+      const cost = getPinCost(order);
+      const actualCost = stats.godTier ? 0 : cost;
+
+      if (stats.money < actualCost) {
+        soundService.playError();
+        addTerminalLog(`[ERROR] Insufficient funds to pin (Cost: $${actualCost})`);
+        return;
+      }
+      
+      const maxPins = stats.purchasedUpgrades?.includes('heart_slot_3') ? 3 :
+                      stats.purchasedUpgrades?.includes('heart_slot_2') ? 2 : 1;
+                      
+      if ((stats.pinnedOrders || []).length >= maxPins) {
+        soundService.playError();
+        addTerminalLog(`[ERROR] Maximum pinned orders reached (${maxPins}). Check shop for upgrades.`);
+        return;
+      }
+
+      soundService.playSuccess();
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, isPinned: true } : o));
+      setStats(prev => ({
+        ...prev,
+        money: prev.money - actualCost,
+        pinnedOrders: [...(prev.pinnedOrders || []), { ...order, isPinned: true }]
+      }));
+      addTerminalLog(`[SYSTEM] Order pinned: ${order.name} (Cost: $${actualCost})`);
+    }
+  }, [stats.money, stats.godTier, stats.purchasedUpgrades, stats.pinnedOrders]);
+
   const finalizeChromaticOrder = (success: boolean) => {
     if (!chromaticMinigameOrder) return;
     
@@ -5189,6 +6042,7 @@ function KitchenAppContainer({ user }: { user: User }) {
         xp: prev.xp + 2500,
         completedOrders: prev.completedOrders + 1,
         completedDishes: Array.from(new Set([...(prev.completedDishes || []), order.name])),
+        pinnedOrders: (prev.pinnedOrders || []).filter((o: Order) => o.id !== order.id),
         dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
           c.type === 'orders' ? { ...c, current: c.current + 1 } :
           c.type === 'money' ? { ...c, current: c.current + reward } : c
@@ -5237,6 +6091,8 @@ function KitchenAppContainer({ user }: { user: User }) {
           onPickUp={handlePickUp}
           onAddOrder={handleAddOrder}
           onServe={handleVerifyServedDish}
+          onTogglePin={handleTogglePin}
+          getPinCost={getPinCost}
           onOpenCombinationAgent={() => {
             setCombinationAgentOpen(true);
             setCookingAgentOpen(false);

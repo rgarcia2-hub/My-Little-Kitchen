@@ -47,6 +47,7 @@ export interface Order {
   rarity?: Rarity;
   status: 'not_started' | 'in_progress' | 'completed' | 'failed';
   servedDish?: string;  // What was actually served (for failed orders)
+  isPinned?: boolean;
 }
 
 export interface VerificationResult {
@@ -420,6 +421,22 @@ export const UPGRADES: Upgrade[] = [
     emoji: '⚛️',
     cost: 15000,
     effect: 'zero_fire_risk'
+  },
+  {
+    id: 'heart_slot_2',
+    name: 'Extra Heart I',
+    description: 'Allows you to pin up to 2 orders simultaneously.',
+    emoji: '❤️',
+    cost: 2000,
+    effect: 'pin_slot_2'
+  },
+  {
+    id: 'heart_slot_3',
+    name: 'Extra Heart II',
+    description: 'Allows you to pin up to 3 orders simultaneously.',
+    emoji: '💖',
+    cost: 5000,
+    effect: 'pin_slot_3'
   }
 ];
 

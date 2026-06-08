@@ -182,9 +182,10 @@ export function MusicPlayer({ hasMusicPass = false, onPurchasePass }: MusicPlaye
                   {onPurchasePass && (
                     <button 
                       onClick={onPurchasePass}
-                      className="mt-4 px-3 py-1 border border-green-500 text-green-500 text-[10px] uppercase font-bold hover:bg-green-500/20 transition-colors"
+                      className="mt-4 px-6 py-2 relative overflow-hidden bg-gradient-to-r from-emerald-500 to-teal-500 text-black text-[12px] uppercase font-black hover:scale-105 transition-all rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)] group border-2 border-emerald-300 z-10 block"
                     >
-                      Purchase Music Pass
+                      <div className="absolute inset-0 bg-white/40 w-full translate-x-[-150%] skew-x-[-20deg] group-hover:transition-all group-hover:duration-700 group-hover:translate-x-[150%] ease-in-out -z-10" />
+                      <span className="drop-shadow-md">Purchase Music Pass</span>
                     </button>
                   )}
                 </div>
