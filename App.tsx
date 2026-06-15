@@ -83,10 +83,10 @@ const COSMETICS_LIST = [
   {
     id: 'banner_discord',
     type: 'banner',
-    name: 'Estándar Blurple',
+    name: 'Clásico Culinario',
     price: 0,
-    desc: 'El clásico color azul de Discord.',
-    style: { bg: '#5865F2' }
+    desc: 'El color azul representativo de nuestra propia cocina.',
+    style: { bg: '#2563eb' }
   },
   {
     id: 'banner_neon',
@@ -187,9 +187,9 @@ const COSMETICS_LIST = [
   {
     id: 'badge_nitro',
     type: 'badge',
-    name: 'Booster Nitro Chef',
+    name: 'Chef Booster VIP',
     price: 100,
-    desc: 'La codiciada insignia del rayo rosa de Discord para tu tarjeta de perfil (suscripción ficticia).',
+    desc: 'La codiciada insignia del rayo rosa por tu pasión en la cocina (suscripción ficticia para tu perfil).',
     className: ''
   }
 ];
@@ -559,7 +559,7 @@ function getChefBadges(chefStats: any, chefEmail: string | null) {
       name: 'Early Chef Dev',
       emoji: '🛠️',
       category: 'staff',
-      desc: 'Desarrollador / Early Contributor del sistema culinario Discord.'
+      desc: 'Desarrollador / Early Contributor de este sistema culinario.'
     });
   }
   
@@ -599,10 +599,10 @@ function getChefBadges(chefStats: any, chefEmail: string | null) {
   if ((chefStats?.purchasedCosmetics || []).includes('badge_nitro')) {
     list.push({
       id: 'badge_nitro_active',
-      name: 'Nitro Chef Booster',
+      name: 'Chef Booster VIP',
       emoji: '⚡',
       category: 'subscription',
-      desc: 'Insignia de Suscriptor Booster de Cooking Discord. ¡Gracias por el apoyo!'
+      desc: 'Insignia de Suscriptor Booster de My Little Kitchen. ¡Gracias por el apoyo!'
     });
   }
   
@@ -619,26 +619,26 @@ function getChefBadges(chefStats: any, chefEmail: string | null) {
   if (chefStats?.equippedHypeSquad === 'hype_bravery') {
     list.push({
       id: 'badge_hype_bravery',
-      name: 'HypeSquad Bravery',
-      emoji: '🛡️',
+      name: 'Gremio del Fuego',
+      emoji: '🔥',
       category: 'hypesquad',
-      desc: 'Miembro de la Casa de Bravery de Discord.'
+      desc: 'Miembro honorable del Gremio del Fuego de My Little Kitchen.'
     });
   } else if (chefStats?.equippedHypeSquad === 'hype_brilliance') {
     list.push({
       id: 'badge_hype_brilliance',
-      name: 'HypeSquad Brilliance',
+      name: 'Gremio Dulce',
       emoji: '🔮',
       category: 'hypesquad',
-      desc: 'Miembro de la Casa de Brilliance de Discord.'
+      desc: 'Miembro honorable del Gremio Dulce de My Little Kitchen.'
     });
   } else if (chefStats?.equippedHypeSquad === 'hype_balance') {
     list.push({
       id: 'badge_hype_balance',
-      name: 'HypeSquad Balance',
+      name: 'Gremio Umami',
       emoji: '⚖️',
       category: 'hypesquad',
-      desc: 'Miembro de la Casa de Balance de Discord.'
+      desc: 'Miembro honorable del Gremio Umami de My Little Kitchen.'
     });
   }
   
@@ -706,9 +706,9 @@ function Leaderboard({ data, isLoading, onClose, onViewProfile }: LeaderboardPro
                         <div className="os-chef-info">
                           <div className="flex items-center gap-1">
                             <span 
-                              className="os-chef-name hover:text-[#5865F2] hover:underline cursor-pointer" 
+                              className="os-chef-name hover:text-[#2563eb] hover:underline cursor-pointer" 
                               onClick={() => onViewProfile(entry)}
-                              title="Ver Perfil de Discord"
+                              title="Ver Tarjeta de Chef"
                             >
                               {entry.displayName}
                             </span>
@@ -2845,7 +2845,7 @@ Do not say you cannot do it; always provide a recipe.`;
                 <span className="money-amount">${stats.money}</span>
               </div>
 
-              <div className="money-display-bar credits-display-bar" title="Chef Credits (Créditos para cosméticos de Discord)">
+              <div className="money-display-bar credits-display-bar" title="Créditos Culinarios (Créditos para cosméticos de Chef)">
                 <span className="money-icon">🪙</span>
                 <span className="money-amount">{stats.credits ?? 150} CRED</span>
               </div>
@@ -3296,7 +3296,7 @@ Do not say you cannot do it; always provide a recipe.`;
                 className={`settings-tab-btn ${activeSettingsTab === 'discord' ? 'active' : ''}`}
                 onClick={() => { soundService.playClick(); setActiveSettingsTab('discord'); }}
               >
-                🎮 Perfil de Discord y Tienda
+                🍳 Tarjeta de Chef y Cosméticos
               </button>
               <button 
                 type="button"
@@ -3307,7 +3307,7 @@ Do not say you cannot do it; always provide a recipe.`;
               </button>
             </div>
 
-            {/* TAB 1: DISCORD PROFILE CUSTOMIZER & SHOP */}
+            {/* TAB 1: CHEF PROFILE CUSTOMIZER & SHOP */}
             {activeSettingsTab === 'discord' && (
               <div className="p-4 bg-[#2b2d31]/40 border border-[#1a1a1a] rounded-lg">
                 <div className="discord-customizer-grid">
@@ -3323,7 +3323,7 @@ Do not say you cannot do it; always provide a recipe.`;
                         stats.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
                         stats.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
                       }`}
-                      style={stats.discordBanner === 'banner_discord' ? { backgroundColor: '#5865F2' } : {}}
+                      style={stats.discordBanner === 'banner_discord' ? { backgroundColor: '#2563eb' } : {}}
                     />
                     
                     {/* Avatar and status dot */}
@@ -3369,7 +3369,7 @@ Do not say you cannot do it; always provide a recipe.`;
                           />
                         )}
                         {stats.proPlan && (
-                          <span className="text-[9px] bg-[#5865F2] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro</span>
+                          <span className="text-[9px] bg-[#f97316] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro Plan</span>
                         )}
                       </div>
                       
@@ -3407,7 +3407,7 @@ Do not say you cannot do it; always provide a recipe.`;
                       
                       {/* Active Activity Frame */}
                       <div className="discord-activity-card">
-                        <div className="discord-activity-header">Jugando a un juego</div>
+                        <div className="discord-activity-header">Cocinando en Vivo</div>
                         <div className="discord-activity-body">
                           <div className="discord-activity-game-icon">🍳</div>
                           <div className="discord-activity-details">
@@ -3464,13 +3464,13 @@ Do not say you cannot do it; always provide a recipe.`;
                         </div>
                         
                         <div className="discord-form-group">
-                          <label>Estado de Conexión</label>
+                          <label>Actividad del Cocinero</label>
                           <div className="grid grid-cols-4 gap-2">
                             {[
-                              { id: 'online', name: 'Conectado', color: 'bg-[#23a55a]' },
-                              { id: 'idle', name: 'Ausente', color: 'bg-[#f0b232]' },
-                              { id: 'dnd', name: 'No Molestar', color: 'bg-[#f23f43]' },
-                              { id: 'offline', name: 'Invisible', color: 'bg-[#80848e]' },
+                              { id: 'online', name: 'Activo', color: 'bg-[#10b981]' },
+                              { id: 'idle', name: 'Reposo', color: 'bg-[#f59e0b]' },
+                              { id: 'dnd', name: 'Fuego lento', color: 'bg-[#ef4444]' },
+                              { id: 'offline', name: 'Fuera de servicio', color: 'bg-[#6b7280]' },
                             ].map(st => (
                               <button
                                 key={st.id}
@@ -3480,7 +3480,7 @@ Do not say you cannot do it; always provide a recipe.`;
                                   setStats((prev: any) => ({ ...prev, discordStatus: st.id }));
                                 }}
                                 className={`flex items-center gap-1.5 justify-center p-2 text-[10px] font-bold border-2 rounded-md ${
-                                  stats.discordStatus === st.id ? 'border-[#5865F2] bg-[#5865F2]/10' : 'border-[#1a1a1a] bg-[#1e1f22]'
+                                  stats.discordStatus === st.id ? 'border-[#f97316] bg-[#f97316]/10' : 'border-[#1a1a1a] bg-[#1e1f22]'
                                 }`}
                                 style={{ color: '#fff' }}
                               >
@@ -3493,7 +3493,7 @@ Do not say you cannot do it; always provide a recipe.`;
 
                         <div className="grid grid-cols-12 gap-2 discord-form-group">
                           <div className="col-span-4 flex flex-col gap-1">
-                            <label>Emoji de Estado</label>
+                            <label>Emoji del Plato</label>
                             <select 
                               className="discord-input-fancy text-center p-1"
                               value={stats.discordStatusEmoji || '💭'}
@@ -3505,7 +3505,7 @@ Do not say you cannot do it; always provide a recipe.`;
                             </select>
                           </div>
                           <div className="col-span-8 flex flex-col gap-1">
-                            <label>Texto de Estado</label>
+                            <label>Estado de la Comanda</label>
                             <input 
                               type="text"
                               className="discord-input-fancy"
@@ -3517,7 +3517,7 @@ Do not say you cannot do it; always provide a recipe.`;
                         </div>
 
                         <div className="discord-form-group">
-                          <label>Biografía (Sobre Mí)</label>
+                          <label>Biografía Culinaria (Sobre Mí)</label>
                           <textarea 
                             className="discord-input-fancy h-16 resize-none"
                             value={stats.discordBio || ''}
@@ -3527,13 +3527,13 @@ Do not say you cannot do it; always provide a recipe.`;
                         </div>
 
                         <div className="discord-form-group">
-                          <label>Casa HypeSquad (¡Gratis!)</label>
+                          <label>Gremio del Sabor (¡Gratis!)</label>
                           <div className="grid grid-cols-4 gap-2">
                             {[
-                              { id: null, name: 'Ninguna', emoji: '❌' },
-                              { id: 'hype_bravery', name: 'Bravery', emoji: '🛡️' },
-                              { id: 'hype_brilliance', name: 'Brilliance', emoji: '🔮' },
-                              { id: 'hype_balance', name: 'Balance', emoji: '⚖️' }
+                              { id: null, name: 'Ninguno', emoji: '❌' },
+                              { id: 'hype_bravery', name: 'Gremio del Fuego', emoji: '🔥' },
+                              { id: 'hype_brilliance', name: 'Gremio Dulce', emoji: '🔮' },
+                              { id: 'hype_balance', name: 'Gremio Umami', emoji: '⚖️' }
                             ].map(hs => (
                               <button
                                 key={hs.id || 'none'}
@@ -3543,12 +3543,12 @@ Do not say you cannot do it; always provide a recipe.`;
                                   setStats((prev: any) => ({ ...prev, equippedHypeSquad: hs.id }));
                                 }}
                                 className={`flex flex-col items-center justify-center p-1.5 border-2 rounded-md transition-all ${
-                                  stats.equippedHypeSquad === hs.id ? 'border-[#5865F2] bg-[#5865F2]/10 scale-[1.03]' : 'border-[#1a1a1a] bg-[#1e1f22]'
+                                  stats.equippedHypeSquad === hs.id ? 'border-[#f97316] bg-[#f97316]/10 scale-[1.03]' : 'border-[#1a1a1a] bg-[#1e1f22]'
                                 }`}
                                 style={{ color: '#fff' }}
                               >
                                 <span className="text-lg">{hs.emoji}</span>
-                                <span className="text-[9px] font-extrabold mt-1">{hs.name}</span>
+                                <span className="text-[9px] font-extrabold mt-1 text-center">{hs.name}</span>
                               </button>
                             ))}
                           </div>
@@ -3586,7 +3586,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     {activeDiscordTab === 'shop' && (
                       <div>
                         <div className="discord-cosmetics-balance-row">
-                          <span className="text-xs font-bold text-gray-300">Créditos de Discord:</span>
+                          <span className="text-xs font-bold text-gray-300">Créditos Culinarios:</span>
                           <div className="credits-highlight-amount">
                             <span>🪙</span>
                             <span>{stats.credits ?? 150} CRED</span>
@@ -5607,9 +5607,9 @@ function KitchenAppContainer({ user }: { user: User }) {
     discoveredIngredientsList: STARTING_INGREDIENTS,
     credits: 150,
     discordStatus: 'online',
-    discordStatusText: 'Cooking up a storm 🍳',
+    discordStatusText: 'Cocinando a toda máquina 🍳',
     discordStatusEmoji: '🟢',
-    discordBio: 'Professional chef combining cooking actions and ingredients on Discord!',
+    discordBio: '¡Chef profesional de My Little Kitchen combinando ingredientes y acciones culinarias!',
     discordBanner: 'banner_discord',
     discordBorder: 'border_none',
     purchasedCosmetics: ['banner_discord', 'border_none'] as string[],
@@ -6301,10 +6301,10 @@ function KitchenAppContainer({ user }: { user: User }) {
       {selectedChefForProfile && (
         <div className="os-modal-overlay animate-fadeIn" style={{ zIndex: 3000 }} onClick={() => setSelectedChefForProfile(null)}>
           <div className="discord-profile-view-modal shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="os-modal-header-green-alt" style={{ backgroundColor: '#5865F2', color: '#ffffff' }}>
+            <div className="os-modal-header-green-alt" style={{ backgroundColor: '#2563eb', color: '#ffffff' }}>
               <div className="header-left-group">
-                <span className="os-modal-icon">🎮</span>
-                <span className="os-modal-title" style={{ fontFamily: 'var(--font-sans)', fontWeight: 800 }}>PERFIL DE DISCORD</span>
+                <span className="os-modal-icon">🍳</span>
+                <span className="os-modal-title" style={{ fontFamily: 'var(--font-sans)', fontWeight: 800 }}>PERFIL DE CHEF</span>
               </div>
               <button 
                 className="os-close-btn" 
@@ -6326,7 +6326,7 @@ function KitchenAppContainer({ user }: { user: User }) {
                     selectedChefForProfile.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
                     selectedChefForProfile.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
                   }`}
-                  style={selectedChefForProfile.discordBanner === 'banner_discord' || !selectedChefForProfile.discordBanner ? { backgroundColor: '#5865F2' } : {}}
+                  style={selectedChefForProfile.discordBanner === 'banner_discord' || !selectedChefForProfile.discordBanner ? { backgroundColor: '#2563eb' } : {}}
                 />
                 
                 {/* Avatar and status dot */}
@@ -6372,7 +6372,7 @@ function KitchenAppContainer({ user }: { user: User }) {
                       />
                     )}
                     {selectedChefForProfile.proPlan && (
-                      <span className="text-[9px] bg-[#5865F2] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro</span>
+                      <span className="text-[9px] bg-[#f97316] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro Plan</span>
                     )}
                   </div>
                   
@@ -6410,7 +6410,7 @@ function KitchenAppContainer({ user }: { user: User }) {
                   
                   {/* Active Activity Frame */}
                   <div className="discord-activity-card">
-                    <div className="discord-activity-header">Jugando a un juego</div>
+                    <div className="discord-activity-header">Cocinando en Vivo</div>
                     <div className="discord-activity-body">
                       <div className="discord-activity-game-icon">🍳</div>
                       <div className="discord-activity-details">
