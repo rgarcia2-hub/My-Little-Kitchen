@@ -8465,3 +8465,15 @@ input:checked + .os-slider:before {
   box-shadow: inset 0 0 20px #00ff00/20;
 }
 
+.discord-profile-view-modal {
+  background: #1e1f22;
+  border: 4px solid #1a1a1a;
+  box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-sans);
+  animation: osModalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+

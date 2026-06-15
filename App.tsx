@@ -550,13 +550,119 @@ function GlitchedTitle({ title, className = "" }: GlitchedTitleProps) {
   );
 }
 
+function getChefBadges(chefStats: any, chefEmail: string | null) {
+  const list: { id: string; name: string; emoji: string; category: string; desc: string; isDifficult?: boolean }[] = [];
+  
+  if (ADMIN_EMAILS.includes(chefEmail || '') || chefStats?.godTier) {
+    list.push({
+      id: 'badge_dev_staff',
+      name: 'Early Chef Dev',
+      emoji: '🛠️',
+      category: 'staff',
+      desc: 'Desarrollador / Early Contributor del sistema culinario Discord.'
+    });
+  }
+  
+  if ((chefStats?.discoveredIngredients || 0) >= 25) {
+    list.push({
+      id: 'badge_combo_god',
+      name: 'Master Combinador',
+      emoji: '🌀',
+      category: 'achievement',
+      desc: '¡Logro Súper Difícil! Encontraste +25 ingredientes diferentes.',
+      isDifficult: true
+    });
+  }
+  
+  if ((chefStats?.completedNightmareOrders || 0) >= 3) {
+    list.push({
+      id: 'badge_nightmare',
+      name: 'Pesadilla Dominada',
+      emoji: '💀',
+      category: 'achievement',
+      desc: '¡Logro Súper Difícil! Completaste 3 o más órdenes en dificultad Pesadilla.',
+      isDifficult: true
+    });
+  }
+  
+  if ((chefStats?.money || 0) >= 3000) {
+    list.push({
+      id: 'badge_millionaire',
+      name: 'Chef Millonario',
+      emoji: '💎',
+      category: 'achievement',
+      desc: '¡Logro Súper Difícil! Acumulaste un saldo superior a $3,000 cash.',
+      isDifficult: true
+    });
+  }
+  
+  if ((chefStats?.purchasedCosmetics || []).includes('badge_nitro')) {
+    list.push({
+      id: 'badge_nitro_active',
+      name: 'Nitro Chef Booster',
+      emoji: '⚡',
+      category: 'subscription',
+      desc: 'Insignia de Suscriptor Booster de Cooking Discord. ¡Gracias por el apoyo!'
+    });
+  }
+  
+  if ((chefStats?.completedOrders || 0) >= 15) {
+    list.push({
+      id: 'badge_active_cook',
+      name: 'Cocinero Activo',
+      emoji: '🔥',
+      category: 'game',
+      desc: 'Completaste más de 15 comandas culinarias con éxito.'
+    });
+  }
+  
+  if (chefStats?.equippedHypeSquad === 'hype_bravery') {
+    list.push({
+      id: 'badge_hype_bravery',
+      name: 'HypeSquad Bravery',
+      emoji: '🛡️',
+      category: 'hypesquad',
+      desc: 'Miembro de la Casa de Bravery de Discord.'
+    });
+  } else if (chefStats?.equippedHypeSquad === 'hype_brilliance') {
+    list.push({
+      id: 'badge_hype_brilliance',
+      name: 'HypeSquad Brilliance',
+      emoji: '🔮',
+      category: 'hypesquad',
+      desc: 'Miembro de la Casa de Brilliance de Discord.'
+    });
+  } else if (chefStats?.equippedHypeSquad === 'hype_balance') {
+    list.push({
+      id: 'badge_hype_balance',
+      name: 'HypeSquad Balance',
+      emoji: '⚖️',
+      category: 'hypesquad',
+      desc: 'Miembro de la Casa de Balance de Discord.'
+    });
+  }
+  
+  if ((chefStats?.fameDonated || 0) >= 500) {
+    list.push({
+      id: 'badge_fame_titan',
+      name: 'Titán de la Fama',
+      emoji: '✨',
+      category: 'game',
+      desc: 'Donaste más de $500 en la terminal de Fama.'
+    });
+  }
+  
+  return list;
+}
+
 interface LeaderboardProps {
   data: any[];
   isLoading: boolean;
   onClose: () => void;
+  onViewProfile: (chef: any) => void;
 }
 
-function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
+function Leaderboard({ data, isLoading, onClose, onViewProfile }: LeaderboardProps) {
   return (
     <div className="os-modal-overlay" onClick={onClose}>
       <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
@@ -599,7 +705,13 @@ function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
                         </div>
                         <div className="os-chef-info">
                           <div className="flex items-center gap-1">
-                            <span className="os-chef-name">{entry.displayName}</span>
+                            <span 
+                              className="os-chef-name hover:text-[#5865F2] hover:underline cursor-pointer" 
+                              onClick={() => onViewProfile(entry)}
+                              title="Ver Perfil de Discord"
+                            >
+                              {entry.displayName}
+                            </span>
                             {(ADMIN_EMAILS.includes(entry.email || '') || (entry.displayName === 'VERIFIEDROBY' && entry.money > 1000000)) && (
                               <img 
                                 src={VERIFIED_BADGE_URL} 
@@ -1660,108 +1772,7 @@ function CombinationAgent({
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
 
   const getPlayerBadges = () => {
-    const list: { id: string; name: string; emoji: string; category: string; desc: string; isDifficult?: boolean }[] = [];
-    
-    if (ADMIN_EMAILS.includes(user.email || '') || stats.godTier) {
-      list.push({
-        id: 'badge_dev_staff',
-        name: 'Early Chef Dev',
-        emoji: '🛠️',
-        category: 'staff',
-        desc: 'Desarrollador / Early Contributor del sistema culinario Discord.'
-      });
-    }
-    
-    if ((stats.discoveredIngredients || 0) >= 25) {
-      list.push({
-        id: 'badge_combo_god',
-        name: 'Master Combinador',
-        emoji: '🌀',
-        category: 'achievement',
-        desc: '¡Logro Súper Difícil! Encontraste +25 ingredientes diferentes.',
-        isDifficult: true
-      });
-    }
-    
-    if ((stats.completedNightmareOrders || 0) >= 3) {
-      list.push({
-        id: 'badge_nightmare',
-        name: 'Pesadilla Dominada',
-        emoji: '💀',
-        category: 'achievement',
-        desc: '¡Logro Súper Difícil! Completaste 3 o más órdenes en dificultad Pesadilla.',
-        isDifficult: true
-      });
-    }
-    
-    if ((stats.money || 0) >= 3000) {
-      list.push({
-        id: 'badge_millionaire',
-        name: 'Chef Millonario',
-        emoji: '💎',
-        category: 'achievement',
-        desc: '¡Logro Súper Difícil! Acumulaste un saldo superior a $3,000 cash.',
-        isDifficult: true
-      });
-    }
-    
-    if ((stats.purchasedCosmetics || []).includes('badge_nitro')) {
-      list.push({
-        id: 'badge_nitro_active',
-        name: 'Nitro Chef Booster',
-        emoji: '⚡',
-        category: 'subscription',
-        desc: 'Insignia de Suscriptor Booster de Cooking Discord. ¡Gracias por el apoyo!'
-      });
-    }
-    
-    if ((stats.completedOrders || 0) >= 15) {
-      list.push({
-        id: 'badge_active_cook',
-        name: 'Cocinero Activo',
-        emoji: '🔥',
-        category: 'game',
-        desc: 'Completaste más de 15 comandas culinarias con éxito.'
-      });
-    }
-    
-    if (stats.equippedHypeSquad === 'hype_bravery') {
-      list.push({
-        id: 'badge_hype_bravery',
-        name: 'HypeSquad Bravery',
-        emoji: '🛡️',
-        category: 'hypesquad',
-        desc: 'Miembro de la Casa de Bravery de Discord.'
-      });
-    } else if (stats.equippedHypeSquad === 'hype_brilliance') {
-      list.push({
-        id: 'badge_hype_brilliance',
-        name: 'HypeSquad Brilliance',
-        emoji: '🔮',
-        category: 'hypesquad',
-        desc: 'Miembro de la Casa de Brilliance de Discord.'
-      });
-    } else if (stats.equippedHypeSquad === 'hype_balance') {
-      list.push({
-        id: 'badge_hype_balance',
-        name: 'HypeSquad Balance',
-        emoji: '⚖️',
-        category: 'hypesquad',
-        desc: 'Miembro de la Casa de Balance de Discord.'
-      });
-    }
-    
-    if ((stats.fameDonated || 0) >= 500) {
-      list.push({
-        id: 'badge_fame_titan',
-        name: 'Titán de la Fama',
-        emoji: '✨',
-        category: 'game',
-        desc: 'Donaste más de $500 en la terminal de Fama.'
-      });
-    }
-    
-    return list;
+    return getChefBadges(stats, user.email);
   };
 
   const handleBuyCosmetic = (itemId: string, cost: number) => {
@@ -5618,6 +5629,7 @@ function KitchenAppContainer({ user }: { user: User }) {
     }
   }, [stats.currentTheme]);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [selectedChefForProfile, setSelectedChefForProfile] = useState<any | null>(null);
   const currentFame = getCurrentFameLevel(stats.fameDonated || 0);
   const [showLevelError, setShowLevelError] = useState(false);
   const [showLeaderboardOptIn, setShowLeaderboardOptIn] = useState(false);
@@ -5789,7 +5801,23 @@ function KitchenAppContainer({ user }: { user: User }) {
             money: gameState.stats?.money || 0,
             level: level,
             title: gameState.stats?.title || "Kitchen Hand",
-            customTitle: gameState.stats?.customTitle || null
+            customTitle: gameState.stats?.customTitle || null,
+            discordBanner: gameState.stats?.discordBanner || 'banner_discord',
+            discordBorder: gameState.stats?.discordBorder || 'border_none',
+            discordStatus: gameState.stats?.discordStatus || 'online',
+            discordStatusEmoji: gameState.stats?.discordStatusEmoji || '💭',
+            discordStatusText: gameState.stats?.discordStatusText || '',
+            discordBio: gameState.stats?.discordBio || '',
+            equippedHypeSquad: gameState.stats?.equippedHypeSquad || null,
+            purchasedCosmetics: gameState.stats?.purchasedCosmetics || [],
+            profileImage: gameState.stats?.profileImage || null,
+            discoveredIngredients: gameState.stats?.discoveredIngredients || 0,
+            completedNightmareOrders: gameState.stats?.completedNightmareOrders || 0,
+            completedOrders: gameState.stats?.completedOrders || 0,
+            fameDonated: gameState.stats?.fameDonated || 0,
+            credits: gameState.stats?.credits || 0,
+            proPlan: gameState.stats?.proPlan || false,
+            godTier: gameState.stats?.godTier || false
           });
         }
         
@@ -6263,7 +6291,150 @@ function KitchenAppContainer({ user }: { user: User }) {
           data={leaderboardData} 
           isLoading={isLeaderboardLoading} 
           onClose={() => setIsLeaderboardOpen(false)} 
+          onViewProfile={(chef) => {
+            soundService.playClick();
+            setSelectedChefForProfile(chef);
+          }}
         />
+      )}
+
+      {selectedChefForProfile && (
+        <div className="os-modal-overlay animate-fadeIn" style={{ zIndex: 3000 }} onClick={() => setSelectedChefForProfile(null)}>
+          <div className="discord-profile-view-modal shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="os-modal-header-green-alt" style={{ backgroundColor: '#5865F2', color: '#ffffff' }}>
+              <div className="header-left-group">
+                <span className="os-modal-icon">🎮</span>
+                <span className="os-modal-title" style={{ fontFamily: 'var(--font-sans)', fontWeight: 800 }}>PERFIL DE DISCORD</span>
+              </div>
+              <button 
+                className="os-close-btn" 
+                style={{ color: '#ffffff' }}
+                onClick={() => { soundService.playClick(); setSelectedChefForProfile(null); }}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-4 flex items-center justify-center bg-[#2b2d31]/55 border-b border-[#1a1a1a]">
+              <div className="discord-profile-preview-card" style={{ width: '100%', maxWidth: '320px', boxShadow: 'none' }}>
+                {/* Banner Preview */}
+                <div 
+                  className={`discord-banner-preview ${
+                    selectedChefForProfile.discordBanner === 'banner_neon' ? 'preview-banner-neon' :
+                    selectedChefForProfile.discordBanner === 'banner_sakura' ? 'preview-banner-sakura' :
+                    selectedChefForProfile.discordBanner === 'banner_cosmic' ? 'preview-banner-cosmic' :
+                    selectedChefForProfile.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
+                    selectedChefForProfile.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
+                  }`}
+                  style={selectedChefForProfile.discordBanner === 'banner_discord' || !selectedChefForProfile.discordBanner ? { backgroundColor: '#5865F2' } : {}}
+                />
+                
+                {/* Avatar and status dot */}
+                <div className="discord-avatar-container">
+                  <div className={`discord-avatar-inner ${
+                    selectedChefForProfile.discordBorder === 'border_gaming' ? 'border-gaming-chroma' :
+                    selectedChefForProfile.discordBorder === 'border_cute' ? 'border-cute-cat' :
+                    selectedChefForProfile.discordBorder === 'border_fire' ? 'border-fire-ring' :
+                    selectedChefForProfile.discordBorder === 'border_frost' ? 'border-frost-crystals' :
+                    selectedChefForProfile.discordBorder === 'border_gold' ? 'border-gold-crown' :
+                    selectedChefForProfile.discordBorder === 'border_early' ? 'border-chef-hat' : ''
+                  }`}>
+                    {selectedChefForProfile.profileImage || selectedChefForProfile.photoURL ? (
+                      <img 
+                        src={selectedChefForProfile.profileImage || selectedChefForProfile.photoURL} 
+                        alt="Profile" 
+                        className="discord-avatar-img"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#313338] text-white flex items-center justify-center font-bold text-2xl uppercase">
+                        {selectedChefForProfile.displayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className={`discord-status-dot-badge ${
+                    selectedChefForProfile.discordStatus === 'online' ? 'status-online' :
+                    selectedChefForProfile.discordStatus === 'idle' ? 'status-idle' :
+                    selectedChefForProfile.discordStatus === 'dnd' ? 'status-dnd' : 'status-offline'
+                  }`} />
+                </div>
+                
+                {/* Details */}
+                <div className="discord-profile-details">
+                  <div className="discord-card-username flex items-center gap-1">
+                    <span>{selectedChefForProfile.displayName}</span>
+                    {(ADMIN_EMAILS.includes(selectedChefForProfile.email || '') || (selectedChefForProfile.displayName === 'VERIFIEDROBY' && selectedChefForProfile.money > 1000000)) && (
+                      <img 
+                        src={VERIFIED_BADGE_URL} 
+                        alt="Verified" 
+                        style={{ width: '16px', height: '16px' }}
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    {selectedChefForProfile.proPlan && (
+                      <span className="text-[9px] bg-[#5865F2] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro</span>
+                    )}
+                  </div>
+                  
+                  {selectedChefForProfile.discordStatusText && (
+                    <div className="discord-card-custom-status">
+                      <span>{selectedChefForProfile.discordStatusEmoji || '💭'}</span>
+                      <span>{selectedChefForProfile.discordStatusText}</span>
+                    </div>
+                  )}
+                  
+                  {/* Badges container */}
+                  <div className="discord-user-badge-container">
+                    {getChefBadges(selectedChefForProfile, selectedChefForProfile.email).length > 0 ? (
+                      getChefBadges(selectedChefForProfile, selectedChefForProfile.email).map((badge) => (
+                        <div 
+                          key={badge.id} 
+                          className={`discord-profile-badge ${badge.isDifficult ? 'badge-difficult' : ''}`}
+                        >
+                          <span>{badge.emoji}</span>
+                          <div className="badge-tooltip">
+                            <p className="font-bold border-b border-white/20 pb-1 mb-1">{badge.name}</p>
+                            <p>{badge.desc}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-gray-400 italic px-1">Sin insignias equipo</span>
+                    )}
+                  </div>
+                  
+                  <div className="discord-card-separator" />
+                  
+                  <div className="discord-card-section-title">Sobre Mí</div>
+                  <p className="discord-card-bio mb-4 text-[12px]">{selectedChefForProfile.discordBio || 'Este chef no ha escrito una biografía todavía.'}</p>
+                  
+                  {/* Active Activity Frame */}
+                  <div className="discord-activity-card">
+                    <div className="discord-activity-header">Jugando a un juego</div>
+                    <div className="discord-activity-body">
+                      <div className="discord-activity-game-icon">🍳</div>
+                      <div className="discord-activity-details">
+                        <p className="discord-activity-game-name">My Little Kitchen</p>
+                        <p className="discord-activity-game-stats">Rango: {selectedChefForProfile.customTitle || selectedChefForProfile.title || 'Kitchen Hand'}</p>
+                        <p className="discord-activity-game-stats">Nivel: {selectedChefForProfile.level || 1} • Capital: ${selectedChefForProfile.money?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-[#1e1f22] flex justify-end gap-2 border-t border-[#1a1a1a]">
+              <button 
+                type="button" 
+                onClick={() => { soundService.playClick(); setSelectedChefForProfile(null); }}
+                className="px-4 py-1.5 font-bold uppercase tracking-wider text-[11px] bg-red-600/25 border border-red-500/50 hover:bg-red-600/40 text-red-100 rounded-sm transition-all"
+              >
+                CERRAR_PERFIL
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showLeaderboardOptIn && (
