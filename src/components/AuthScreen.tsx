@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
 import { 
+  auth, 
+  db,
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signInWithPopup, 
   GoogleAuthProvider,
-  updateProfile
-} from 'firebase/auth';
-import { auth, db } from '../firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+  updateProfile,
+  doc, 
+  setDoc, 
+  getDoc, 
+  serverTimestamp,
+  getIsOffline
+} from '../firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
@@ -153,6 +158,13 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
                 ? 'AUTHENTICATE TO ACCESS KITCHEN_CORE' 
                 : 'REGISTER NEW OPERATOR IN THE SYSTEM'}
             </p>
+
+            {getIsOffline() && (
+              <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '2px solid rgb(234, 179, 8)', color: 'rgb(234, 179, 8)', fontFamily: 'monospace', fontSize: '11px', padding: '8px 12px', borderRadius: '4px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'rgb(234, 179, 8)', animation: 'pulse 1.5s infinite' }}></span>
+                <span>SYSTEM_NOTICE: SECURE LOCAL SANDBOX MODE ACTIVE</span>
+              </div>
+            )}
 
             {error && (
               <div className="auth-error-box">
