@@ -1,11 +1,8 @@
 {
-  "description": "A simulated kitchen where Gemini 1.5 Flash controls 100 tools. Features achievements, a recipe book, and a Pro Plan to unlock specialized AI agents.",
+  "description": "Domina el arte culinario en My Little Kitchen, un simulador de cocina frenético donde aprenderás recetas únicas, personalizarás tu perfil de chef con cosméticos exclusivos y competirás en el ranking mundial por el título del mejor chef.",
   "requestFramePermissions": [
     "camera",
     "microphone"
   ],
-  "name": "My little Kitchen",
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
+  "name": "My Little Kitchen"
 }

@@ -4,6 +4,7 @@
 */
 
 import { MusicPlayer } from './src/components/MusicPlayer';
+import { SecurityBreachOverlay } from './src/components/SecurityBreachOverlay';
 
 /**
  * Copyright 2024 Google LLC
@@ -73,27 +74,126 @@ import {
 } from './constants';
 import { soundService } from './src/services/soundService';
 
-import { 
-  auth, 
-  db, 
-  onAuthStateChanged, 
-  signOut,
-  doc, 
-  getDoc, 
-  setDoc, 
-  onSnapshot, 
-  getDocFromServer, 
-  Timestamp, 
-  query, 
-  orderBy, 
-  limit, 
-  getDocs, 
-  collection,
-  getIsOffline
-} from "./src/firebase";
-import type { User } from "firebase/auth";
+import { onAuthStateChanged, User, signOut } from "firebase/auth";
+import { doc, getDoc, setDoc, onSnapshot, getDocFromServer, Timestamp, query, orderBy, limit, getDocs, collection } from "firebase/firestore";
+import { auth, db } from "./src/firebase";
 import AuthScreen from "./src/components/AuthScreen";
 import { AntigravityBackground } from "./src/components/AntigravityBackground";
+
+const COSMETICS_LIST = [
+  {
+    id: 'banner_discord',
+    type: 'banner',
+    name: 'Clásico Culinario',
+    price: 0,
+    desc: 'El color azul representativo de nuestra propia cocina.',
+    style: { bg: '#2563eb' }
+  },
+  {
+    id: 'banner_neon',
+    type: 'banner',
+    name: 'Luces de Neón',
+    price: 80,
+    desc: 'Un gradiente cibernético animado con destellos.',
+    style: { bg: 'linear-gradient(135deg, #ff007f, #7f00ff, #00f0ff)' }
+  },
+  {
+    id: 'banner_sakura',
+    type: 'banner',
+    name: 'Pétalos de Sakura',
+    price: 100,
+    desc: 'Suaves tonos pastel rosados estilo cerezo en flor.',
+    style: { bg: 'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)' }
+  },
+  {
+    id: 'banner_cosmic',
+    type: 'banner',
+    name: 'Nebulosa Cósmica',
+    price: 150,
+    desc: 'Fondo espacial profundo con estrellas brillantes.',
+    style: { bg: 'linear-gradient(220deg, #0d1b2a, #1b263b, #415a77)' }
+  },
+  {
+    id: 'banner_gold',
+    type: 'banner',
+    name: 'Resplandor Dorado',
+    price: 200,
+    desc: 'Prestigio dorado de lujo para chefs consolidados.',
+    style: { bg: 'linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7)' }
+  },
+  {
+    id: 'banner_matrix',
+    type: 'banner',
+    name: 'Código Hacker Matrix',
+    price: 180,
+    desc: 'Líneas cayendo en cascada en tu terminal de cocina.',
+    style: { bg: 'linear-gradient(180deg, #0f0c20, #001a00, #050d05)' }
+  },
+  {
+    id: 'border_none',
+    type: 'border',
+    name: 'Sin Decoración',
+    price: 0,
+    desc: 'Borde limpio, estilo clásico.',
+    className: ''
+  },
+  {
+    id: 'border_gaming',
+    type: 'border',
+    name: 'Chroma Gamer RGB',
+    price: 120,
+    desc: 'Un aro con luces RGB rotatorias súper fluidas.',
+    className: 'border-gaming-chroma'
+  },
+  {
+    id: 'border_cute',
+    type: 'border',
+    name: 'Orejas de Gato Pink',
+    price: 100,
+    desc: 'Adorables orejitas de gato rosadas colocadas sobre tu avatar.',
+    className: 'border-cute-cat'
+  },
+  {
+    id: 'border_fire',
+    type: 'border',
+    name: 'Corona de Fuego Brutal',
+    price: 150,
+    desc: 'Aro envuelto en llamas intensas animadas.',
+    className: 'border-fire-ring'
+  },
+  {
+    id: 'border_frost',
+    type: 'border',
+    name: 'Cristal de Escarcha',
+    price: 150,
+    desc: 'Un helado marco de hielo ártico resplandeciente.',
+    className: 'border-frost-crystals'
+  },
+  {
+    id: 'border_gold',
+    type: 'border',
+    name: 'Corona Real de Oro',
+    price: 220,
+    desc: 'Borde áureo enjoyado con la máxima suntuosidad.',
+    className: 'border-gold-crown'
+  },
+  {
+    id: 'border_early',
+    type: 'border',
+    name: 'Gorra de Cocinero',
+    price: 80,
+    desc: 'Una preciosa gorrita de cocinero decorativa.',
+    className: 'border-chef-hat'
+  },
+  {
+    id: 'badge_nitro',
+    type: 'badge',
+    name: 'Chef Booster VIP',
+    price: 100,
+    desc: 'La codiciada insignia del rayo rosa por tu pasión en la cocina (suscripción ficticia para tu perfil).',
+    className: ''
+  }
+];
 import { handleFirestoreError, OperationType } from "./src/lib/firestore-errors";
 import { StripeCheckoutModal } from "./src/components/StripeCheckoutModal";
 
@@ -451,13 +551,119 @@ function GlitchedTitle({ title, className = "" }: GlitchedTitleProps) {
   );
 }
 
+function getChefBadges(chefStats: any, chefEmail: string | null) {
+  const list: { id: string; name: string; emoji: string; category: string; desc: string; isDifficult?: boolean }[] = [];
+  
+  if (ADMIN_EMAILS.includes(chefEmail || '') || chefStats?.godTier) {
+    list.push({
+      id: 'badge_dev_staff',
+      name: 'Early Chef Dev',
+      emoji: '🛠️',
+      category: 'staff',
+      desc: 'Desarrollador / Early Contributor de este sistema culinario.'
+    });
+  }
+  
+  if ((chefStats?.discoveredIngredients || 0) >= 25) {
+    list.push({
+      id: 'badge_combo_god',
+      name: 'Master Combinador',
+      emoji: '🌀',
+      category: 'achievement',
+      desc: '¡Logro Súper Difícil! Encontraste +25 ingredientes diferentes.',
+      isDifficult: true
+    });
+  }
+  
+  if ((chefStats?.completedNightmareOrders || 0) >= 3) {
+    list.push({
+      id: 'badge_nightmare',
+      name: 'Pesadilla Dominada',
+      emoji: '💀',
+      category: 'achievement',
+      desc: '¡Logro Súper Difícil! Completaste 3 o más órdenes en dificultad Pesadilla.',
+      isDifficult: true
+    });
+  }
+  
+  if ((chefStats?.money || 0) >= 3000) {
+    list.push({
+      id: 'badge_millionaire',
+      name: 'Chef Millonario',
+      emoji: '💎',
+      category: 'achievement',
+      desc: '¡Logro Súper Difícil! Acumulaste un saldo superior a $3,000 cash.',
+      isDifficult: true
+    });
+  }
+  
+  if ((chefStats?.purchasedCosmetics || []).includes('badge_nitro')) {
+    list.push({
+      id: 'badge_nitro_active',
+      name: 'Chef Booster VIP',
+      emoji: '⚡',
+      category: 'subscription',
+      desc: 'Insignia de Suscriptor Booster de My Little Kitchen. ¡Gracias por el apoyo!'
+    });
+  }
+  
+  if ((chefStats?.completedOrders || 0) >= 15) {
+    list.push({
+      id: 'badge_active_cook',
+      name: 'Cocinero Activo',
+      emoji: '🔥',
+      category: 'game',
+      desc: 'Completaste más de 15 comandas culinarias con éxito.'
+    });
+  }
+  
+  if (chefStats?.equippedHypeSquad === 'hype_bravery') {
+    list.push({
+      id: 'badge_hype_bravery',
+      name: 'Gremio del Fuego',
+      emoji: '🔥',
+      category: 'hypesquad',
+      desc: 'Miembro honorable del Gremio del Fuego de My Little Kitchen.'
+    });
+  } else if (chefStats?.equippedHypeSquad === 'hype_brilliance') {
+    list.push({
+      id: 'badge_hype_brilliance',
+      name: 'Gremio Dulce',
+      emoji: '🔮',
+      category: 'hypesquad',
+      desc: 'Miembro honorable del Gremio Dulce de My Little Kitchen.'
+    });
+  } else if (chefStats?.equippedHypeSquad === 'hype_balance') {
+    list.push({
+      id: 'badge_hype_balance',
+      name: 'Gremio Umami',
+      emoji: '⚖️',
+      category: 'hypesquad',
+      desc: 'Miembro honorable del Gremio Umami de My Little Kitchen.'
+    });
+  }
+  
+  if ((chefStats?.fameDonated || 0) >= 500) {
+    list.push({
+      id: 'badge_fame_titan',
+      name: 'Titán de la Fama',
+      emoji: '✨',
+      category: 'game',
+      desc: 'Donaste más de $500 en la terminal de Fama.'
+    });
+  }
+  
+  return list;
+}
+
 interface LeaderboardProps {
   data: any[];
   isLoading: boolean;
   onClose: () => void;
+  onViewProfile: (chef: any) => void;
 }
 
-function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
+function Leaderboard({ data, isLoading, onClose, onViewProfile }: LeaderboardProps) {
   return (
     <div className="os-modal-overlay" onClick={onClose}>
       <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
@@ -500,7 +706,13 @@ function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
                         </div>
                         <div className="os-chef-info">
                           <div className="flex items-center gap-1">
-                            <span className="os-chef-name">{entry.displayName}</span>
+                            <span 
+                              className="os-chef-name hover:text-[#2563eb] hover:underline cursor-pointer" 
+                              onClick={() => onViewProfile(entry)}
+                              title="Ver Tarjeta de Chef"
+                            >
+                              {entry.displayName}
+                            </span>
                             {(ADMIN_EMAILS.includes(entry.email || '') || (entry.displayName === 'VERIFIEDROBY' && entry.money > 1000000)) && (
                               <img 
                                 src={VERIFIED_BADGE_URL} 
@@ -1534,6 +1746,8 @@ function CombinationAgent({
   const [toolsSearchTerm, setToolsSearchTerm] = useState('');
   
   const [showSkipModal, setShowSkipModal] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'discord' | 'system'>('discord');
+  const [activeDiscordTab, setActiveDiscordTab] = useState<'customize' | 'shop'>('customize');
   const [debugMode, setDebugMode] = useState(false);
   const [skipAmount, setSkipAmount] = useState('1');
   const [skipCompleteOrder, setSkipCompleteOrder] = useState(false);
@@ -1557,6 +1771,64 @@ function CombinationAgent({
   const [activeNewsId, setActiveNewsId] = useState<string | null>(null);
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
+
+  const getPlayerBadges = () => {
+    return getChefBadges(stats, user.email);
+  };
+
+  const handleBuyCosmetic = (itemId: string, cost: number) => {
+    soundService.playClick();
+    if ((stats.purchasedCosmetics || []).includes(itemId)) {
+      const item = COSMETICS_LIST.find(c => c.id === itemId);
+      if (!item) return;
+      
+      setStats((prev: any) => {
+        if (item.type === 'banner') {
+          return { ...prev, discordBanner: itemId };
+        } else if (item.type === 'border') {
+          return { ...prev, discordBorder: itemId };
+        }
+        return prev;
+      });
+      addTerminalLog(`[DISCORD] Equipado cosmético: ${item.name}`);
+      return;
+    }
+    
+    const currentCredits = stats.credits ?? 150;
+    if (currentCredits < cost) {
+      soundService.playError();
+      addTerminalLog(`[ERROR] Créditos insuficientes para comprar este cosmético (${cost} CRED requeridos)`);
+      return;
+    }
+    
+    setStats((prev: any) => {
+      const owned = [...(prev.purchasedCosmetics || ['banner_discord', 'border_none'])];
+      if (!owned.includes(itemId)) {
+        owned.push(itemId);
+      }
+      
+      let updatedStats = {
+        ...prev,
+        credits: currentCredits - cost,
+        purchasedCosmetics: owned
+      };
+      
+      const item = COSMETICS_LIST.find(c => c.id === itemId);
+      if (item) {
+        if (item.type === 'banner') {
+          updatedStats.discordBanner = itemId;
+        } else if (item.type === 'border') {
+          updatedStats.discordBorder = itemId;
+        }
+      }
+      
+      return updatedStats;
+    });
+    
+    soundService.playSuccess();
+    const item = COSMETICS_LIST.find(c => c.id === itemId);
+    addTerminalLog(`[DISCORD] ¡Compra exitosa! Adquirido: ${item?.name || itemId} por ${cost} créditos.`);
+  };
 
   // New OS States
   const getProtocolInfo = useCallback(() => {
@@ -1964,6 +2236,16 @@ Do not say you cannot do it; always provide a recipe.`;
             let newPurchasedUpgrades = [...(prev.purchasedUpgrades || [])];
             let newTitle = prev.title || 'Kitchen Hand';
 
+            const difficultyToCredits: { [key: string]: number } = {
+              easy: 20,
+              intermediate: 35,
+              difficult: 60,
+              nightmare: 150
+            };
+            const orderCredits = difficultyToCredits[currentOrder.difficulty] || 20;
+            const lvlUpCredits = leveledUp ? (newLevel * 25) : 0;
+            const newCredits = (prev.credits || 0) + orderCredits + lvlUpCredits;
+
             if (leveledUp) {
               newMoney += newLevel * 100;
               const applicableTitle = [...TITLES].reverse().find(t => newLevel >= t.level);
@@ -1981,6 +2263,7 @@ Do not say you cannot do it; always provide a recipe.`;
               level: newLevel,
               title: newTitle,
               purchasedUpgrades: newPurchasedUpgrades,
+              credits: newCredits
             };
           });
 
@@ -2558,9 +2841,14 @@ Do not say you cannot do it; always provide a recipe.`;
           
           <div className="header-center">
             <div className="stats-group">
-              <div className="money-display-bar">
+              <div className="money-display-bar" title="In-game cash">
                 <span className="money-icon">💰</span>
                 <span className="money-amount">${stats.money}</span>
+              </div>
+
+              <div className="money-display-bar credits-display-bar" title="Créditos Culinarios (Créditos para cosméticos de Chef)">
+                <span className="money-icon">🪙</span>
+                <span className="money-amount">{stats.credits ?? 150} CRED</span>
               </div>
               
               <div className="level-status-card">
@@ -3000,9 +3288,374 @@ Do not say you cannot do it; always provide a recipe.`;
       {/* Settings & Account Modal */}
       {showSkipModal && (
         <div className="skip-modal-overlay">
-          <div className="skip-modal">
-            <h3 className="skip-modal-title">Settings & Account {debugMode && <span className="debug-badge">DEBUG</span>}</h3>
-            <div className="skip-modal-body">
+          <div className={`skip-modal ${activeSettingsTab === 'discord' ? 'discord-modal-wide' : ''}`}>
+            
+            {/* Header with Segmented Tabs */}
+            <div className="settings-tabs-header">
+              <button 
+                type="button"
+                className={`settings-tab-btn ${activeSettingsTab === 'discord' ? 'active' : ''}`}
+                onClick={() => { soundService.playClick(); setActiveSettingsTab('discord'); }}
+              >
+                🍳 Tarjeta de Chef y Cosméticos
+              </button>
+              <button 
+                type="button"
+                className={`settings-tab-btn ${activeSettingsTab === 'system' ? 'active' : ''}`}
+                onClick={() => { soundService.playClick(); setActiveSettingsTab('system'); }}
+              >
+                ⚙️ Ajustes y Cuenta
+              </button>
+            </div>
+
+            {/* TAB 1: CHEF PROFILE CUSTOMIZER & SHOP */}
+            {activeSettingsTab === 'discord' && (
+              <div className="p-4 bg-[#18181b]/40 border border-[#1a1a1a] rounded-lg">
+                <div className="discord-customizer-grid">
+                  
+                  {/* Left Column: Live Card Preview */}
+                  <div className="discord-profile-preview-card">
+                    {/* Banner Preview */}
+                    <div 
+                      className={`discord-banner-preview ${
+                        stats.discordBanner === 'banner_neon' ? 'preview-banner-neon' :
+                        stats.discordBanner === 'banner_sakura' ? 'preview-banner-sakura' :
+                        stats.discordBanner === 'banner_cosmic' ? 'preview-banner-cosmic' :
+                        stats.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
+                        stats.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
+                      }`}
+                      style={stats.discordBanner === 'banner_discord' ? { backgroundColor: '#2563eb' } : {}}
+                    />
+                    
+                    {/* Avatar and status dot */}
+                    <div className="discord-avatar-container">
+                      <div className={`discord-avatar-inner ${
+                        stats.discordBorder === 'border_gaming' ? 'border-gaming-chroma' :
+                        stats.discordBorder === 'border_cute' ? 'border-cute-cat' :
+                        stats.discordBorder === 'border_fire' ? 'border-fire-ring' :
+                        stats.discordBorder === 'border_frost' ? 'border-frost-crystals' :
+                        stats.discordBorder === 'border_gold' ? 'border-gold-crown' :
+                        stats.discordBorder === 'border_early' ? 'border-chef-hat' : ''
+                      }`}>
+                        {stats.profileImage || user.photoURL ? (
+                          <img 
+                            src={stats.profileImage || user.photoURL} 
+                            alt="Profile" 
+                            className="discord-avatar-img"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#313338] text-white flex items-center justify-center font-bold text-2xl uppercase">
+                            {user.displayName?.[0] || user.email?.[0] || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className={`discord-status-dot-badge ${
+                        stats.discordStatus === 'online' ? 'status-online' :
+                        stats.discordStatus === 'idle' ? 'status-idle' :
+                        stats.discordStatus === 'dnd' ? 'status-dnd' : 'status-offline'
+                      }`} />
+                    </div>
+                    
+                    {/* Details */}
+                    <div className="discord-profile-details">
+                      <div className="discord-card-username">
+                        <span>{user.displayName || 'Chef'}</span>
+                        {isSuperAdmin && (
+                          <img 
+                            src={VERIFIED_BADGE_URL} 
+                            alt="Verified" 
+                            style={{ width: '16px', height: '16px' }}
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
+                        {stats.proPlan && (
+                          <span className="text-[9px] bg-[#f97316] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro Plan</span>
+                        )}
+                      </div>
+                      
+                      {stats.discordStatusText && (
+                        <div className="discord-card-custom-status">
+                          <span>{stats.discordStatusEmoji || '💭'}</span>
+                          <span>{stats.discordStatusText}</span>
+                        </div>
+                      )}
+                      
+                      {/* Badges container */}
+                      <div className="discord-user-badge-container">
+                        {getPlayerBadges().length > 0 ? (
+                          getPlayerBadges().map((badge) => (
+                            <div 
+                              key={badge.id} 
+                              className={`discord-profile-badge ${badge.isDifficult ? 'badge-difficult' : ''}`}
+                            >
+                              <span>{badge.emoji}</span>
+                              <div className="badge-tooltip">
+                                <p className="font-bold border-b border-white/20 pb-1 mb-1">{badge.name}</p>
+                                <p>{badge.desc}</p>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-gray-400 italic px-1">Sin insignias equipo</span>
+                        )}
+                      </div>
+                      
+                      <div className="discord-card-separator" />
+                      
+                      <div className="discord-card-section-title">Sobre Mí</div>
+                      <p className="discord-card-bio mb-4 text-[12px]">{stats.discordBio || 'Este chef no ha escrito una biografía todavía. ¡Presiona Personalizar para agregar una!'}</p>
+                      
+                      {/* Active Activity Frame */}
+                      <div className="discord-activity-card">
+                        <div className="discord-activity-header">Cocinando en Vivo</div>
+                        <div className="discord-activity-body">
+                          <div className="discord-activity-game-icon">🍳</div>
+                          <div className="discord-activity-details">
+                            <p className="discord-activity-game-name">My Little Kitchen</p>
+                            <p className="discord-activity-game-stats">Rango: {stats.title || 'Kitchen Hand'}</p>
+                            <p className="discord-activity-game-stats">Nivel: {stats.level || 1} • XP: {Math.floor(stats.xp || 0)}</p>
+                          </div>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => { soundService.playClick(); setShowSkipModal(false); }}
+                          className="discord-activity-action-btn"
+                        >
+                          Continuar Cocinando
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right Column: Customizer inputs & shop sub-tabs */}
+                  <div>
+                    <div className="discord-subtabs-nav">
+                      <button 
+                        type="button"
+                        className={`discord-subtab-btn ${activeDiscordTab === 'customize' ? 'active' : ''}`}
+                        onClick={() => { soundService.playClick(); setActiveDiscordTab('customize'); }}
+                      >
+                        ✏️ Personalizar Perfil
+                      </button>
+                      <button 
+                        type="button"
+                        className={`discord-subtab-btn ${activeDiscordTab === 'shop' ? 'active' : ''}`}
+                        onClick={() => { soundService.playClick(); setActiveDiscordTab('shop'); }}
+                      >
+                        🪙 Tienda de Cosméticos
+                      </button>
+                    </div>
+                    
+                    {/* Tab 1.1: Customize Form */}
+                    {activeDiscordTab === 'customize' && (
+                      <div className="discord-form-panel">
+                        <div className="discord-form-group">
+                          <label>Nombre de Usuario (Apodo de Cocina)</label>
+                          <input 
+                            type="text"
+                            className="discord-input-fancy"
+                            value={user.displayName || 'Chef'}
+                            onChange={(e) => {
+                              const newName = e.target.value;
+                              setStats((prev: any) => ({ ...prev, displayName: newName }));
+                            }}
+                            placeholder="Tu alias culinario..."
+                          />
+                        </div>
+                        
+                        <div className="discord-form-group">
+                          <label>Actividad del Cocinero</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { id: 'online', name: 'Activo', color: 'bg-[#10b981]' },
+                              { id: 'idle', name: 'Reposo', color: 'bg-[#f59e0b]' },
+                              { id: 'dnd', name: 'Fuego lento', color: 'bg-[#ef4444]' },
+                              { id: 'offline', name: 'Fuera de servicio', color: 'bg-[#6b7280]' },
+                            ].map(st => (
+                              <button
+                                key={st.id}
+                                type="button"
+                                onClick={() => {
+                                  soundService.playClick();
+                                  setStats((prev: any) => ({ ...prev, discordStatus: st.id }));
+                                }}
+                                className={`flex items-center gap-1.5 justify-center p-2 text-[10px] font-bold border-2 rounded-md ${
+                                  stats.discordStatus === st.id ? 'border-[#f97316] bg-[#f97316]/10' : 'border-[#1a1a1a] bg-[#18181b]'
+                                }`}
+                                style={{ color: '#fff' }}
+                              >
+                                <div className={`w-2 h-2 rounded-full ${st.color}`} />
+                                <span>{st.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-2 discord-form-group">
+                          <div className="col-span-4 flex flex-col gap-1">
+                            <label>Emoji del Plato</label>
+                            <select 
+                              className="discord-input-fancy text-center p-1"
+                              value={stats.discordStatusEmoji || '💭'}
+                              onChange={(e) => setStats((prev: any) => ({ ...prev, discordStatusEmoji: e.target.value }))}
+                            >
+                              {['💭', '🍳', '🔥', '🔪', '🍔', '🍕', '🍰', '🍣', '💀', '👽', '🎮', '👑', '💸', '✨', '⭐', '🌈', '⚡', '☕'].map(em => (
+                                <option key={em} value={em}>{em}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="col-span-8 flex flex-col gap-1">
+                            <label>Estado de la Comanda</label>
+                            <input 
+                              type="text"
+                              className="discord-input-fancy"
+                              value={stats.discordStatusText || ''}
+                              onChange={(e) => setStats((prev: any) => ({ ...prev, discordStatusText: e.target.value }))}
+                              placeholder="¿Qué estás tramando?"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="discord-form-group">
+                          <label>Biografía Culinaria (Sobre Mí)</label>
+                          <textarea 
+                            className="discord-input-fancy h-16 resize-none"
+                            value={stats.discordBio || ''}
+                            onChange={(e) => setStats((prev: any) => ({ ...prev, discordBio: e.target.value }))}
+                            placeholder="Cuéntale a todos sobre tus mejores descubrimientos culinarios..."
+                          />
+                        </div>
+
+                        <div className="discord-form-group">
+                          <label>Gremio del Sabor (¡Gratis!)</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[
+                              { id: null, name: 'Ninguno', emoji: '❌' },
+                              { id: 'hype_bravery', name: 'Gremio del Fuego', emoji: '🔥' },
+                              { id: 'hype_brilliance', name: 'Gremio Dulce', emoji: '🔮' },
+                              { id: 'hype_balance', name: 'Gremio Umami', emoji: '⚖️' }
+                            ].map(hs => (
+                              <button
+                                key={hs.id || 'none'}
+                                type="button"
+                                onClick={() => {
+                                  soundService.playClick();
+                                  setStats((prev: any) => ({ ...prev, equippedHypeSquad: hs.id }));
+                                }}
+                                className={`flex flex-col items-center justify-center p-1.5 border-2 rounded-md transition-all ${
+                                  stats.equippedHypeSquad === hs.id ? 'border-[#f97316] bg-[#f97316]/10 scale-[1.03]' : 'border-[#1a1a1a] bg-[#1e1f22]'
+                                }`}
+                                style={{ color: '#fff' }}
+                              >
+                                <span className="text-lg">{hs.emoji}</span>
+                                <span className="text-[9px] font-extrabold mt-1 text-center">{hs.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-1">
+                          <button 
+                            type="button"
+                            className="settings-tab-btn flex items-center justify-center gap-1 text-[11px]"
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                            }}
+                          >
+                            <Camera size={14} /> Foto de Avatar
+                          </button>
+                          
+                          {stats.profileImage && (
+                            <button 
+                              type="button"
+                              className="settings-tab-btn"
+                              onClick={() => {
+                                soundService.playClick();
+                                setStats((prev: any) => ({ ...prev, profileImage: null }));
+                              }}
+                              style={{ fontSize: '11px', background: '#fee2e2', color: '#ef4444', borderColor: '#ef4444' }}
+                            >
+                              Eliminar Foto
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Tab 1.2: Cosmetic Credits Shop */}
+                    {activeDiscordTab === 'shop' && (
+                      <div>
+                        <div className="discord-cosmetics-balance-row">
+                          <span className="text-xs font-bold text-gray-300">Créditos Culinarios:</span>
+                          <div className="credits-highlight-amount">
+                            <span>🪙</span>
+                            <span>{stats.credits ?? 150} CRED</span>
+                          </div>
+                        </div>
+                        
+                        <div className="discord-shop-showcase-grid custom-scrollbar">
+                          {COSMETICS_LIST.map((item) => {
+                            const isOwned = (stats.purchasedCosmetics || []).includes(item.id);
+                            const isEquipped = item.type === 'banner' 
+                              ? stats.discordBanner === item.id 
+                              : item.type === 'border' 
+                              ? stats.discordBorder === item.id 
+                              : false;
+                            
+                            const canAfford = (stats.credits ?? 150) >= item.price;
+                            
+                            let btnClass = "buy-unacquired";
+                            let btnText = `Comprar (${item.price} 🪙)`;
+                            
+                            if (isOwned) {
+                              if (item.type === 'badge') {
+                                btnClass = "buy-equipped";
+                                btnText = "✓ COMPRADO";
+                              } else if (isEquipped) {
+                                btnClass = "buy-equipped";
+                                btnText = "✓ EQUIPADO";
+                              } else {
+                                btnClass = "buy-unequipped";
+                                btnText = "EQUIPAR";
+                              }
+                            } else if (!canAfford) {
+                              btnClass = "buy-locked";
+                              btnText = "BLOQUEADO";
+                            }
+                            
+                            return (
+                              <div key={item.id} className="discord-shop-item-card">
+                                <div>
+                                  <div className="discord-shop-item-name">
+                                    <span className="text-xs font-bold">{item.name}</span>
+                                    {item.price > 0 && <span className="discord-shop-item-price">🪙 {item.price}</span>}
+                                  </div>
+                                  <p className="discord-shop-item-desc text-[10px]">{item.desc}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={`discord-shop-buy-btn ${btnClass}`}
+                                  disabled={item.price > 0 && !isOwned && !canAfford}
+                                  onClick={() => handleBuyCosmetic(item.id, item.price)}
+                                >
+                                  {btnText}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: ORIGINAL ACCOUNT CONFIG */}
+            {activeSettingsTab === 'system' && (
+              <div className="skip-modal-body">
               
               <div className="admin-section">
                 <h4>Account</h4>
@@ -3146,7 +3799,10 @@ Do not say you cannot do it; always provide a recipe.`;
                     </div>
                   </div>
 
-                  <button className="logout-btn-brutalist" onClick={() => signOut(auth)}>
+                  <button className="logout-btn-brutalist" onClick={() => {
+                    signOut(auth).catch(() => {});
+                    window.location.reload();
+                  }}>
                     <LogOut size={18} />
                     <span>Terminate Session</span>
                   </button>
@@ -3331,7 +3987,8 @@ Do not say you cannot do it; always provide a recipe.`;
               )}
 
               {skipError && <p className="skip-error">{skipError}</p>}
-            </div>
+              </div>
+            )}
             <div className="skip-modal-footer">
               <button className="skip-cancel-btn" onClick={() => setShowSkipModal(false)}>Close Panel</button>
             </div>
@@ -4763,6 +5420,16 @@ function VerificationAgent({
               let newMoney = (prev.money || 0) + reward;
               let newPurchasedUpgrades = [...(prev.purchasedUpgrades || [])];
               let newTitle = prev.title || 'Kitchen Hand';
+              
+              const difficultyToCredits: { [key: string]: number } = {
+                easy: 20,
+                intermediate: 35,
+                difficult: 60,
+                nightmare: 150
+              };
+              const orderCredits = difficultyToCredits[order.difficulty] || 20;
+              const lvlUpCredits = leveledUp ? (newLevel * 25) : 0;
+              const newCredits = (prev.credits || 0) + orderCredits + lvlUpCredits;
 
               if (leveledUp) {
                 newMoney += newLevel * 100;
@@ -4794,7 +5461,8 @@ function VerificationAgent({
                 completedDishes: prev.completedDishes?.includes(order.name) 
                   ? prev.completedDishes 
                   : [...(prev.completedDishes || []), order.name],
-                pinnedOrders: (prev.pinnedOrders || []).filter((o: Order) => o.id !== order.id)
+                pinnedOrders: (prev.pinnedOrders || []).filter((o: Order) => o.id !== order.id),
+                credits: newCredits
               };
             });
 
@@ -4941,6 +5609,15 @@ function KitchenAppContainer({ user }: { user: User }) {
     purchasedShopItems: [] as string[],
     currentTheme: 'green',
     discoveredIngredientsList: STARTING_INGREDIENTS,
+    credits: 150,
+    discordStatus: 'online',
+    discordStatusText: 'Cocinando a toda máquina 🍳',
+    discordStatusEmoji: '🟢',
+    discordBio: '¡Chef profesional de My Little Kitchen combinando ingredientes y acciones culinarias!',
+    discordBanner: 'banner_discord',
+    discordBorder: 'border_none',
+    purchasedCosmetics: ['banner_discord', 'border_none'] as string[],
+    equippedHypeSquad: 'hype_bravery' as string | null,
     dailyChallenges: [
       { id: 'orders_3', title: 'Feed the Crowd', description: 'Complete 3 orders', target: 3, current: 0, reward: 500, type: 'orders', completed: false },
       { id: 'discover_5', title: 'New Flavors', description: 'Discover 5 new items', target: 5, current: 0, reward: 300, type: 'discovery', completed: false },
@@ -4956,6 +5633,7 @@ function KitchenAppContainer({ user }: { user: User }) {
     }
   }, [stats.currentTheme]);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [selectedChefForProfile, setSelectedChefForProfile] = useState<any | null>(null);
   const currentFame = getCurrentFameLevel(stats.fameDonated || 0);
   const [showLevelError, setShowLevelError] = useState(false);
   const [showLeaderboardOptIn, setShowLeaderboardOptIn] = useState(false);
@@ -5003,107 +5681,92 @@ function KitchenAppContainer({ user }: { user: User }) {
     }
   };
 
-  // 1. Load data from Firestore on mount
+  // 1. Load data from localStorage or Firestore on mount
   useEffect(() => {
     if (!user) return;
 
-    const gameStateRef = doc(db, 'game_states', user.uid);
+    const storageKey = `kitchen_gamestate_${user.uid}`;
     
     // Initial load
     const loadInitialData = async () => {
       try {
-        // Test connection
-        await getDocFromServer(doc(db, 'test', 'connection')).catch((err) => {
-          console.warn("Connection test failed (expected if rules deny):", err.message);
-        });
-        
-        const docSnap = await getDoc(gameStateRef).catch(err => handleFirestoreError(err, OperationType.GET, `game_states/${user.uid}`));
-        if (docSnap && docSnap.exists()) {
-          const data = docSnap.data();
-          const loadedStats = { ...stats, ...(data.stats || {}) };
-          
-          // Force Pro Plan for admin email (only if using password provider)
-          if (isAdminUser) {
-            setStats({ ...loadedStats, proPlan: true, godTier: true, musicPass: true });
-          } else {
-            setStats(loadedStats);
+        // Try local storage first
+        let hasLocalData = false;
+        try {
+          const localSaved = localStorage.getItem(storageKey);
+          if (localSaved) {
+            const data = JSON.parse(localSaved);
+            if (data.stats) setStats(prev => ({ ...prev, ...data.stats }));
+            if (data.unlockedAchievements) setUnlockedAchievements(data.unlockedAchievements);
+            if (data.completedRecipes) setCompletedRecipes(data.completedRecipes);
+            if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
+            if (data.inventory) setInventory(data.inventory);
+            if (data.customTools) setCustomTools(data.customTools);
+            hasLocalData = true;
           }
-          
-          if (loadedStats.pinnedOrders && loadedStats.pinnedOrders.length > 0) {
-            setOrders(prev => {
-              const newOrders = [...prev];
-              loadedStats.pinnedOrders.forEach((pinned: Order) => {
-                if (!newOrders.some(o => o.id === pinned.id)) {
-                  newOrders.unshift(pinned); // Add pinned to the top
+        } catch (e) {
+          console.warn("Could not read local state:", e);
+        }
+
+        // Try Firestore if not guest
+        if (!(user as any).isGuest && user.uid !== 'guest-chef-local') {
+          const gameStateRef = doc(db, 'game_states', user.uid);
+          const docSnap = await getDoc(gameStateRef).catch(err => {
+            console.warn("Firestore read failed, relying on local storage state:", err);
+            return null;
+          });
+
+          if (docSnap && docSnap.exists()) {
+            const data = docSnap.data();
+            const loadedStats = { ...stats, ...(data.stats || {}) };
+            
+            if (isAdminUser) {
+              setStats({ ...loadedStats, proPlan: true, godTier: true, musicPass: true });
+            } else {
+              setStats(loadedStats);
+            }
+            
+            if (loadedStats.pinnedOrders && loadedStats.pinnedOrders.length > 0) {
+              setOrders(prev => {
+                const newOrders = [...prev];
+                loadedStats.pinnedOrders.forEach((pinned: Order) => {
+                  if (!newOrders.some(o => o.id === pinned.id)) {
+                    newOrders.unshift(pinned);
+                  }
+                });
+                return newOrders;
+              });
+            }
+            
+            setUnlockedAchievements(data.unlockedAchievements || []);
+            setCompletedRecipes(data.completedRecipes || []);
+            setTutorialStep(data.tutorialStep ?? 1);
+            
+            if (data.inventory) {
+              const merged = [...STARTING_INGREDIENTS];
+              data.inventory.forEach((ing: any) => {
+                if (!merged.some(m => m.name.toLowerCase() === ing.name.toLowerCase())) {
+                  merged.push(ing);
                 }
               });
-              return newOrders;
-            });
+              setInventory(merged);
+            }
+            setCustomTools(data.customTools || []);
           }
-          
-          setUnlockedAchievements(data.unlockedAchievements || []);
-          setCompletedRecipes(data.completedRecipes || []);
-          setTutorialStep(data.tutorialStep ?? 1);
-          
-          // Ensure STARTING_INGREDIENTS are always available, plus any discovered ones
-          if (data.inventory) {
-            const merged = [...STARTING_INGREDIENTS];
-            data.inventory.forEach((ing: any) => {
-              if (!merged.some(m => m.name.toLowerCase() === ing.name.toLowerCase())) {
-                merged.push(ing);
-              }
-            });
-            setInventory(merged);
-          } else {
-            setInventory(STARTING_INGREDIENTS);
-          }
-          setCustomTools(data.customTools || []);
-        } else {
-          // Initialize new game state in Firestore
-          await setDoc(gameStateRef, {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName || 'Chef',
-            photoURL: user.photoURL || null,
-            money: 0,
-            inventory: STARTING_INGREDIENTS,
-            completedRecipes: [],
-            unlockedAchievements: [],
-            purchasedUpgrades: [],
-            customTools: [],
-            stats: isAdminUser ? { ...stats, proPlan: true, godTier: true, musicPass: true, adsDisabled: true } : stats,
-            tutorialStep: 1,
-            lastUpdated: Timestamp.now()
-          }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
         }
         setIsDataLoaded(true);
       } catch (error) {
-        console.error("Error loading game state:", error);
+        console.warn("Error loading game state:", error);
         setIsDataLoaded(true); // Proceed anyway to avoid getting stuck
       }
     };
 
     loadInitialData();
-
-    // 2. Real-time sync (optional, but good for multi-device)
-    const unsubscribe = onSnapshot(gameStateRef, (doc) => {
-      if (doc.exists() && !isCooking) { // Avoid overwriting while cooking
-        const data = doc.data();
-        // We only sync stats and achievements from remote to local if they changed significantly
-        // This is a simple implementation; a more robust one would use a version counter
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `game_states/${user.uid}`);
-    });
-
-    return () => unsubscribe();
   }, [user.uid]);
 
   const fetchLeaderboard = async () => {
     setIsLeaderboardLoading(true);
     try {
-      // Query game states where leaderboardOptIn is true
-      // Note: We'll filter level in memory to avoid needing a composite index for now
       const q = query(
         collection(db, "game_states"), 
         orderBy("stats.money", "desc"), 
@@ -5117,7 +5780,6 @@ function KitchenAppContainer({ user }: { user: User }) {
         const level = gameState.stats?.level || 1;
         const optIn = gameState.stats?.leaderboardOptIn || false;
         
-        // Include chefs that are level 5+ AND opted in OR are admins
         if ((level >= 5 && optIn) || ADMIN_EMAILS.includes(gameState.email || '')) {
           data.push({
             uid: docSnap.id,
@@ -5127,7 +5789,23 @@ function KitchenAppContainer({ user }: { user: User }) {
             money: gameState.stats?.money || 0,
             level: level,
             title: gameState.stats?.title || "Kitchen Hand",
-            customTitle: gameState.stats?.customTitle || null
+            customTitle: gameState.stats?.customTitle || null,
+            discordBanner: gameState.stats?.discordBanner || 'banner_discord',
+            discordBorder: gameState.stats?.discordBorder || 'border_none',
+            discordStatus: gameState.stats?.discordStatus || 'online',
+            discordStatusEmoji: gameState.stats?.discordStatusEmoji || '💭',
+            discordStatusText: gameState.stats?.discordStatusText || '',
+            discordBio: gameState.stats?.discordBio || '',
+            equippedHypeSquad: gameState.stats?.equippedHypeSquad || null,
+            purchasedCosmetics: gameState.stats?.purchasedCosmetics || [],
+            profileImage: gameState.stats?.profileImage || null,
+            discoveredIngredients: gameState.stats?.discoveredIngredients || 0,
+            completedNightmareOrders: gameState.stats?.completedNightmareOrders || 0,
+            completedOrders: gameState.stats?.completedOrders || 0,
+            fameDonated: gameState.stats?.fameDonated || 0,
+            credits: gameState.stats?.credits || 0,
+            proPlan: gameState.stats?.proPlan || false,
+            godTier: gameState.stats?.godTier || false
           });
         }
         
@@ -5135,15 +5813,34 @@ function KitchenAppContainer({ user }: { user: User }) {
       }
       setLeaderboardData(data);
     } catch (error) {
-      console.error("Error fetching leaderboard:", error);
+      console.warn("Error fetching leaderboard:", error);
     } finally {
       setIsLeaderboardLoading(false);
     }
   };
 
-  // 3. Save data to Firestore when it changes
+  // 3. Save data to localStorage & Firestore when it changes
   useEffect(() => {
     if (!user || !isDataLoaded) return;
+
+    const storageKey = `kitchen_gamestate_${user.uid}`;
+
+    // Always save to localStorage (instant, works offline or without working auth key)
+    try {
+      localStorage.setItem(storageKey, JSON.stringify({
+        stats,
+        inventory,
+        completedRecipes,
+        unlockedAchievements,
+        purchasedUpgrades: stats.purchasedUpgrades,
+        tutorialStep,
+        customTools
+      }));
+    } catch (e) {
+      console.warn("Could not save to localStorage:", e);
+    }
+
+    if ((user as any).isGuest || user.uid === 'guest-chef-local') return;
 
     const saveTimeout = setTimeout(async () => {
       try {
@@ -5162,9 +5859,9 @@ function KitchenAppContainer({ user }: { user: User }) {
           tutorialStep: tutorialStep,
           customTools: customTools,
           lastUpdated: Timestamp.now()
-        }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `game_states/${user.uid}`));
+        }, { merge: true }).catch(err => console.warn("Firestore save warning:", err));
       } catch (error) {
-        console.error("Error saving game state:", error);
+        console.warn("Error saving game state:", error);
       }
     }, 2000); // Debounce saves
 
@@ -5601,7 +6298,150 @@ function KitchenAppContainer({ user }: { user: User }) {
           data={leaderboardData} 
           isLoading={isLeaderboardLoading} 
           onClose={() => setIsLeaderboardOpen(false)} 
+          onViewProfile={(chef) => {
+            soundService.playClick();
+            setSelectedChefForProfile(chef);
+          }}
         />
+      )}
+
+      {selectedChefForProfile && (
+        <div className="os-modal-overlay animate-fadeIn" style={{ zIndex: 3000 }} onClick={() => setSelectedChefForProfile(null)}>
+          <div className="discord-profile-view-modal shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="os-modal-header-green-alt" style={{ backgroundColor: '#2563eb', color: '#ffffff' }}>
+              <div className="header-left-group">
+                <span className="os-modal-icon">🍳</span>
+                <span className="os-modal-title" style={{ fontFamily: 'var(--font-sans)', fontWeight: 800 }}>PERFIL DE CHEF</span>
+              </div>
+              <button 
+                className="os-close-btn" 
+                style={{ color: '#ffffff' }}
+                onClick={() => { soundService.playClick(); setSelectedChefForProfile(null); }}
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-4 flex items-center justify-center bg-[#18181b]/55 border-b border-[#1a1a1a]">
+              <div className="discord-profile-preview-card" style={{ width: '100%', maxWidth: '320px', boxShadow: 'none' }}>
+                {/* Banner Preview */}
+                <div 
+                  className={`discord-banner-preview ${
+                    selectedChefForProfile.discordBanner === 'banner_neon' ? 'preview-banner-neon' :
+                    selectedChefForProfile.discordBanner === 'banner_sakura' ? 'preview-banner-sakura' :
+                    selectedChefForProfile.discordBanner === 'banner_cosmic' ? 'preview-banner-cosmic' :
+                    selectedChefForProfile.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
+                    selectedChefForProfile.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
+                  }`}
+                  style={selectedChefForProfile.discordBanner === 'banner_discord' || !selectedChefForProfile.discordBanner ? { backgroundColor: '#2563eb' } : {}}
+                />
+                
+                {/* Avatar and status dot */}
+                <div className="discord-avatar-container">
+                  <div className={`discord-avatar-inner ${
+                    selectedChefForProfile.discordBorder === 'border_gaming' ? 'border-gaming-chroma' :
+                    selectedChefForProfile.discordBorder === 'border_cute' ? 'border-cute-cat' :
+                    selectedChefForProfile.discordBorder === 'border_fire' ? 'border-fire-ring' :
+                    selectedChefForProfile.discordBorder === 'border_frost' ? 'border-frost-crystals' :
+                    selectedChefForProfile.discordBorder === 'border_gold' ? 'border-gold-crown' :
+                    selectedChefForProfile.discordBorder === 'border_early' ? 'border-chef-hat' : ''
+                  }`}>
+                    {selectedChefForProfile.profileImage || selectedChefForProfile.photoURL ? (
+                      <img 
+                        src={selectedChefForProfile.profileImage || selectedChefForProfile.photoURL} 
+                        alt="Profile" 
+                        className="discord-avatar-img"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[#313338] text-white flex items-center justify-center font-bold text-2xl uppercase">
+                        {selectedChefForProfile.displayName?.[0] || '?'}
+                      </div>
+                    )}
+                  </div>
+                  <div className={`discord-status-dot-badge ${
+                    selectedChefForProfile.discordStatus === 'online' ? 'status-online' :
+                    selectedChefForProfile.discordStatus === 'idle' ? 'status-idle' :
+                    selectedChefForProfile.discordStatus === 'dnd' ? 'status-dnd' : 'status-offline'
+                  }`} />
+                </div>
+                
+                {/* Details */}
+                <div className="discord-profile-details">
+                  <div className="discord-card-username flex items-center gap-1">
+                    <span>{selectedChefForProfile.displayName}</span>
+                    {(ADMIN_EMAILS.includes(selectedChefForProfile.email || '') || (selectedChefForProfile.displayName === 'VERIFIEDROBY' && selectedChefForProfile.money > 1000000)) && (
+                      <img 
+                        src={VERIFIED_BADGE_URL} 
+                        alt="Verified" 
+                        style={{ width: '16px', height: '16px' }}
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+                    {selectedChefForProfile.proPlan && (
+                      <span className="text-[9px] bg-[#f97316] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro Plan</span>
+                    )}
+                  </div>
+                  
+                  {selectedChefForProfile.discordStatusText && (
+                    <div className="discord-card-custom-status">
+                      <span>{selectedChefForProfile.discordStatusEmoji || '💭'}</span>
+                      <span>{selectedChefForProfile.discordStatusText}</span>
+                    </div>
+                  )}
+                  
+                  {/* Badges container */}
+                  <div className="discord-user-badge-container">
+                    {getChefBadges(selectedChefForProfile, selectedChefForProfile.email).length > 0 ? (
+                      getChefBadges(selectedChefForProfile, selectedChefForProfile.email).map((badge) => (
+                        <div 
+                          key={badge.id} 
+                          className={`discord-profile-badge ${badge.isDifficult ? 'badge-difficult' : ''}`}
+                        >
+                          <span>{badge.emoji}</span>
+                          <div className="badge-tooltip">
+                            <p className="font-bold border-b border-white/20 pb-1 mb-1">{badge.name}</p>
+                            <p>{badge.desc}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-[10px] text-gray-400 italic px-1">Sin insignias equipo</span>
+                    )}
+                  </div>
+                  
+                  <div className="discord-card-separator" />
+                  
+                  <div className="discord-card-section-title">Sobre Mí</div>
+                  <p className="discord-card-bio mb-4 text-[12px]">{selectedChefForProfile.discordBio || 'Este chef no ha escrito una biografía todavía.'}</p>
+                  
+                  {/* Active Activity Frame */}
+                  <div className="discord-activity-card">
+                    <div className="discord-activity-header">Cocinando en Vivo</div>
+                    <div className="discord-activity-body">
+                      <div className="discord-activity-game-icon">🍳</div>
+                      <div className="discord-activity-details">
+                        <p className="discord-activity-game-name">My Little Kitchen</p>
+                        <p className="discord-activity-game-stats">Rango: {selectedChefForProfile.customTitle || selectedChefForProfile.title || 'Kitchen Hand'}</p>
+                        <p className="discord-activity-game-stats">Nivel: {selectedChefForProfile.level || 1} • Capital: ${selectedChefForProfile.money?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-3 bg-[#1e1f22] flex justify-end gap-2 border-t border-[#1a1a1a]">
+              <button 
+                type="button" 
+                onClick={() => { soundService.playClick(); setSelectedChefForProfile(null); }}
+                className="px-4 py-1.5 font-bold uppercase tracking-wider text-[11px] bg-red-600/25 border border-red-500/50 hover:bg-red-600/40 text-red-100 rounded-sm transition-all"
+              >
+                CERRAR_PERFIL
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {showLeaderboardOptIn && (
@@ -5723,39 +6563,7 @@ function KitchenAppContainer({ user }: { user: User }) {
 // ============================================================================
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#f5f5f5]">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-[#1f94ff] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="font-bold text-[#1a1a1a] uppercase tracking-widest">Loading Kitchen...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ErrorBoundary>
-      {!user ? (
-        <AuthScreen onAuthSuccess={(u) => setUser(u)} />
-      ) : (
-        <GeminiAPIProvider>
-          <KitchenAppContainer user={user} />
-        </GeminiAPIProvider>
-      )}
-    </ErrorBoundary>
-  );
+  return <SecurityBreachOverlay />;
 }
 
 export default App;

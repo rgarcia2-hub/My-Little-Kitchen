@@ -70,7 +70,16 @@
             "musicPass": { "type": "boolean" },
             "customTitle": { "type": ["string", "null"] },
             "profileImage": { "type": ["string", "null"] },
-            "leaderboardOptIn": { "type": "boolean" }
+            "leaderboardOptIn": { "type": "boolean" },
+            "credits": { "type": "integer", "description": "New Discord Profile Shop Currency" },
+            "discordStatus": { "type": "string" },
+            "discordStatusText": { "type": "string" },
+            "discordStatusEmoji": { "type": "string" },
+            "discordBio": { "type": "string" },
+            "discordBanner": { "type": "string" },
+            "discordBorder": { "type": "string" },
+            "purchasedCosmetics": { "type": "array", "items": { "type": "string" } },
+            "equippedHypeSquad": { "type": ["string", "null"] }
           }
         },
         "tutorialStep": { "type": "integer" },
