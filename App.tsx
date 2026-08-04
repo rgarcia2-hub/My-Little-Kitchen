@@ -4,7 +4,6 @@
 */
 
 import { MusicPlayer } from './src/components/MusicPlayer';
-import { SecurityBreachOverlay } from './src/components/SecurityBreachOverlay';
 
 /**
  * Copyright 2024 Google LLC
@@ -785,7 +784,6 @@ function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighli
       )}
       <div className="hover-tooltip">{ingredient.name}</div>
       <span className="emoji">{ingredient.emoji}</span>
-      <span className="name">{ingredient.name}</span>
     </button>
   );
 }
@@ -6563,7 +6561,34 @@ function KitchenAppContainer({ user }: { user: User }) {
 // ============================================================================
 
 function App() {
-  return <SecurityBreachOverlay />;
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center font-mono">
+        <div className="text-[#33ff33] animate-pulse">INIT_KITCHEN_OS...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return (
+    <GeminiAPIProvider>
+      <KitchenAppContainer user={user} />
+    </GeminiAPIProvider>
+  );
 }
 
 export default App;

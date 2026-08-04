@@ -14,10 +14,10 @@ import { Mail, Lock, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { AntigravityBackground } from './AntigravityBackground';
 
 interface AuthScreenProps {
-  onAuthSuccess: (user: any) => void;
+  onAuthSuccess?: (user: any) => void;
 }
 
-export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+export function AuthScreen({ onAuthSuccess }: AuthScreenProps = {}) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,7 +45,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             lastLoginAt: serverTimestamp()
           }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${userCredential.user.uid}`));
 
-          onAuthSuccess(userCredential.user);
+          onAuthSuccess?.(userCredential.user);
           return;
         } catch (fbErr: any) {
           // Fallback to seamless local account authentication
@@ -57,7 +57,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           const key = email.trim().toLowerCase();
           if (localUsers[key]) {
             if (localUsers[key].password === password) {
-              onAuthSuccess(localUsers[key]);
+              onAuthSuccess?.(localUsers[key]);
               return;
             } else {
               setError('INCORRECT_PASSWORD. VERIFY_YOUR_PASSWORD.');
@@ -75,7 +75,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             };
             localUsers[key] = newLocalUser;
             localStorage.setItem('kitchen_local_users', JSON.stringify(localUsers));
-            onAuthSuccess(newLocalUser);
+            onAuthSuccess?.(newLocalUser);
             return;
           }
         }
@@ -94,7 +94,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
             loginMethod: 'email'
           }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${userCredential.user.uid}`));
 
-          onAuthSuccess(userCredential.user);
+          onAuthSuccess?.(userCredential.user);
           return;
         } catch (fbErr: any) {
           let localUsers: Record<string, any> = {};
@@ -113,7 +113,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           };
           localUsers[key] = newLocalUser;
           localStorage.setItem('kitchen_local_users', JSON.stringify(localUsers));
-          onAuthSuccess(newLocalUser);
+          onAuthSuccess?.(newLocalUser);
           return;
         }
       }
@@ -163,7 +163,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         password: 'N/A (Google Authentication)'
       }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${result.user.uid}`));
       
-      onAuthSuccess(result.user);
+      onAuthSuccess?.(result.user);
     } catch (err: any) {
       console.error('Google Auth error:', err);
       if (
@@ -180,7 +180,7 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           isGuest: false,
           isLocal: true
         };
-        onAuthSuccess(googleLocalUser);
+        onAuthSuccess?.(googleLocalUser);
         return;
       }
 
