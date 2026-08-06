@@ -659,10 +659,9 @@ interface LeaderboardProps {
   data: any[];
   isLoading: boolean;
   onClose: () => void;
-  onViewProfile: (chef: any) => void;
 }
 
-function Leaderboard({ data, isLoading, onClose, onViewProfile }: LeaderboardProps) {
+function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
   return (
     <div className="os-modal-overlay" onClick={onClose}>
       <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
@@ -705,11 +704,7 @@ function Leaderboard({ data, isLoading, onClose, onViewProfile }: LeaderboardPro
                         </div>
                         <div className="os-chef-info">
                           <div className="flex items-center gap-1">
-                            <span 
-                              className="os-chef-name hover:text-[#2563eb] hover:underline cursor-pointer" 
-                              onClick={() => onViewProfile(entry)}
-                              title="Ver Tarjeta de Chef"
-                            >
+                            <span className="os-chef-name">
                               {entry.displayName}
                             </span>
                             {(ADMIN_EMAILS.includes(entry.email || '') || (entry.displayName === 'VERIFIEDROBY' && entry.money > 1000000)) && (
@@ -821,17 +816,14 @@ function ActionTile({ action, isActive, isDisabled, isHighlighted, onClick }: Ac
 
 interface OrderCardProps {
   order: Order;
-  isDisabled: boolean;
+  isDisabled?: boolean;
   isHighlighted?: boolean;
   onPickUp: (orderId: string) => void;
   onCookWithGemini: (orderName: string) => void;
   onOpenVerificationAgent?: () => void;
-  onTogglePin?: (order: Order) => void;
-  pinCost?: number;
-  canAffordPin?: boolean;
 }
 
-function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent, onTogglePin, pinCost, canAffordPin }: OrderCardProps) {
+function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent }: OrderCardProps) {
   const statusClass = order.status === 'completed' ? 'completed' :
     order.status === 'failed' ? 'failed' :
       order.status === 'in_progress' ? 'in-progress' : 'not-started';
@@ -842,19 +834,6 @@ function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemin
 
   return (
     <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass}`}>
-      {onTogglePin && order.status === 'not_started' && (
-        <button 
-          title={order.isPinned ? "Unpin order" : `Pin order (Cost: $${pinCost})`}
-          className={`pin-order-btn ${order.isPinned ? 'pinned' : ''}`}
-          onClick={(e) => { e.stopPropagation(); onTogglePin(order); }}
-          disabled={!order.isPinned && !canAffordPin}
-        >
-          <Heart 
-            size={16} 
-            className="pin-heart-icon"
-          />
-        </button>
-      )}
       {order.difficulty && (
         <div className={`order-difficulty ${difficultyClass}`}>
           {order.difficulty === 'chromatic' || order.rarity === 'chromatic' ? 'Chromatic' : order.difficulty}
@@ -1363,8 +1342,6 @@ interface RecipeStepsDisplayProps {
   isLoading: boolean;
   orderName: string;
   difficulty?: string;
-  isPinned: boolean;
-  onPinToggle: () => void;
   adsDisabled?: boolean;
   proPlan?: boolean;
   godTier?: boolean;
@@ -1377,13 +1354,10 @@ function RecipeStepsDisplay({
   isLoading, 
   orderName, 
   difficulty, 
-  isPinned, 
-  onPinToggle,
   adsDisabled,
   proPlan,
   godTier
 }: RecipeStepsDisplayProps) {
-  const canPin = difficulty !== 'difficult' && difficulty !== 'nightmare';
   const isProtected = difficulty === 'difficult' || difficulty === 'nightmare';
   const [isBlackedOut, setIsBlackedOut] = useState(false);
 
@@ -1417,7 +1391,7 @@ function RecipeStepsDisplay({
   }, [isProtected]);
 
   return (
-    <div className={`recipe-steps-overlay ${isPinned ? 'pinned' : ''} ${isProtected ? 'protected-mode' : ''}`}>
+    <div className={`recipe-steps-overlay ${isProtected ? 'protected-mode' : ''}`}>
       <div className={`recipe-steps-modal ${isBlackedOut ? 'blacked-out' : ''}`}>
         {isBlackedOut && isProtected && (
           <div className="blackout-shield">
@@ -1435,15 +1409,6 @@ function RecipeStepsDisplay({
             <p className="recipe-steps-subtitle">Follow these steps using the tools and ingredients below</p>
           </div>
           <div className="recipe-steps-header-actions">
-            {canPin && (
-              <button 
-                onClick={onPinToggle} 
-                className={`recipe-steps-pin ${isPinned ? 'active' : ''}`}
-                title={isPinned ? "Unpin recipe" : "Pin recipe to screen"}
-              >
-                <span className="material-symbols-outlined">{isPinned ? 'keep_off' : 'keep'}</span>
-              </button>
-            )}
             <button onClick={onClose} className="recipe-steps-close">✕</button>
           </div>
         </div>
@@ -1498,11 +1463,9 @@ function RecipeStepsDisplay({
             </div>
           )}
         </div>
-        {!isPinned && (
-          <div className="recipe-steps-footer">
-            <button onClick={onClose} className="recipe-steps-done">Got it!</button>
-          </div>
-        )}
+        <div className="recipe-steps-footer">
+          <button onClick={onClose} className="recipe-steps-done">Got it!</button>
+        </div>
         
         {/* Ad Slot: Recipe Footer */}
         {!adsDisabled && !proPlan && !godTier && (
@@ -2843,11 +2806,6 @@ Do not say you cannot do it; always provide a recipe.`;
                 <span className="money-icon">💰</span>
                 <span className="money-amount">${stats.money}</span>
               </div>
-
-              <div className="money-display-bar credits-display-bar" title="Créditos Culinarios (Créditos para cosméticos de Chef)">
-                <span className="money-icon">🪙</span>
-                <span className="money-amount">{stats.credits ?? 150} CRED</span>
-              </div>
               
               <div className="level-status-card">
                 <div className="level-badge-mini">
@@ -3271,9 +3229,6 @@ Do not say you cannot do it; always provide a recipe.`;
                     onPickUp={onPickUp}
                     onCookWithGemini={onCookWithGemini}
                     onOpenVerificationAgent={onOpenVerificationAgent}
-                    onTogglePin={onTogglePin}
-                    pinCost={getPinCost ? (stats.godTier ? 0 : getPinCost(order)) : 0}
-                    canAffordPin={getPinCost ? (stats.godTier || stats.money >= getPinCost(order)) : false}
                   />
                 ))}
                 <AddOrderCard onAddOrder={onAddOrder} isDisabled={hasInProgressOrder} />
@@ -3286,28 +3241,14 @@ Do not say you cannot do it; always provide a recipe.`;
       {/* Settings & Account Modal */}
       {showSkipModal && (
         <div className="skip-modal-overlay">
-          <div className={`skip-modal ${activeSettingsTab === 'discord' ? 'discord-modal-wide' : ''}`}>
-            
-            {/* Header with Segmented Tabs */}
-            <div className="settings-tabs-header">
-              <button 
-                type="button"
-                className={`settings-tab-btn ${activeSettingsTab === 'discord' ? 'active' : ''}`}
-                onClick={() => { soundService.playClick(); setActiveSettingsTab('discord'); }}
-              >
-                🍳 Tarjeta de Chef y Cosméticos
-              </button>
-              <button 
-                type="button"
-                className={`settings-tab-btn ${activeSettingsTab === 'system' ? 'active' : ''}`}
-                onClick={() => { soundService.playClick(); setActiveSettingsTab('system'); }}
-              >
-                ⚙️ Ajustes y Cuenta
-              </button>
+          <div className="skip-modal">
+            <div className="skip-modal-header">
+              <h3>⚙️ Ajustes y Cuenta</h3>
+              <button className="skip-close-btn" onClick={() => setShowSkipModal(false)}>✕</button>
             </div>
 
-            {/* TAB 1: CHEF PROFILE CUSTOMIZER & SHOP */}
-            {activeSettingsTab === 'discord' && (
+            {/* TAB 1: CHEF PROFILE CUSTOMIZER & SHOP (REMOVED) */}
+            {false && (
               <div className="p-4 bg-[#18181b]/40 border border-[#1a1a1a] rounded-lg">
                 <div className="discord-customizer-grid">
                   
@@ -3650,10 +3591,7 @@ Do not say you cannot do it; always provide a recipe.`;
                 </div>
               </div>
             )}
-
-            {/* TAB 2: ORIGINAL ACCOUNT CONFIG */}
-            {activeSettingsTab === 'system' && (
-              <div className="skip-modal-body">
+            <div className="skip-modal-body">
               
               <div className="admin-section">
                 <h4>Account</h4>
@@ -3986,7 +3924,6 @@ Do not say you cannot do it; always provide a recipe.`;
 
               {skipError && <p className="skip-error">{skipError}</p>}
               </div>
-            )}
             <div className="skip-modal-footer">
               <button className="skip-cancel-btn" onClick={() => setShowSkipModal(false)}>Close Panel</button>
             </div>
@@ -4543,8 +4480,6 @@ Do not say you cannot do it; always provide a recipe.`;
           isLoading={isFetchingSteps}
           orderName={currentOrder.name}
           difficulty={currentOrder.difficulty}
-          isPinned={isRecipePinned}
-          onPinToggle={() => setIsRecipePinned(!isRecipePinned)}
           adsDisabled={stats.adsDisabled}
           proPlan={stats.proPlan}
           godTier={stats.godTier}
@@ -5529,8 +5464,8 @@ function KitchenAppContainer({ user }: { user: User }) {
   const [actionTriggerCount, setActionTriggerCount] = useState(0);
   const [activeIngredients, setActiveIngredients] = useState<Set<string>>(new Set());
   const [orders, setOrders] = useState<Order[]>(() => {
-    // Start with only easy orders
-    return EXAMPLE_ORDERS.filter(o => o.difficulty === 'easy');
+    // Start with only 5 easy recipes
+    return EXAMPLE_ORDERS.filter(o => o.difficulty === 'easy').slice(0, 5);
   });
 
   // Overlay open states - start closed
@@ -6296,10 +6231,6 @@ function KitchenAppContainer({ user }: { user: User }) {
           data={leaderboardData} 
           isLoading={isLeaderboardLoading} 
           onClose={() => setIsLeaderboardOpen(false)} 
-          onViewProfile={(chef) => {
-            soundService.playClick();
-            setSelectedChefForProfile(chef);
-          }}
         />
       )}
 
