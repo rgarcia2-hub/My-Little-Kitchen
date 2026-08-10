@@ -30,24 +30,6 @@ service cloud.firestore {
     //   - unlockedAchievements: list (required) - Array of achievement IDs
     //   - purchasedUpgrades: list (optional) - Array of upgrade IDs
     //   - stats: map (required) - Game statistics
-    //     - completedOrders: number
-    //     - money: number
-    //     - discoveredIngredients: number
-    //     - usedToolsCount: number
-    //     - usedTools: list
-    //     - maxConfidence: number
-    //     - maxIngredientsUsed: number
-    //     - completedDishes: list
-    //     - completedNightmareOrders: number
-    //     - totalActions: number
-    //     - xp: number
-    //     - level: number
-    //     - title: string
-    //     - purchasedUpgrades: list
-    //     - proPlan: bool
-    //     - godTier: bool
-    //     - musicPass: bool
-    //     - profileImage: string|null
     //   - tutorialStep: number (required) - Current tutorial step
     //   - lastUpdated: timestamp (required) - Last update time
     //
@@ -67,8 +49,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() &&
-             (request.auth.token.email == "robert.garcia.alsina2012@gmail.com" || 
-              request.auth.token.email == "gianlucaperalta555@gmail.com") &&
+             request.auth.token.email == "robert.garcia.alsina2012@gmail.com" &&
              request.auth.token.email_verified == true;
     }
 
@@ -141,6 +122,11 @@ service cloud.firestore {
       // Users can create/update their own game state.
       allow create: if isOwner(uid) && isValidGameState(request.resource.data);
       allow update: if isOwner(uid) && isValidGameState(request.resource.data);
+    }
+    
+    match /system_news/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /test/connection {
