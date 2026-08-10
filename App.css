@@ -8510,3 +8510,8 @@ input:checked + .os-slider:before {
 }
 
 
+.upgrade-item.locked:not(.purchased) {
+  opacity: 0.5;
+  background: #f0f0f0;
+  border-style: dashed;
+}

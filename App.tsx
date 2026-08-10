@@ -661,94 +661,99 @@ interface LeaderboardProps {
   onClose: () => void;
 }
 
+
 function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
   return (
-    <div className="os-modal-overlay" onClick={onClose}>
-      <div className="os-leaderboard-card" onClick={e => e.stopPropagation()}>
-        <div className="os-modal-header-green-alt">
-          <div className="header-left-group">
-            <span className="os-modal-icon">📊</span>
-            <span className="os-modal-title">GLOBAL_RANKINGS_v2.4</span>
+    <div className="os-modal-overlay z-[15000]" onClick={onClose}>
+      <div className="os-leaderboard-card max-w-2xl w-full mx-4" onClick={e => e.stopPropagation()}>
+        <div className="os-modal-header-green-alt flex items-center justify-between p-4 bg-[#111] border-b border-[#222]">
+          <div className="header-left-group flex items-center gap-2">
+            <span className="os-modal-icon text-xl">🏆</span>
+            <span className="os-modal-title font-bold text-green-500 tracking-wider">GLOBAL_RANKINGS_v3.0</span>
           </div>
-          <button className="os-close-btn" onClick={onClose}>&times;</button>
+          <button className="os-close-btn text-gray-500 hover:text-white" onClick={onClose}>&times;</button>
         </div>
         
-        <div className="os-leaderboard-body">
+        <div className="os-leaderboard-body bg-[#0a0a0a] p-6 max-h-[70vh] overflow-y-auto">
+          {/* Rivalidad Semanal Header */}
+          <div className="mb-6 p-4 border border-purple-500/30 bg-purple-500/5 rounded-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">⚔️</span>
+              <h3 className="text-purple-400 font-bold uppercase tracking-wider">Rivalidad Semanal</h3>
+            </div>
+            <p className="text-gray-400 text-sm mb-3">
+              Objetivo: "Chef Supremo". Cocina 50 platillos nivel Divino.
+            </p>
+            <div className="w-full bg-[#111] h-2 rounded-full overflow-hidden">
+              <div className="bg-purple-500 h-full w-[45%]"></div>
+            </div>
+            <p className="text-right text-xs text-purple-500 mt-1">45% completado</p>
+          </div>
+
           {isLoading ? (
-            <div className="os-loading-state">
-              <div className="os-spinner"></div>
-              <span>FETCHING_DATA...</span>
+            <div className="os-loading-state text-center py-10">
+              <div className="os-spinner inline-block w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <span className="block text-green-500 font-mono text-sm">FETCHING_DATA...</span>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="os-empty-state text-center py-10 text-gray-500 font-mono">
+              NO_DATA_FOUND
             </div>
           ) : (
-            <div className="os-table-container">
-              <div className="os-table-header">
-                <span className="col-rank">#</span>
-                <span className="col-chef">CHEF_ID</span>
-                <span className="col-money">CAPITAL</span>
-                <span className="col-level">LVL</span>
-              </div>
-              <div className="os-table-rows">
-                {data.length === 0 ? (
-                  <div className="os-empty-state">NO_ACTIVE_CHEFS_FOUND</div>
-                ) : (
-                  data.map((entry, index) => (
-                    <div key={entry.uid} className="os-table-row">
-                      <span className="col-rank">{index + 1}</span>
-                      <div className="col-chef os-chef-cell">
-                        <div className="os-avatar-mini">
-                          {entry.photoURL ? (
-                            <img src={entry.photoURL} alt="" referrerPolicy="no-referrer" />
-                          ) : (
-                            <div className="os-avatar-placeholder">{entry.displayName[0]}</div>
-                          )}
-                        </div>
-                        <div className="os-chef-info">
-                          <div className="flex items-center gap-1">
-                            <span className="os-chef-name">
-                              {entry.displayName}
-                            </span>
-                            {(ADMIN_EMAILS.includes(entry.email || '') || (entry.displayName === 'VERIFIEDROBY' && entry.money > 1000000)) && (
-                              <img 
-                                src={VERIFIED_BADGE_URL} 
-                                alt="Verified" 
-                                style={{ width: '14px', height: '14px' }}
-                                className="flex-shrink-0" 
-                                referrerPolicy="no-referrer"
-                              />
-                            )}
-                          </div>
-                          <span className="os-chef-title">{entry.customTitle || entry.title}</span>
+            <div className="os-leaderboard-list flex flex-col gap-2">
+              {data.map((u, index) => {
+                const isTop3 = index < 3;
+                return (
+                  <div key={u.uid} className={`os-leaderboard-row flex items-center justify-between p-3 rounded-lg border ${isTop3 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-[#222] bg-[#111]'}`}>
+                    <div className="row-left flex items-center gap-4">
+                      <span className={`row-rank font-bold w-6 text-center ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-gray-600'}`}>
+                        #{index + 1}
+                      </span>
+                      <div className="row-avatar text-2xl">
+                        {u.profileImage ? (
+                          <img src={u.profileImage} alt="avatar" className="w-8 h-8 rounded-full border border-[#333]" />
+                        ) : '👨‍🍳'}
+                      </div>
+                      <div className="row-info flex flex-col">
+                        <span className="row-name font-bold text-gray-200">
+                          {u.email ? u.email.split('@')[0] : 'Unknown_Chef'}
+                        </span>
+                        <div className="row-badges flex gap-1 mt-1">
+                          {u.badges && u.badges.map((b, i) => (
+                            <span key={i} className="text-xs">{b}</span>
+                          ))}
                         </div>
                       </div>
-                      <span className="col-money">${entry.money.toLocaleString()}</span>
-                      <span className="col-level">[{entry.level}]</span>
                     </div>
-                  ))
-                )}
-              </div>
+                    <div className="row-right flex items-center gap-6 text-right">
+                      <div className="row-stat flex flex-col">
+                        <span className="text-xs text-gray-500 uppercase">Level</span>
+                        <span className="font-mono text-green-400">{u.level}</span>
+                      </div>
+                      <div className="row-stat flex flex-col">
+                        <span className="text-xs text-gray-500 uppercase">Fame</span>
+                        <span className="font-mono text-yellow-400">{u.fameDonated || 0}</span>
+                      </div>
+                      <div className="row-stat flex flex-col min-w-[60px]">
+                        <span className="text-xs text-gray-500 uppercase">Money</span>
+                        <span className="font-mono text-green-500">\${u.money.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
         
-        <div className="os-leaderboard-footer">
-          <div className="footer-status">SYSTEM_STATUS: ONLINE</div>
+        <div className="os-leaderboard-footer p-3 bg-[#111] border-t border-[#222] flex justify-between items-center text-xs text-gray-500 font-mono">
+          <div className="footer-status text-green-500">SYSTEM_STATUS: ONLINE</div>
           <div className="footer-timestamp">{new Date().toLocaleTimeString()}</div>
         </div>
       </div>
     </div>
   );
 }
-
-interface IngredientTileProps {
-  ingredient: Ingredient;
-  isSelected: boolean;
-  isActive: boolean;
-  isDisabled: boolean;
-  isHighlighted?: boolean;
-  onClick: () => void;
-  onEdit?: () => void;
-}
-
 function IngredientTile({ ingredient, isSelected, isActive, isDisabled, isHighlighted, onClick, onEdit }: IngredientTileProps) {
   const rarityClass = ingredient.rarity ? `rarity-${ingredient.rarity}` : 'rarity-common';
   const isCrumble = ingredient.name.toLowerCase() === 'crumble cookie';
@@ -1102,11 +1107,26 @@ function ChromaticMinigame({ order, onSuccess, onFail }: ChromaticMinigameProps)
       <motion.div 
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="os-modal-card bg-[#050505] border-4 border-white p-0 overflow-hidden max-w-md w-full shadow-[0_0_100px_rgba(255,255,255,0.1)]"
+        className="bg-[#050505] border border-[#333] p-0 overflow-hidden max-w-md w-full shadow-2xl rounded-xl relative"
       >
-        <div className="bg-white text-black p-4 flex justify-between items-center font-black tracking-widest text-[10px]">
-          <span>CHROMATIC_STABILIZER_V1.0</span>
-          <span className="animate-pulse">● LIVE_FREQ</span>
+        {/* MacOS Header */}
+        <div className="bg-[#1a1a1a] border-b border-[#333] px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                soundService.playClick();
+                onFail();
+              }}
+              className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] hover:bg-[#e0443e] border border-[#e0443e] cursor-pointer flex items-center justify-center text-[9px] text-black/80 font-bold group leading-none transition-transform hover:scale-110"
+              title="Close Minigame"
+            >
+              <span className="opacity-0 group-hover:opacity-100 font-extrabold">✕</span>
+            </button>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] border border-[#dea123] inline-block"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#27c93f] border border-[#1aab29] inline-block"></span>
+          </div>
+          <span className="text-gray-400 font-mono text-[10px] font-bold tracking-widest uppercase">Chromatic Stabilizer</span>
+          <div className="w-[42px]"></div>
         </div>
 
         <div className="p-10 flex flex-col items-center relative">
@@ -1242,12 +1262,33 @@ function CrumbleCookieCustomizer({ onClose, onSave }: CrumbleCookieCustomizerPro
   };
 
   return (
-    <div className="customizer-overlay" onClick={onClose}>
-      <div className="customizer-card" onClick={e => e.stopPropagation()}>
-        <div className="customizer-header">
-          <h2 className="customizer-title">Crumble Design Studio</h2>
-          <button onClick={onClose} className="recipe-steps-close">✕</button>
+    <div className="os-modal-overlay z-[12000]" onClick={onClose}>
+      <motion.div 
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-[#050505] border border-[#333] p-0 overflow-hidden max-w-4xl w-full shadow-2xl rounded-xl relative"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* MacOS Header */}
+        <div className="bg-[#1a1a1a] border-b border-[#333] px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                soundService.playClick();
+                onClose();
+              }}
+              className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] hover:bg-[#e0443e] border border-[#e0443e] cursor-pointer flex items-center justify-center text-[9px] text-black/80 font-bold group leading-none transition-transform hover:scale-110"
+              title="Close Customizer"
+            >
+              <span className="opacity-0 group-hover:opacity-100 font-extrabold">✕</span>
+            </button>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] border border-[#dea123] inline-block"></span>
+            <span className="w-3.5 h-3.5 rounded-full bg-[#27c93f] border border-[#1aab29] inline-block"></span>
+          </div>
+          <span className="text-gray-400 font-mono text-[10px] font-bold tracking-widest uppercase">Crumble Design Studio</span>
+          <div className="w-[42px]"></div>
         </div>
+
         <div className="customizer-body">
           <div className="cookie-preview-section">
             <div className={`cookie-visual ${flavor === 'chromatic' || glazing === 'chromatic' ? 'rarity-chromatic' : ''}`}>
@@ -1320,13 +1361,13 @@ function CrumbleCookieCustomizer({ onClose, onSave }: CrumbleCookieCustomizerPro
             </div>
           </div>
         </div>
-        <div className="customizer-footer">
-          <button className="cancel-cookie-btn" onClick={onClose}>Cancel</button>
-          <button className="save-cookie-btn" onClick={() => onSave({ flavor, glazing, toppings })}>
+        <div className="customizer-footer border-t border-[#333] p-4 bg-[#111] flex justify-end gap-3">
+          <button className="px-4 py-2 text-sm font-bold text-gray-400 hover:text-white transition-colors" onClick={onClose}>Cancel</button>
+          <button className="px-4 py-2 text-sm font-bold bg-[#00ff00] text-black rounded hover:bg-[#00cc00] transition-colors" onClick={() => onSave({ flavor, glazing, toppings })}>
             Finalize Chromatic Creation
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
@@ -1598,29 +1639,35 @@ function CookingWires() {
   );
 }
 
-function UpgradeItem({ upgrade, isPurchased, canAfford, onBuy }: { 
+function UpgradeItem({ upgrade, isPurchased, canAfford, meetsRequirement, onBuy }: { 
   upgrade: Upgrade; 
   isPurchased: boolean; 
   canAfford: boolean;
+  meetsRequirement: boolean;
   onBuy: () => void;
 }) {
   return (
-    <div className={`upgrade-item ${isPurchased ? 'purchased' : canAfford ? 'affordable' : 'expensive'}`}>
+    <div className={`upgrade-item ${isPurchased ? 'purchased' : (!meetsRequirement ? 'locked' : (canAfford ? 'affordable' : 'expensive'))}`}>
       <div className="upgrade-icon">{upgrade.emoji}</div>
       <div className="upgrade-info">
         <div className="upgrade-name">{upgrade.name}</div>
         <div className="upgrade-description">{upgrade.description}</div>
+        {!meetsRequirement && !isPurchased && upgrade.requirementText && (
+          <div className="text-red-400 text-xs font-mono mt-1 flex items-center gap-1">
+            <span>⚠️</span> {upgrade.requirementText}
+          </div>
+        )}
         <div className="upgrade-cost">
-          {isPurchased ? 'PURCHASED' : `Cost: $${upgrade.cost}`}
+          {isPurchased ? 'PURCHASED' : `Cost: $${upgrade.cost.toLocaleString()}`}
         </div>
       </div>
       {!isPurchased && (
         <button 
           className="buy-upgrade-btn" 
           onClick={onBuy}
-          disabled={!canAfford}
+          disabled={!canAfford || !meetsRequirement}
         >
-          Buy
+          {meetsRequirement ? 'Buy' : 'Locked'}
         </button>
       )}
     </div>
@@ -1814,8 +1861,8 @@ function CombinationAgent({
   const prevInventoryLengthRef = useRef(inventory.length);
 
   const [isChallengesExpanded, setIsChallengesExpanded] = useState(false);
-
   const [isChallengesVisible, setIsChallengesVisible] = useState(true);
+  const [isChallengesClosed, setIsChallengesClosed] = useState(false);
 
   const handleDonateToFame = () => {
     const amount = parseInt(fameDonationAmount, 10);
@@ -2902,24 +2949,6 @@ Do not say you cannot do it; always provide a recipe.`;
                     {user.displayName?.[0] || user.email?.[0] || '?'}
                   </div>
                 )}
-                <div className="flex items-center gap-1">
-                  <span className="user-name-text">{user.displayName || 'Chef'}</span>
-                  {ADMIN_EMAILS.includes(user.email || '') && (
-                    <img 
-                      src={VERIFIED_BADGE_URL} 
-                      alt="Verified" 
-                      style={{ width: '14px', height: '14px' }}
-                      className="flex-shrink-0" 
-                      referrerPolicy="no-referrer"
-                    />
-                  )}
-                  {currentFame && (
-                    <span className="fame-badge-mini" title={`${currentFame.tier} Fame`}>
-                      {currentFame.emoji}
-                    </span>
-                  )}
-                </div>
-                <span className="settings-gear">⚙️</span>
               </div>
             </button>
           </div>
@@ -2927,13 +2956,37 @@ Do not say you cannot do it; always provide a recipe.`;
       </div>
 
       {/* Challenge Banner */}
-      {isChallengesVisible && (
+      {isChallengesVisible && !isChallengesClosed && (
         <div className={`challenge-banner-brutalist ${isChallengesExpanded ? 'challenges-fullscreen' : ''}`}>
-          <div className="challenge-header-rail">
-            <span className="rail-text">KITCHEN PROTOCOL v1.0</span>
-            <div className="flex gap-4">
-              <span className="rail-text cursor-pointer hover:text-red-500" onClick={() => setIsChallengesVisible(false)}>CLOSE [X]</span>
-              <span className="rail-text">SYSTEM READY</span>
+          <div className="challenge-header-rail flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <button 
+                  onClick={() => setIsChallengesClosed(true)} 
+                  className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] hover:bg-[#e0443e] border border-[#e0443e] cursor-pointer flex items-center justify-center text-[9px] text-black/80 font-bold group leading-none transition-transform hover:scale-110"
+                  title="Cerrar Kitchen Protocol (MacOS)"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-extrabold">✕</span>
+                </button>
+                <button 
+                  onClick={() => setIsChallengesVisible(false)} 
+                  className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:bg-[#dea123] border border-[#dea123] cursor-pointer flex items-center justify-center text-[9px] text-black/80 font-bold group leading-none transition-transform hover:scale-110"
+                  title="Minimizar Kitchen Protocol"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-extrabold pb-1">−</span>
+                </button>
+                <button 
+                  onClick={() => setIsChallengesExpanded(!isChallengesExpanded)} 
+                  className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:bg-[#1aab29] border border-[#1aab29] cursor-pointer flex items-center justify-center text-[9px] text-black/80 font-bold group leading-none transition-transform hover:scale-110"
+                  title="Maximizar/Restaurar Kitchen Protocol"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-extrabold">⤢</span>
+                </button>
+              </div>
+              <span className="rail-text font-mono text-xs">KITCHEN PROTOCOL v1.0</span>
+            </div>
+            <div className="flex gap-4 items-center">
+              <span className="rail-text text-[#00ff00]">SYSTEM READY</span>
             </div>
           </div>
           
@@ -2982,15 +3035,16 @@ Do not say you cannot do it; always provide a recipe.`;
         </div>
       )}
       
-          {/* Commented out daily missions as requested
-          {!isChallengesVisible && (
-            <button 
-              className="os-btn-mini mb-6"
-              onClick={() => setIsChallengesVisible(true)}
-            >
-              SHOW DAILY MISSIONS
-            </button>
-          )} */}
+      {!isChallengesVisible && !isChallengesClosed && (
+        <div className="flex justify-start mb-4">
+          <button 
+            className="os-btn-mini text-xs flex items-center gap-2 bg-black text-white px-3 py-1.5 border border-[#333] hover:bg-zinc-800 cursor-pointer"
+            onClick={() => setIsChallengesVisible(true)}
+          >
+            <span>💻</span> ABRIR KITCHEN PROTOCOL
+          </button>
+        </div>
+      )}
 
       {/* Achievements Top Bar */}
       <div className="achievements-top-bar">
@@ -3166,6 +3220,7 @@ Do not say you cannot do it; always provide a recipe.`;
                 upgrade={upgrade} 
                 isPurchased={(stats.purchasedUpgrades || []).includes(upgrade.id)}
                 canAfford={(stats.money || 0) >= upgrade.cost}
+                meetsRequirement={upgrade.condition ? upgrade.condition(stats) : true}
                 onBuy={() => onBuyUpgrade(upgrade)}
               />
             ))}
@@ -3642,24 +3697,12 @@ Do not say you cannot do it; always provide a recipe.`;
                     </div>
 
                     <div className="account-details">
-                      <div className="flex items-center gap-1">
-                        <h5 className="chef-name">{user.displayName || 'Chef'}</h5>
-                        {ADMIN_EMAILS.includes(user.email || '') && (
-                          <img 
-                            src={VERIFIED_BADGE_URL} 
-                            alt="Verified" 
-                            style={{ width: '18px', height: '18px' }}
-                            className="flex-shrink-0" 
-                            referrerPolicy="no-referrer"
-                          />
-                        )}
-                        {currentFame && (
-                          <span className="fame-badge-mini ml-1" title={`${currentFame.tier} Fame - Stage ${currentFame.stage}`}>
-                            {currentFame.emoji}
-                          </span>
-                        )}
+                      <div className="text-xl font-bold font-mono uppercase mb-1">
+                        {user.displayName || 'Chef'}
                       </div>
-                      <p className="chef-email">{user.email}</p>
+                      <div className="text-xs text-gray-500 mb-2 font-mono">
+                        {user.email}
+                      </div>
                       <div className="profile-status-badge">
                         {stats.profileImage ? 'CUSTOM_AVATAR_ACTIVE' : 'DEFAULT_AVATAR'}
                       </div>
@@ -4113,16 +4156,22 @@ Do not say you cannot do it; always provide a recipe.`;
           <div className="lab-tools-container" ref={actionsRef}>
             {[...COOKING_ACTIONS, ...customTools]
               .filter(action => action.displayName.toLowerCase().includes(toolsSearchTerm.toLowerCase()))
+              .sort((a, b) => {
+                if (a.name === 'serve') return -1;
+                if (b.name === 'serve') return 1;
+                return a.displayName.localeCompare(b.displayName);
+              })
               .map(action => {
-                const isServeDisabled = action.name === 'serve' && selectedIngredients.size !== 1;
-                const isDisabled = isCooking ? false : (!hasSelection || activeAction !== null || isServeDisabled);
                 const isServeAction = action.name === 'serve';
+                const isServeDisabled = isServeAction && selectedIngredients.size !== 1;
+                const isDisabled = isCooking ? false : (!hasSelection || activeAction !== null || isServeDisabled);
                 return (
                   <button
                     key={action.name}
                     id={action.name === 'serve' ? 'serve' : undefined}
                     data-action={action.name}
-                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${tutorialStep === 4 && action.name === 'serve' ? 'tutorial-highlight' : ''}`}
+                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${tutorialStep === 4 && isServeAction ? 'tutorial-highlight' : ''} ${isServeAction ? 'col-span-full !bg-green-100 !border-green-600 !border-2 !shadow-md !py-4 hover:!bg-green-200' : ''}`}
+                    style={isServeAction ? { gridColumn: '1 / -1', fontSize: '1.2rem', justifyContent: 'center' } : {}}
                     onClick={() => !isDisabled && executeAction(action)}
                     disabled={isDisabled}
                     title={isServeAction ? "Press 'S' key to serve the selected dish" : undefined}
@@ -4486,90 +4535,63 @@ Do not say you cannot do it; always provide a recipe.`;
         />
       )}
 
-      {/* Fame Level Requirement Error Modal - Extreme Glitch Edition */}
+      {/* Fame Level Requirement Error Modal */}
       {showFameLevelError && (
-        <div className="os-modal-overlay" onClick={() => setShowFameLevelError(false)}>
+        <div className="os-modal-overlay z-[12000]" onClick={() => setShowFameLevelError(false)}>
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1, x: [0, -2, 2, -1, 1, 0] }}
+            animate={{ scale: 1, opacity: 1, y: [10, 0] }}
             transition={{ duration: 0.2 }}
-            className="os-modal-card border-4 border-[#ff4b2b] bg-[#0a0a0a] max-w-[450px] shadow-[0_0_50px_rgba(255,75,43,0.3)] relative overflow-hidden" 
+            className="bg-[#0a0a0a] border border-[#333] max-w-[450px] shadow-2xl relative overflow-hidden rounded-xl w-full" 
             onClick={e => e.stopPropagation()}
           >
-            {/* Glitch Overlay */}
-            <div className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay bg-[url('https://media.giphy.com/media/oEI9uWUicst3i/giphy.gif')]"></div>
-            
-            {/* Top Bar */}
-            <div className="bg-[#ff4b2b] p-3 flex justify-between items-center text-white font-mono text-[9px] font-black tracking-widest">
+            {/* Top Bar with MacOS style buttons */}
+            <div className="bg-[#1a1a1a] border-b border-[#333] px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="animate-pulse">●</span>
-                <span>SYSTEM_LOCKDOWN // GATEKEEPER_V3</span>
+                <button 
+                  onClick={() => {
+                    soundService.playClick();
+                    setShowFameLevelError(false);
+                  }}
+                  className="w-3.5 h-3.5 rounded-full bg-[#ff5f56] hover:bg-[#e0443e] border border-[#e0443e] cursor-pointer flex items-center justify-center text-[9px] text-black/80 font-bold group leading-none transition-transform hover:scale-110"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-extrabold">✕</span>
+                </button>
+                <span className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] border border-[#dea123] inline-block"></span>
+                <span className="w-3.5 h-3.5 rounded-full bg-[#27c93f] border border-[#1aab29] inline-block"></span>
               </div>
-              <span>SECURITY_STATE: CRITICAL</span>
+              <span className="text-gray-400 font-mono text-[10px] font-bold tracking-widest uppercase">System Error 403</span>
+              <div className="w-[42px]"></div>
             </div>
 
-            <div className="p-10 flex flex-col items-center relative z-10">
-              <motion.div 
-                animate={{ 
-                  textShadow: [
-                    "2px 0 red, -2px 0 blue",
-                    "-2px 0 red, 2px 0 blue",
-                    "0px 0 red, 0px 0 blue"
-                  ]
-                }}
-                transition={{ duration: 0.1, repeat: Infinity, repeatType: "mirror" }}
-                className="relative mb-12"
-              >
-                <div className="text-[100px] leading-none select-none opacity-10 absolute -top-10 left-1/2 -translate-x-1/2 font-black text-[#ff4b2b] italic">403</div>
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="w-20 h-20 bg-[#ff4b2b] rounded-full flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(255,75,43,1)] border-4 border-white animate-bounce">
-                    🚫
-                  </div>
-                  <h2 className="text-4xl font-black text-white tracking-tighter text-center uppercase leading-[0.8] mb-2">
-                    Access<br/><span className="text-[#ff4b2b]">Rejected</span>
-                  </h2>
-                  <div className="h-1 w-12 bg-[#ff4b2b] mb-1"></div>
-                </div>
-              </motion.div>
+            <div className="p-8 flex flex-col items-center text-center">
+               <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                 <Lock size={32} className="text-red-500" />
+               </div>
+               
+               <h2 className="text-2xl font-bold text-white mb-2">Access Rejected</h2>
+               <p className="text-gray-400 text-sm mb-8">You need to reach Level 80 to unlock the Fame Terminal.</p>
 
-              <div className="w-full grid grid-cols-2 gap-px bg-[#333] border border-[#333] mb-8 overflow-hidden rounded-sm">
-                <div className="bg-[#0f0f0f] p-6 text-center">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Required</p>
-                  <p className="text-5xl font-black text-white">80</p>
-                  <p className="text-[9px] text-[#ff4b2b] mt-1 font-mono">LEVEL_MIN</p>
-                </div>
-                <div className="bg-[#0f0f0f] p-6 text-center">
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-2">Current</p>
-                  <p className="text-5xl font-black text-white">{stats.level || 1}</p>
-                  <p className="text-[9px] text-gray-400 mt-1 font-mono">LEVEL_AUTH</p>
-                </div>
-              </div>
+               <div className="w-full flex justify-between gap-4 mb-8">
+                 <div className="flex-1 bg-[#111] border border-[#222] rounded-lg p-4">
+                   <p className="text-xs text-gray-500 uppercase font-bold mb-1">Required</p>
+                   <p className="text-3xl font-black text-white">80</p>
+                 </div>
+                 <div className="flex-1 bg-[#111] border border-[#222] rounded-lg p-4">
+                   <p className="text-xs text-gray-500 uppercase font-bold mb-1">Current</p>
+                   <p className="text-3xl font-black text-white">{stats.level || 1}</p>
+                 </div>
+               </div>
 
-              <div className="w-full font-mono text-[11px] text-[#ff4b2b] mb-10 p-5 border-2 border-[#ff4b2b55] bg-[#ff4b2b11] shadow-[inset_0_0_20px_rgba(255,75,43,0.1)]">
-                <div className="flex justify-between border-b border-[#ff4b2b33] mb-3 pb-1 font-black opacity-80">
-                  <span>ERROR_CODE:</span>
-                  <span>LVL_INSUFFICIENT</span>
-                </div>
-                <div className="space-y-1 opacity-90 italic">
-                  <p className="flex items-center gap-2"><span className="text-white">»</span> Unauthorized access to terminal...</p>
-                  <p className="flex items-center gap-2"><span className="text-white">»</span> Credentials verification: FAILED</p>
-                  <p className="flex items-center gap-2"><span className="text-white">»</span> Mandatory Delta: {80 - (stats.level || 1)} levels</p>
-                </div>
-              </div>
-
-              <button 
-                className="group relative w-full overflow-hidden"
-                onClick={() => {
-                  soundService.playClick();
-                  setShowFameLevelError(false);
-                }}
-              >
-                <div className="absolute inset-0 bg-[#ff4b2b] translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                <div className="relative py-5 border-2 border-white bg-white text-black font-black uppercase tracking-[0.3em] text-[10px] group-hover:text-white transition-colors duration-300 flex items-center justify-center gap-4">
-                  <span>Acknowledge Error</span>
-                  <RotateCcw size={14} className="group-hover:rotate-180 transition-transform duration-500" />
-                </div>
-              </button>
+               <button 
+                 className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                 onClick={() => {
+                   soundService.playClick();
+                   setShowFameLevelError(false);
+                 }}
+               >
+                 Close
+               </button>
             </div>
           </motion.div>
         </div>
@@ -5442,6 +5464,44 @@ function KitchenAppContainer({ user }: { user: User }) {
   const isAdminUser = isSuperAdmin;
 
   const [terminalLogs, setTerminalLogs] = useState<string[]>(["[SYSTEM] Kernel loaded.", "[INFO] Awaiting authorization..."]);
+  
+  const [vipEvent, setVipEvent] = useState<{title: string, description: string, reward: number, timeLeft: number} | null>(null);
+
+  useEffect(() => {
+    const int1 = setInterval(() => {
+      setVipEvent(prev => {
+        if (prev) return prev;
+        if (Math.random() > 0.3) {
+          return {
+            title: "🕵️‍♂️ VIP Hacker Request",
+            description: "El sindicato 'CyberChef' exige que cocines a la máxima velocidad para probar tus scripts.",
+            reward: 25000,
+            timeLeft: 300
+          };
+        }
+        return null;
+      });
+    }, 120000); // Check every 2 minutes
+    
+    const int2 = setInterval(() => {
+      setVipEvent(prev => {
+        if (!prev) return null;
+        if (prev.timeLeft <= 1) return null;
+        return { ...prev, timeLeft: prev.timeLeft - 1 };
+      });
+    }, 1000);
+    
+    return () => { clearInterval(int1); clearInterval(int2); };
+  }, []);
+
+  const completeVipEvent = () => {
+    if (!vipEvent) return;
+    setStats(s => ({ ...s, money: s.money + vipEvent.reward }));
+    soundService.playSuccess();
+    setVipEvent(null);
+    addTerminalLog("[SUCCESS] VIP Hacker transaction complete. Funds transferred.");
+  };
+
   const [chromaticMinigameOrder, setChromaticMinigameOrder] = useState<{order: Order, servedEmoji: string, reward: number} | null>(null);
   const [showFameLevelError, setShowFameLevelError] = useState(false);
   const [showFameRankUp, setShowFameRankUp] = useState<{tier: string, stage: number, emoji: string} | null>(null);
@@ -5557,6 +5617,22 @@ function KitchenAppContainer({ user }: { user: User }) {
       { id: 'money_1000', title: 'Greedy Chef', description: 'Earn $1000', target: 1000, current: 0, reward: 200, type: 'money', completed: false },
     ]
   });
+
+  
+  // Auto Farm Scripts Effect
+  useEffect(() => {
+    let income = 0;
+    if (stats.purchasedUpgrades?.includes('auto_script_1')) income += 5;
+    if (stats.purchasedUpgrades?.includes('auto_script_2')) income += 20;
+    if (stats.purchasedUpgrades?.includes('auto_script_3')) income += 100;
+    
+    if (income > 0) {
+      const interval = setInterval(() => {
+        setStats(s => ({ ...s, money: s.money + income }));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [stats.purchasedUpgrades]);
 
   // Apply theme to body
   useEffect(() => {

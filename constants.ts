@@ -92,6 +92,8 @@ export interface Upgrade {
   emoji: string;
   cost: number;
   effect: string;
+  condition?: (stats: any) => boolean;
+  requirementText?: string;
 }
 
 export interface FameLevel {
@@ -334,6 +336,37 @@ export const SHOP_ITEMS: ShopItem[] = [
 ];
 
 export const UPGRADES: Upgrade[] = [
+  {
+    id: 'auto_script_1',
+    name: 'Script: Lavaplatos',
+    description: 'Automatización básica. Genera $5 por segundo.',
+    emoji: '🤖',
+    cost: 25000,
+    effect: 'auto_farm_5',
+    condition: (stats) => (stats.level || 1) >= 10,
+    requirementText: 'Requires Level 10'
+  },
+  {
+    id: 'auto_script_2',
+    name: 'Script: Sous Chef',
+    description: 'Automatización intermedia. Genera $20 por segundo.',
+    emoji: '⚙️',
+    cost: 100000,
+    effect: 'auto_farm_20',
+    condition: (stats) => (stats.level || 1) >= 25 && (stats.purchasedUpgrades || []).includes('auto_script_1'),
+    requirementText: 'Requires Level 25 & Script: Lavaplatos'
+  },
+  {
+    id: 'auto_script_3',
+    name: 'Script: IA de Cocina en la Nube',
+    description: 'Automatización avanzada. Genera $100 por segundo.',
+    emoji: '☁️',
+    cost: 500000,
+    effect: 'auto_farm_100',
+    condition: (stats) => (stats.level || 1) >= 50 && (stats.purchasedUpgrades || []).includes('auto_script_2'),
+    requirementText: 'Requires Level 50 & Script: Sous Chef'
+  },
+
   {
     id: 'faster_ai',
     name: 'Turbo Chef AI',
@@ -784,7 +817,7 @@ export const COOKING_ACTIONS: KitchenAction[] = [
   // Mixing & Combining
   createAction('mix', '🥣'), createAction('whisk', '🥄'), createAction('stir', '🥄'),
   createAction('fold', '🥄'), createAction('beat', '🥄'), createAction('whip', '🥄'),
-  createAction('blend', '🌪️'), createAction('combine', '🥣'), createAction('toss', '🥗'),
+  createAction('blend', '🌪️'), createAction('fusion', '🧬'), createAction('combine', '🥣'), createAction('toss', '🥗'),
 
   // Seasoning & Flavoring
   createAction('marinate', '🍖'), createAction('brine', '🧂'),

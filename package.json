@@ -35,9 +35,11 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^22.19.15",
     "@vitejs/plugin-react": "^5.0.0",
     "esbuild": "^0.28.1",
+    "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
