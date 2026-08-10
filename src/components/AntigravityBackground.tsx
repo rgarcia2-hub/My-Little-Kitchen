@@ -25,41 +25,44 @@ export function AntigravityBackground({
   zIndex?: number;
   opacityRange?: [number, number];
 }) {
+  const emojisStr = JSON.stringify(emojis);
+  const opacityRangeStr = JSON.stringify(opacityRange);
   const particles = useMemo(() => {
-    return Array.from({ length: count }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
-      size: Math.random() * (40 - 20) + 20,
-      duration: Math.random() * (20 - 10) + 10,
-      delay: Math.random() * -20,
-      opacity: Math.random() * (opacityRange[1] - opacityRange[0]) + opacityRange[0],
-    }));
-  }, [count, emojis, opacityRange]);
+    return Array.from({ length: count }).map((_, i) => {
+      const x = Math.random() * 100;
+      const y = Math.random() * 100;
+      const opacity = Math.random() * (opacityRange[1] - opacityRange[0]) + opacityRange[0];
+      const duration = Math.random() * (20 - 10) + 10;
+      const delay = Math.random() * -20;
+      return {
+        id: i,
+        emoji: emojis[Math.floor(Math.random() * emojis.length)],
+        size: Math.random() * (40 - 20) + 20,
+        initial: { x: `${x}vw`, y: `${y}vh`, opacity: 0 },
+        animate: {
+          y: [`${y}vh`, `${y - 15}vh`, `${y}vh`],
+          x: [`${x}vw`, `${x + 5}vw`, `${x}vw`],
+          rotate: [0, 360],
+          opacity: opacity
+        },
+        transition: {
+          duration: duration,
+          repeat: Infinity,
+          delay: delay,
+          ease: "easeInOut" as const
+        }
+      };
+    });
+  }, [count, emojisStr, opacityRangeStr]);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex }}>
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          initial={{ 
-            x: `${p.x}vw`, 
-            y: `${p.y}vh`,
-            opacity: 0 
-          }}
-          animate={{
-            y: [`${p.y}vh`, `${p.y - 15}vh`, `${p.y}vh`],
-            x: [`${p.x}vw`, `${p.x + 5}vw`, `${p.x}vw`],
-            rotate: [0, 360],
-            opacity: p.opacity
-          }}
-          transition={{
-            duration: p.duration,
-            repeat: Infinity,
-            delay: p.delay,
-            ease: "easeInOut"
-          }}
+          initial={p.initial}
+          animate={p.animate}
+          transition={p.transition}
           style={{
             position: 'absolute',
             fontSize: p.size,

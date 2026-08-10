@@ -496,7 +496,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Discover 10 new ingredients.',
     emoji: '🧪',
     isSecret: false,
-    condition: (stats) => stats.discoveredIngredients >= 10
+    condition: (stats) => stats.discoveredIngredients >= STARTING_INGREDIENTS.length + 10
   },
   {
     id: 'tool_master',
@@ -528,7 +528,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Discover 50 new ingredients.',
     emoji: '🧬',
     isSecret: true,
-    condition: (stats) => stats.discoveredIngredients >= 50
+    condition: (stats) => stats.discoveredIngredients >= STARTING_INGREDIENTS.length + 50
   },
   {
     id: 'lemon_master',
@@ -608,7 +608,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Discover 100 different ingredients.',
     emoji: '📚',
     isSecret: false,
-    condition: (stats) => stats.discoveredIngredients >= 100
+    condition: (stats) => stats.discoveredIngredients >= STARTING_INGREDIENTS.length + 100
   },
   {
     id: 'secret_marathon',

@@ -527,6 +527,7 @@ interface IngredientTileProps {
   isActive: boolean;
   isDisabled: boolean;
   isHighlighted?: boolean;
+  onEdit?: () => void;
   onClick: () => void;
 }
 
@@ -797,6 +798,7 @@ interface ActionTileProps {
   isActive: boolean;
   isDisabled: boolean;
   isHighlighted?: boolean;
+  onEdit?: () => void;
   onClick: () => void;
 }
 
@@ -823,6 +825,7 @@ interface OrderCardProps {
   order: Order;
   isDisabled?: boolean;
   isHighlighted?: boolean;
+  onEdit?: () => void;
   onPickUp: (orderId: string) => void;
   onCookWithGemini: (orderName: string) => void;
   onOpenVerificationAgent?: () => void;
@@ -2832,7 +2835,22 @@ Do not say you cannot do it; always provide a recipe.`;
       <div className="kitchen-header">
         <div className="header-content-wrapper max-w-7xl mx-auto px-4">
           <div className="header-left">
-            <h1 className="kitchen-title">My little Kitchen</h1>
+            {isSuperAdmin ? (
+              <div className="relative group flex items-center justify-center cursor-default">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 rounded-lg blur opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
+                <div className="relative flex items-center gap-3 px-5 py-2 bg-black/80 border border-white/20 rounded-lg backdrop-blur-sm">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-yellow-400 font-black tracking-[0.25em] uppercase text-lg" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
+                    SANDBOX_MODE
+                  </span>
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-900/40 border border-red-500/30 rounded">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                    <span className="text-red-400 text-[9px] font-bold tracking-widest">LIVE</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <h1 className="kitchen-title">My little Kitchen</h1>
+            )}
             {currentFame && (
               <div className="fame-badge-header" title={`${currentFame.tier} Fame Stage ${currentFame.stage}`}>
                 <span className="fame-emoji">{currentFame.emoji}</span>
@@ -4762,41 +4780,65 @@ Do not say you cannot do it; always provide a recipe.`;
 
       {/* News Feed Archive Modal */}
       {showNewsFeed && (
-        <div className="fame-os-overlay overflow-hidden" onClick={() => setShowNewsFeed(false)}>
+        <div className="fame-os-overlay overflow-hidden backdrop-blur-sm bg-black/60" onClick={() => setShowNewsFeed(false)}>
           <AntigravityBackground 
             count={20} 
             emojis={['📡', '✉️', '📻', '🗞️']} 
             opacityRange={[0.08, 0.2]}
             zIndex={1}
           />
-          <div className="fame-terminal-window" onClick={e => e.stopPropagation()}>
-            <div className="terminal-scanline"></div>
-            <div className="terminal-header">
-              <div className="terminal-dots">
-                <span className="dot red"></span>
-                <span className="dot yellow"></span>
-                <span className="dot green"></span>
+          <div className="relative w-full max-w-2xl bg-[#0f0f13] border border-gray-800 rounded-xl shadow-2xl overflow-hidden font-sans flex flex-col" onClick={e => e.stopPropagation()} style={{ zIndex: 10, maxHeight: '85vh' }}>
+            
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 bg-[#141419]">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 border border-blue-500/30">
+                  📡
+                </div>
+                <div>
+                  <h2 className="text-white font-bold tracking-wide m-0 leading-none">SYSTEM BROADCASTS</h2>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-1 m-0">Global Communications Archive</p>
+                </div>
               </div>
-              <div className="terminal-title">SYSTEM_BROADCAST_ARCHIVE</div>
-              <button className="terminal-close" onClick={() => setShowNewsFeed(false)}>TERMINATE_SESSION</button>
+              <button className="text-gray-500 hover:text-white transition-colors text-xl font-bold p-2" onClick={() => setShowNewsFeed(false)}>
+                ✕
+              </button>
             </div>
             
-            <div className="terminal-content">
+            <div className="p-6 overflow-y-auto">
               {activeNewsId === 'NEW' && isSuperAdmin ? (
-                <div className="terminal-fame-display flex flex-col gap-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <button className="terminal-execute-btn bg-[#222] border-[#444] text-white hover:bg-white hover:text-black w-24" onClick={() => setActiveNewsId(null)}>&lt; BACK</button>
-                    <h3 className="terminal-h2">CREATE_BROADCAST</h3>
+                <div className="flex flex-col gap-5 animate-fade-in">
+                  <div className="flex items-center gap-3 mb-2">
+                    <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold rounded-md transition-colors" onClick={() => setActiveNewsId(null)}>
+                      ← Back
+                    </button>
+                    <h3 className="text-lg font-bold text-white m-0">Create Broadcast</h3>
                   </div>
-                  <div className="terminal-input-group flex flex-col gap-2">
-                    <input id="news-title" type="text" className="terminal-input bg-black border border-[#333] text-[#00ff00] font-mono text-sm p-3 focus:outline-none focus:border-[#00ff00]" placeholder="Title (e.g. SYSTEM_UPDATE)..." />
-                    <textarea id="news-content" className="terminal-input bg-black border border-[#333] text-[#00ff00] font-mono text-sm p-3 focus:outline-none focus:border-[#00ff00] min-h-[100px]" placeholder="Content..."></textarea>
-                    <div className="flex gap-2">
-                      <input id="news-badge" type="text" className="terminal-input bg-black border border-[#333] text-[#00ff00] font-mono text-sm p-3 focus:outline-none focus:border-[#00ff00] flex-1" placeholder="Badge (e.g. URGENT, UPDATE)..." defaultValue="UPDATE" />
-                      <input id="news-icon" type="text" className="terminal-input bg-black border border-[#333] text-[#00ff00] font-mono text-sm p-3 focus:outline-none focus:border-[#00ff00] flex-1" placeholder="Icon (e.g. ⚠️)..." defaultValue="📡" />
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Headline</label>
+                      <input id="news-title" type="text" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600" placeholder="e.g. SYSTEM UPDATE v2.0" />
                     </div>
+                    
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Message Content</label>
+                      <textarea id="news-content" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all min-h-[120px] placeholder:text-gray-600 resize-y" placeholder="Write your broadcast message here..."></textarea>
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Classification Badge</label>
+                        <input id="news-badge" type="text" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600" placeholder="e.g. URGENT, UPDATE" defaultValue="UPDATE" />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Display Icon</label>
+                        <input id="news-icon" type="text" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600" placeholder="e.g. ⚠️" defaultValue="📡" />
+                      </div>
+                    </div>
+                    
                     <button 
-                      className="terminal-execute-btn border-2 border-[#00ff00] text-[#00ff00] font-black uppercase tracking-widest hover:bg-[#00ff00] hover:text-black transition-all mt-4"
+                      className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/20 transition-all transform hover:scale-[1.01] active:scale-[0.99] uppercase tracking-widest text-sm"
                       onClick={async () => {
                         const title = (document.getElementById('news-title') as HTMLInputElement)?.value;
                         const content = (document.getElementById('news-content') as HTMLTextAreaElement)?.value;
@@ -4816,83 +4858,106 @@ Do not say you cannot do it; always provide a recipe.`;
                         }
                       }}
                     >
-                      EXECUTE_TRANSMISSION
+                      Transmit Broadcast
                     </button>
                   </div>
                 </div>
               ) : activeNewsId ? (
-                <div className="terminal-fame-display">
-                  <div className="flex items-center gap-2 mb-4">
-                    <button className="terminal-execute-btn bg-[#222] border-[#444] text-white hover:bg-white hover:text-black w-24" onClick={() => setActiveNewsId(null)}>&lt; BACK</button>
-                    <div className="fame-portal-badge" style={{ background: '#1a1a1a', border: '2px solid rgba(255,255,255,0.1)' }}>
+                <div className="flex flex-col animate-fade-in">
+                  <div className="flex items-center gap-3 mb-6">
+                    <button className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold rounded-md transition-colors" onClick={() => setActiveNewsId(null)}>
+                      ← Back
+                    </button>
+                  </div>
+                  
+                  <div className="bg-[#1a1a24] rounded-xl border border-gray-800 p-6 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 text-6xl pointer-events-none">
                       {newsItems.find(n => n.id === activeNewsId)?.icon || '📡'}
                     </div>
-                    <div>
-                      <h3 className="terminal-h2">{newsItems.find(n => n.id === activeNewsId)?.title}</h3>
-                      <span className="text-[9px] font-mono text-[#00ff00] opacity-70">
-                        DATE: {newsItems.find(n => n.id === activeNewsId)?.date} | CLASSIFICATION: {newsItems.find(n => n.id === activeNewsId)?.badge}
-                      </span>
+                    
+                    <div className="relative z-10">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider border border-blue-500/30">
+                          {newsItems.find(n => n.id === activeNewsId)?.badge || 'UPDATE'}
+                        </span>
+                        <span className="text-xs text-gray-500 font-medium">
+                          {newsItems.find(n => n.id === activeNewsId)?.date}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-2xl font-bold text-white mb-4 leading-tight">
+                        {newsItems.find(n => n.id === activeNewsId)?.title}
+                      </h3>
+                      
+                      <div className="text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        {newsItems.find(n => n.id === activeNewsId)?.content}
+                      </div>
                     </div>
                   </div>
-                  <div className="t-stat border border-[#222] bg-[#0c0c0c] p-4 rounded-sm mt-4 text-[#00ff00] font-mono text-sm leading-relaxed whitespace-pre-wrap">
-                    {newsItems.find(n => n.id === activeNewsId)?.content}
-                  </div>
+
                   {isSuperAdmin && (
                     <button 
-                      className="mt-4 terminal-execute-btn border-2 border-red-500 text-red-500 font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all w-full"
+                      className="mt-6 w-full px-4 py-3 bg-red-950/30 hover:bg-red-900/50 text-red-500 font-bold rounded-lg border border-red-900/50 transition-all uppercase tracking-widest text-xs"
                       onClick={async () => {
                          if (confirm('Delete this broadcast?')) {
                            try {
-                             
                              await deleteDoc(doc(db, "system_news", activeNewsId));
                              setActiveNewsId(null);
                            } catch (e) { console.error("Error deleting", e); }
                          }
                       }}
                     >
-                      DELETE_TRANSMISSION
+                      Delete Transmission
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="terminal-fame-display h-full flex flex-col">
-                  <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col h-full animate-fade-in">
+                  <div className="flex justify-between items-end mb-6">
                      <div>
-                       <h2 className="terminal-h2">INTERCEPTED_TRANSMISSIONS</h2>
-                       <div className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Found {newsItems.length} logs in archive</div>
+                       <h3 className="text-lg font-bold text-white m-0">Archive Logs</h3>
+                       <div className="text-xs text-gray-500 mt-1">Found {newsItems.length} transmission{newsItems.length === 1 ? '' : 's'}</div>
                      </div>
                      {isSuperAdmin && (
                         <button 
-                          className="terminal-execute-btn border border-[#00ff00] text-[#00ff00] px-4 py-2 text-xs hover:bg-[#00ff00] hover:text-black"
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-lg shadow-lg shadow-blue-900/20 transition-all"
                           onClick={() => setActiveNewsId('NEW')}
                         >
-                          + NEW_BROADCAST
+                          + New Broadcast
                         </button>
                      )}
                   </div>
-                  <div className="flex flex-col gap-3 overflow-y-auto pr-2 pb-8" style={{ maxHeight: '60vh' }}>
+                  
+                  <div className="flex flex-col gap-3">
                     {newsItems.length === 0 ? (
-                      <div className="text-center p-8 border border-dashed border-[#333] text-gray-500 font-mono text-xs uppercase">
-                        NO_TRANSMISSIONS_FOUND
+                      <div className="text-center py-12 px-6 border-2 border-dashed border-gray-800 rounded-xl text-gray-500 bg-gray-900/30">
+                        <div className="text-3xl mb-3">📭</div>
+                        <div className="font-bold text-sm uppercase tracking-wider">No Transmissions Found</div>
+                        <div className="text-xs mt-2 opacity-60">The broadcast archive is currently empty.</div>
                       </div>
                     ) : newsItems.map(item => (
                       <div 
                         key={item.id} 
-                        className="t-stat border border-[#222] bg-[#0c0c0c] p-4 rounded-sm cursor-pointer hover:border-[#00ff00] hover:bg-[#00ff00]/10 transition-colors group flex items-start gap-4"
+                        className="group flex gap-4 p-4 bg-[#1a1a24] border border-gray-800 rounded-xl cursor-pointer hover:border-blue-500/50 hover:bg-[#1f1f2e] transition-all"
                         onClick={() => {
                           soundService.playClick();
                           setActiveNewsId(item.id);
                         }}
                       >
-                        <div className="fame-portal-badge flex-shrink-0 !w-10 !h-10 !text-xl" style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div className="flex-shrink-0 w-12 h-12 bg-[#232332] rounded-full flex items-center justify-center text-xl shadow-inner border border-gray-700 group-hover:border-blue-500/30 group-hover:bg-blue-900/20 transition-colors">
                           {item.icon || '📡'}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="text-[10px] text-gray-500 font-mono uppercase truncate">{item.date} // {item.badge}</span>
-                            <span className="text-[#00ff00] opacity-0 group-hover:opacity-100 transition-opacity font-mono text-xs">&gt; OPEN</span>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{item.badge}</span>
+                              <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">{item.date}</span>
+                            </div>
+                            <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">Read →</span>
                           </div>
-                          <div className="text-[#00ff00] font-black uppercase truncate text-sm">{item.title}</div>
+                          <div className="text-gray-200 font-semibold truncate group-hover:text-white transition-colors">
+                            {item.title}
+                          </div>
                         </div>
                       </div>
                     ))}
