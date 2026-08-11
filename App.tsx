@@ -331,52 +331,83 @@ interface TutorialStep {
   highlightId?: string; // ID of the element to highlight
   targetType?: 'order' | 'ingredient' | 'action' | 'other';
   targetName?: string;
+  requireAction?: boolean;
 }
 
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 1,
-    text: "¡Bienvenido a My Little Kitchen! Vamos a aprender a cocinar. Primero, acepta un pedido. Haz clic en 'Start' en el pedido de 'Fried Eggs'.",
-    highlightId: 'order-1',
-    targetType: 'order',
-    targetName: 'Fried Eggs'
+    text: "¡Bienvenido a My Little Kitchen! El objetivo del juego es gestionar tu cocina y servir deliciosos platos usando Inteligencia Artificial. Aquí arriba tienes el panel de 'ACTIVE REQUESTS' (Pedidos Activos).",
+    highlightId: 'orders-panel',
+    targetType: 'other',
+    targetName: 'orders-panel',
+    requireAction: false
   },
   {
     id: 2,
-    text: "¡Genial! Tienes un pedido en curso. La IA conoce todas las recetas, pulsa sobre 'Get Steps' (el icono con la bombilla) para ver las instrucciones.",
-    highlightId: 'get-steps',
-    targetType: 'other',
-    targetName: 'get-steps'
+    text: "Empecemos aceptando el pedido más sencillo para ganar tus primeras monedas. Haz clic en el botón 'Start' en el pedido de 'Fried Eggs' (Huevos fritos).",
+    highlightId: 'order-1',
+    targetType: 'order',
+    targetName: 'Fried Eggs',
+    requireAction: true
   },
   {
     id: 3,
-    text: "La IA te ha dado los pasos. Busca los ingredientes en tu inventario y combínalos utilizando la acción que te haya indicado.",
-    highlightId: 'inventory',
+    text: "¡Genial! Ahora tienes un pedido en curso. Si alguna vez no sabes cómo se hace una receta, pregúntale a la IA de Gemini. Haz clic en 'Get Steps' (el icono amarillo de la bombilla).",
+    highlightId: 'get-steps',
     targetType: 'other',
-    targetName: 'inventory'
+    targetName: 'get-steps',
+    requireAction: true
   },
   {
     id: 4,
-    text: "Una vez completado el plato de 'Fried Eggs', selecciónalo en tu inventario y pulsa la tecla 'serve' para completar la comanda.",
-    highlightId: 'serve',
-    targetType: 'action',
-    targetName: 'serve'
+    text: "La IA te ha dado las instrucciones (míralas arriba). Este es tu 'INVENTORY' (Inventario). Aquí guardas tus ingredientes. Selecciona los ingredientes que la IA te ha dicho haciendo clic sobre ellos.",
+    highlightId: 'inventory',
+    targetType: 'other',
+    targetName: 'inventory',
+    requireAction: false
   },
   {
     id: 5,
-    text: "¡Perfecto! Para progresar, usa 'KITCHEN_OS_SYSTEM_CONTROL // MODULE_SELECTOR'. En LOGIC_CORE cambias a la IA, en SKILL_CHIPS mejoras, en PROTOCOLS activas retos y en MARKETPLACE comercias con ingredientes. Puedes cerrar este tutorial.",
+    text: "A la derecha del inventario están las 'PROCESSING ACTIONS' (Acciones). Una vez seleccionados los ingredientes correctos, haz clic en la acción correspondiente (Cook, Prep, etc.) para crear el plato 'Fried Eggs'.",
+    highlightId: 'actions-panel',
+    targetType: 'other',
+    targetName: 'actions-panel',
+    requireAction: true
+  },
+  {
+    id: 6,
+    text: "¡Has cocinado tu primer plato! Ahora debes servirlo. Una vez que tienes el plato terminado en tu inventario, selecciónalo y pulsa el botón verde grande 'SERVE' (Servir) abajo del todo.",
+    highlightId: 'serve',
+    targetType: 'action',
+    targetName: 'serve',
+    requireAction: true
+  },
+  {
+    id: 7,
+    text: "¡Excelente! Has completado el pedido, ganando monedas y experiencia. Finalmente, abajo del todo tienes 'KITCHEN_OS_SYSTEM_CONTROL'. Son los módulos del juego (IA, Mejoras, Retos y Mercado).",
     highlightId: 'system-control',
     targetType: 'other',
-    targetName: 'system-control'
+    targetName: 'system-control',
+    requireAction: false
+  },
+  {
+    id: 8,
+    text: "En el MARKETPLACE comprarás nuevos ingredientes básicos, y en SKILL_CHIPS podrás mejorar tu nivel de cocina. ¡Ya estás listo! Descubre recetas con la IA y conviértete en el mejor chef.",
+    highlightId: 'system-control',
+    targetType: 'other',
+    targetName: 'system-control',
+    requireAction: false
   }
 ];
 
 interface TutorialOverlayProps {
   step: TutorialStep;
   onClose: () => void;
+  onNext?: () => void;
 }
 
-function TutorialOverlay({ step, onClose }: TutorialOverlayProps) {
+function TutorialOverlay({ step, onClose, onNext }: TutorialOverlayProps) {
   return (
     <div className="tutorial-overlay">
       <div className="tutorial-content">
@@ -385,8 +416,11 @@ function TutorialOverlay({ step, onClose }: TutorialOverlayProps) {
           <button className="tutorial-close" onClick={onClose}>✕</button>
         </div>
         <p className="tutorial-text">{step.text}</p>
-        <div className="tutorial-footer">
+        <div className="tutorial-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="tutorial-step-indicator">Paso {step.id} de {TUTORIAL_STEPS.length}</span>
+          {!step.requireAction && onNext && (
+            <button className="tutorial-next-btn" style={{ padding: '6px 14px', background: '#3b82f6', color: 'white', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold' }} onClick={onNext}>Siguiente ➜</button>
+          )}
         </div>
       </div>
     </div>
@@ -2165,8 +2199,8 @@ function CombinationAgent({
   }, [executeCombination, onExecuteActionRef]);
 
   const fetchRecipeSteps = async (orderName: string, difficulty: string = 'easy') => {
-    if (tutorialStep === 2) {
-      setTutorialStep(3);
+    if (tutorialStep === 3) {
+      setTutorialStep(4);
     }
     // Check cache first to save API quota
     if (recipeCache[orderName]) {
@@ -2605,8 +2639,8 @@ Do not say you cannot do it; always provide a recipe.`;
 
     // Handle serve action specially - only triggers verification, no combination
     if (action.name === 'serve') {
-      if (tutorialStep === 4 && ingredientNames[0]?.toLowerCase().includes('fried egg')) {
-        setTutorialStep(5);
+      if (tutorialStep === 6 && ingredientNames[0]?.toLowerCase().includes('fried egg')) {
+        setTutorialStep(7);
       }
 
       // Serve takes only the first selected ingredient as the dish name
@@ -2621,8 +2655,8 @@ Do not say you cannot do it; always provide a recipe.`;
 
     const newIngredient = await executeCombination(action, ingredientNames);
 
-    if (tutorialStep === 3 && newIngredient && newIngredient.name.toLowerCase().includes('fried egg')) {
-      setTutorialStep(4);
+    if (tutorialStep === 5 && newIngredient && newIngredient.name.toLowerCase().includes('fried egg')) {
+      setTutorialStep(6);
     }
 
     // Update total actions stat
@@ -3284,7 +3318,7 @@ Do not say you cannot do it; always provide a recipe.`;
       )}
 
       {/* Orders Section */}
-      <section className="kitchen-section orders-section">
+      <section className={`kitchen-section orders-section ${tutorialStep === 1 ? 'tutorial-highlight' : ''}`}>
         <div className="section-header">
           <div className="section-header-text">
             <h2 className="section-title">Orders</h2>
@@ -3293,7 +3327,7 @@ Do not say you cannot do it; always provide a recipe.`;
           {currentOrder && (
             <button
               id="get-steps"
-              className={`hint-button ${tutorialStep === 2 ? 'tutorial-highlight' : ''}`}
+              className={`hint-button ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`}
               onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
               title={`Get steps for ${currentOrder.name} (Ctrl+I)`}
               disabled={isCooking || isFetchingSteps}
@@ -3313,7 +3347,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     key={order.id}
                     order={order}
                     isDisabled={hasInProgressOrder && order.status === 'not_started'}
-                    isHighlighted={tutorialStep === 1 && order.name === 'Fried Eggs'}
+                    isHighlighted={tutorialStep === 2 && order.name === 'Fried Eggs'}
                     onPickUp={onPickUp}
                     onCookWithGemini={onCookWithGemini}
                     onOpenVerificationAgent={onOpenVerificationAgent}
@@ -4020,7 +4054,7 @@ Do not say you cannot do it; always provide a recipe.`;
 
       <div className="ingredients-tools-row-lab">
         {/* Left Column: Data Source / Inventory (Always Visible) */}
-        <div id="inventory" className={`lab-column inventory-column ${tutorialStep === 3 ? 'tutorial-highlight' : ''}`}>
+        <div id="inventory" className={`lab-column inventory-column ${(tutorialStep === 4 || tutorialStep === 5 || tutorialStep === 6) ? 'tutorial-highlight' : ''}`}>
           <div className="column-technical-header">
             <div className="flex justify-between items-center w-full">
               <span className="tech-badge">DATA_SOURCE_01 // INVENTORY</span>
@@ -4069,7 +4103,7 @@ Do not say you cannot do it; always provide a recipe.`;
                       isActive={false}
                       isDisabled={!currentOrder}
                       isHighlighted={
-                        (tutorialStep === 4 && ingredient.name.toLowerCase().includes('fried egg'))
+                        (tutorialStep === 6 && ingredient.name.toLowerCase().includes('fried egg'))
                       }
                       onClick={() => toggleIngredient(ingredient.name)}
                       onEdit={() => onEditIngredient(ingredient)}
@@ -4086,7 +4120,7 @@ Do not say you cannot do it; always provide a recipe.`;
         </div>
 
         {/* Center Column: Operation Table */}
-        <div className="lab-column operation-column">
+        <div className={`lab-column operation-column ${tutorialStep === 5 ? 'tutorial-highlight' : ''}`}>
           <div className="column-technical-header">
             <div className="flex justify-between items-center w-full">
               <span className="tech-badge">OPERATIONAL_TABLE</span>
@@ -4203,7 +4237,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     key={action.name}
                     id={action.name === 'serve' ? 'serve' : undefined}
                     data-action={action.name}
-                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${tutorialStep === 4 && isServeAction ? 'tutorial-highlight' : ''} ${isServeAction ? 'col-span-full !bg-green-100 !border-green-600 !border-2 !shadow-md !py-4 hover:!bg-green-200' : ''}`}
+                    className={`lab-action-btn ${activeAction === action.name ? 'active' : ''} ${isDisabled ? 'disabled' : ''} ${tutorialStep === 6 && isServeAction ? 'tutorial-highlight' : ''} ${isServeAction ? 'col-span-full !bg-green-100 !border-green-600 !border-2 !shadow-md !py-4 hover:!bg-green-200' : ''}`}
                     style={isServeAction ? { gridColumn: '1 / -1', fontSize: '1.2rem', justifyContent: 'center' } : {}}
                     onClick={() => !isDisabled && executeAction(action)}
                     disabled={isDisabled}
@@ -4224,7 +4258,7 @@ Do not say you cannot do it; always provide a recipe.`;
       </div>
 
       {/* New OS System Console Section */}
-      <section id="system-control" className={`lab-system-console ${tutorialStep === 5 ? 'tutorial-highlight' : ''}`}>
+      <section id="system-control" className={`lab-system-console ${(tutorialStep === 7 || tutorialStep === 8) ? 'tutorial-highlight' : ''}`}>
         <div className="console-header">
           <div className="console-title flex items-center gap-2">
             <Zap size={14} className="text-[#1a1a1a]" />
@@ -6167,10 +6201,10 @@ function KitchenAppContainer({ user }: { user: User }) {
     // Clear steps when picking up a new order
     setCurrentOrderSteps([]);
 
-    if (tutorialStep === 1) {
+    if (tutorialStep === 2) {
       const order = orders.find(o => o.id === orderId);
       if (order?.name?.toLowerCase() === 'fried eggs') {
-        setTutorialStep(2);
+        setTutorialStep(3);
       }
     }
 
@@ -6302,6 +6336,7 @@ function KitchenAppContainer({ user }: { user: User }) {
             setTutorialStep(0);
             localStorage.setItem('tutorialCompleted', 'true');
           }} 
+          onNext={() => setTutorialStep(prev => prev + 1)}
         />
       )}
 
