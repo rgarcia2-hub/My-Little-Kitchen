@@ -31,7 +31,7 @@ import { createLoggerStore, LoggerStore } from "../../lib/create-logger-store";
  * 1. Manual Override (For external hosting)
  *    - Replace 'YOUR_GEMINI_API_KEY_HERE' with your real key if you're not using environment variables.
  */
-const MANUAL_API_KEY_OVERRIDE: string = 'AIzaSyAOlBZ2rfVRs8MqF-w75HOsSpxwhrpIvsk';
+const MANUAL_API_KEY_OVERRIDE: string = '';
 
 declare const process: { env?: { API_KEY?: string; GEMINI_API_KEY?: string } } | undefined;
 

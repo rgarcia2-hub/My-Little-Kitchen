@@ -1,5 +1,5 @@
 {
-  "description": "Domina el arte culinario en My Little Kitchen, un simulador de cocina frenético donde aprenderás recetas únicas, personalizarás tu perfil de chef con cosméticos exclusivos y competirás en el ranking mundial por el título del mejor chef.",
+  "description": "Un innovador simulador de cocina y alquimia culinaria. Combina ingredientes, desbloquea recetas secretas, colecciona cosméticos únicos y compite en el ranking mundial para convertirte en el Chef Supremo.",
   "requestFramePermissions": [
     "camera",
     "microphone"

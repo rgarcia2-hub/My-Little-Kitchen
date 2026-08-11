@@ -199,6 +199,26 @@ import { StripeCheckoutModal } from "./src/components/StripeCheckoutModal";
 const VERIFIED_BADGE_URL = "/verified.png?v=3.0";
 const ADMIN_EMAILS = ['robert.garcia.alsina2012@gmail.com'];
 
+const generateUniqueOrder = (currentOrders: Order[]): Order => {
+  const existingNames = new Set(currentOrders.map(o => o.name));
+  const difficulty = getRandomDifficulty();
+  let pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty && !existingNames.has(o.name));
+  
+  if (pool.length === 0) {
+    pool = EXAMPLE_ORDERS.filter(o => !existingNames.has(o.name));
+    if (pool.length === 0) {
+      pool = EXAMPLE_ORDERS;
+    }
+  }
+  
+  const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
+  return {
+    ...randomTemplate,
+    id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    status: 'not_started' as const
+  };
+};
+
 // ============================================================================
 // AdSense Component
 // ============================================================================
@@ -2295,16 +2315,8 @@ Do not say you cannot do it; always provide a recipe.`;
               o.id === currentOrder.id ? { ...o, status: 'completed' as const } : o
             );
 
-            // Add a new random order (same logic as VerificationAgent)
-            const difficulty = getRandomDifficulty();
-            const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
-            const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
-            
-            const newOrder: Order = {
-              ...randomTemplate,
-              id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              status: 'not_started'
-            };
+            // Add a new random order
+            const newOrder = generateUniqueOrder(updatedOrders);
 
             return [...updatedOrders, newOrder];
           });
@@ -2379,17 +2391,7 @@ Do not say you cannot do it; always provide a recipe.`;
 
   const handleAdminGenerateOrder = () => {
     if (isAdminUser) {
-      const difficulty = getRandomDifficulty();
-      const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
-      const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
-      
-      const newOrder: Order = {
-        ...randomTemplate,
-        id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        status: 'not_started'
-      };
-
-      setOrders(prev => [...prev, newOrder]);
+      setOrders(prev => [...prev, generateUniqueOrder(prev)]);
       setSkipError('');
     } else {
       setSkipError('Incorrect password');
@@ -2758,6 +2760,36 @@ Do not say you cannot do it; always provide a recipe.`;
     };
   }, [selectedIngredients, executeAction, customTools, addTerminalLog, setSelectedIngredients]);
 
+  // Shortcut for Get Steps
+  useEffect(() => {
+    const handleShortcut = (e: KeyboardEvent) => {
+      // Don't fire shortcuts if the user is currently typing in an input or textarea
+      const activeElement = document.activeElement;
+      if (activeElement) {
+        const tagName = activeElement.tagName;
+        const isContentEditable = (activeElement as HTMLElement).isContentEditable;
+        if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || isContentEditable) {
+          return;
+        }
+      }
+      
+      if (e.ctrlKey && e.key.toLowerCase() === 'i') {
+        e.preventDefault();
+        const activeOrder = orders.find(o => o.status === 'in_progress');
+        if (activeOrder && !isCooking && !isFetchingSteps) {
+          fetchRecipeSteps(activeOrder.name, activeOrder.difficulty);
+          addTerminalLog(`[SYSTEM] Key [Ctrl+I] detected: Fetching steps for ${activeOrder.name}.`);
+        } else if (!activeOrder) {
+          soundService.playError();
+          addTerminalLog("[ERROR] Keyboard [Ctrl+I] failed: No active order.");
+        }
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [orders, isCooking, isFetchingSteps, fetchRecipeSteps, addTerminalLog]);
+
+
   // Auto-scroll ingredients and tools sections on first load to show length
   useEffect(() => {
     if (hasScrolledRef.current) return;
@@ -2835,19 +2867,8 @@ Do not say you cannot do it; always provide a recipe.`;
       <div className="kitchen-header">
         <div className="header-content-wrapper max-w-7xl mx-auto px-4">
           <div className="header-left">
-            {isSuperAdmin ? (
-              <div className="relative group flex items-center justify-center cursor-default">
-                <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-orange-500 to-yellow-500 rounded-lg blur opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
-                <div className="relative flex items-center gap-3 px-5 py-2 bg-black/80 border border-white/20 rounded-lg backdrop-blur-sm">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-yellow-400 font-black tracking-[0.25em] uppercase text-lg" style={{ fontFamily: '"JetBrains Mono", monospace' }}>
-                    SANDBOX_MODE
-                  </span>
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-red-900/40 border border-red-500/30 rounded">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
-                    <span className="text-red-400 text-[9px] font-bold tracking-widest">LIVE</span>
-                  </div>
-                </div>
-              </div>
+            {isSuperAdmin && debugMode ? (
+              <h1 className="kitchen-title" style={{ color: '#ff4444', textShadow: '0 0 10px rgba(255, 68, 68, 0.5)' }}>Debug Mode</h1>
             ) : (
               <h1 className="kitchen-title">My little Kitchen</h1>
             )}
@@ -3274,7 +3295,7 @@ Do not say you cannot do it; always provide a recipe.`;
               id="get-steps"
               className={`hint-button ${tutorialStep === 2 ? 'tutorial-highlight' : ''}`}
               onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
-              title={`Get steps for ${currentOrder.name}`}
+              title={`Get steps for ${currentOrder.name} (Ctrl+I)`}
               disabled={isCooking || isFetchingSteps}
             >
               <Lightbulb size={18} />
@@ -4092,7 +4113,7 @@ Do not say you cannot do it; always provide a recipe.`;
             </div>
           </div>
 
-          <div className="operation-table-surface">
+          <div className={`operation-table-surface ${activeAction ? 'operation-surface-active' : ''}`}>
             <CookingWires />
             
             <AnimatePresence mode="wait">
@@ -4836,6 +4857,13 @@ Do not say you cannot do it; always provide a recipe.`;
                         <input id="news-icon" type="text" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600" placeholder="e.g. ⚠️" defaultValue="📡" />
                       </div>
                     </div>
+                    <div className="w-full">
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Urgency Level</label>
+                      <select id="news-urgency" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
+                        <option value="low">Low (Standard Update)</option>
+                        <option value="high">High (Urgent / Alert)</option>
+                      </select>
+                    </div>
                     
                     <button 
                       className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/20 transition-all transform hover:scale-[1.01] active:scale-[0.99] uppercase tracking-widest text-sm"
@@ -4844,11 +4872,12 @@ Do not say you cannot do it; always provide a recipe.`;
                         const content = (document.getElementById('news-content') as HTMLTextAreaElement)?.value;
                         const badge = (document.getElementById('news-badge') as HTMLInputElement)?.value;
                         const icon = (document.getElementById('news-icon') as HTMLInputElement)?.value;
+                        const urgency = (document.getElementById('news-urgency') as HTMLSelectElement)?.value || 'low';
                         if (!title || !content) return;
                         
                         try {
                           await setDoc(doc(collection(db, "system_news")), {
-                            title, content, badge, icon,
+                            title, content, badge, icon, urgency,
                             date: new Date().toISOString().split('T')[0],
                             timestamp: Date.now()
                           });
@@ -4877,7 +4906,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     
                     <div className="relative z-10">
                       <div className="flex items-center gap-2 mb-3">
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded uppercase tracking-wider border border-blue-500/30">
+                        <span className={`px-2 py-1 text-[10px] font-bold rounded uppercase tracking-wider border ${newsItems.find(n => n.id === activeNewsId)?.urgency === 'high' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}`}>
                           {newsItems.find(n => n.id === activeNewsId)?.badge || 'UPDATE'}
                         </span>
                         <span className="text-xs text-gray-500 font-medium">
@@ -4938,22 +4967,22 @@ Do not say you cannot do it; always provide a recipe.`;
                     ) : newsItems.map(item => (
                       <div 
                         key={item.id} 
-                        className="group flex gap-4 p-4 bg-[#1a1a24] border border-gray-800 rounded-xl cursor-pointer hover:border-blue-500/50 hover:bg-[#1f1f2e] transition-all"
+                        className={`group flex gap-4 p-4 bg-[#1a1a24] border border-gray-800 rounded-xl cursor-pointer transition-all ${item.urgency === 'high' ? 'hover:border-red-500/50 hover:bg-[#2e1f1f]' : 'hover:border-blue-500/50 hover:bg-[#1f1f2e]'}`}
                         onClick={() => {
                           soundService.playClick();
                           setActiveNewsId(item.id);
                         }}
                       >
-                        <div className="flex-shrink-0 w-12 h-12 bg-[#232332] rounded-full flex items-center justify-center text-xl shadow-inner border border-gray-700 group-hover:border-blue-500/30 group-hover:bg-blue-900/20 transition-colors">
+                        <div className={`flex-shrink-0 w-12 h-12 bg-[#232332] rounded-full flex items-center justify-center text-xl shadow-inner border border-gray-700 transition-colors ${item.urgency === 'high' ? 'group-hover:border-red-500/30 group-hover:bg-red-900/20' : 'group-hover:border-blue-500/30 group-hover:bg-blue-900/20'}`}>
                           {item.icon || '📡'}
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                           <div className="flex justify-between items-center mb-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">{item.badge}</span>
+                              <span className={`text-[10px] font-bold uppercase tracking-wider ${item.urgency === 'high' ? 'text-red-400' : 'text-blue-400'}`}>{item.badge}</span>
                               <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">{item.date}</span>
                             </div>
-                            <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold">Read →</span>
+                            <span className={`opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold ${item.urgency === 'high' ? 'text-red-500' : 'text-blue-500'}`}>Read →</span>
                           </div>
                           <div className="text-gray-200 font-semibold truncate group-hover:text-white transition-colors">
                             {item.title}
@@ -5577,14 +5606,7 @@ function VerificationAgent({
                   ? { ...o, status: 'completed' as const, emoji: servedEmoji }
                   : o
               );
-              const difficulty = getRandomDifficulty();
-              const pool = EXAMPLE_ORDERS.filter(o => o.difficulty === difficulty);
-              const randomTemplate = pool[Math.floor(Math.random() * pool.length)];
-              const newOrder: Order = {
-                ...randomTemplate,
-                id: `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                status: 'not_started'
-              };
+              const newOrder = generateUniqueOrder(updatedOrders);
               return [...updatedOrders, newOrder];
             });
 
@@ -5677,6 +5699,19 @@ function KitchenAppContainer({ user }: { user: User }) {
     // Start with only 5 easy recipes
     return EXAMPLE_ORDERS.filter(o => o.difficulty === 'easy').slice(0, 5);
   });
+
+  // 5 seconds delay to remove completed orders
+  useEffect(() => {
+    const completedOrders = orders.filter(o => o.status === 'completed');
+    if (completedOrders.length > 0) {
+      const timers = completedOrders.map(order => 
+        setTimeout(() => {
+          setOrders(prev => prev.filter(o => o.id !== order.id));
+        }, 5000)
+      );
+      return () => timers.forEach(t => clearTimeout(t));
+    }
+  }, [orders]);
 
   // Overlay open states - start closed
   const [combinationAgentOpen, setCombinationAgentOpen] = useState(false);
@@ -5861,6 +5896,7 @@ function KitchenAppContainer({ user }: { user: User }) {
             if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
             if (data.inventory) setInventory(data.inventory);
             if (data.customTools) setCustomTools(data.customTools);
+            if (data.orders && data.orders.length > 0) setOrders(data.orders);
             hasLocalData = true;
           }
         } catch (e) {
@@ -5885,7 +5921,9 @@ function KitchenAppContainer({ user }: { user: User }) {
               setStats(loadedStats);
             }
             
-            if (loadedStats.pinnedOrders && loadedStats.pinnedOrders.length > 0) {
+            if (data.orders && data.orders.length > 0) {
+              setOrders(data.orders);
+            } else if (loadedStats.pinnedOrders && loadedStats.pinnedOrders.length > 0) {
               setOrders(prev => {
                 const newOrders = [...prev];
                 loadedStats.pinnedOrders.forEach((pinned: Order) => {
@@ -5993,7 +6031,8 @@ function KitchenAppContainer({ user }: { user: User }) {
         unlockedAchievements,
         purchasedUpgrades: stats.purchasedUpgrades,
         tutorialStep,
-        customTools
+        customTools,
+        orders
       }));
     } catch (e) {
       console.warn("Could not save to localStorage:", e);
@@ -6017,6 +6056,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           stats: stats,
           tutorialStep: tutorialStep,
           customTools: customTools,
+          orders: orders,
           lastUpdated: Timestamp.now()
         }, { merge: true }).catch(err => console.warn("Firestore save warning:", err));
       } catch (error) {
