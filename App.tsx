@@ -2150,6 +2150,19 @@ function CombinationAgent({
       }
     }
 
+    // --- EASTER EGG: Netecraft Recipe ---
+    const lowerIngredients = ingredientNames.map(n => n.toLowerCase());
+    if (action.name === 'craft' && lowerIngredients.length === 2 && lowerIngredients.includes('pork') && lowerIngredients.includes('apple')) {
+       soundService.playSuccess();
+       addTerminalLog("[EASTER EGG] 🍎🐷 ¡Receta secreta de Netecraft descubierta!");
+       return {
+         name: 'Menú Netecraft',
+         emoji: '🍔⛏️',
+         rarity: 'mythic'
+       };
+    }
+    // ------------------------------------
+
     try {
       const currentOrder = orders.find(o => o.status === 'in_progress');
       
@@ -2739,6 +2752,9 @@ Do not say you cannot do it; always provide a recipe.`;
     setActiveAction(null);
   }, [selectedIngredients, executeCombination, setActiveAction, setSelectedIngredients, setInventory, onServe, inventory, stats.usedTools, stats.maxIngredientsUsed, setCurrentOrderSteps, setStats]);
 
+  // Buffer for Easter Eggs
+  const [keyBuffer, setKeyBuffer] = useState<string>('');
+
   // Global Keyboard Shortcuts Hook
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -2758,6 +2774,56 @@ Do not say you cannot do it; always provide a recipe.`;
       }
 
       const key = event.key.toLowerCase();
+      
+      // Easter Egg: Netecraft
+      if (key.length === 1 && /[a-z]/.test(key)) {
+        setKeyBuffer(prev => {
+          const newBuffer = (prev + key).slice(-15);
+          if (newBuffer.includes('netecraft')) {
+            addTerminalLog("[EASTER EGG] ⛏️ Secret Code 'netecraft' activated.");
+            soundService.playSuccess();
+            
+            // 1. Give the item 
+            setInventory(prevInv => {
+              if (prevInv.some(i => i.name === 'Pico de Netecraft')) return prevInv;
+              return [...prevInv, { name: 'Pico de Netecraft', emoji: '⛏️', rarity: 'mythic' }];
+            });
+            
+            // Show normal discovery notification
+            setManifestationResult({
+              name: 'Pico de Netecraft',
+              emoji: '⛏️',
+              isDuplicate: false
+            });
+            
+            setTimeout(() => setManifestationResult(null), 3500);
+
+            // 2. Give coins
+            setStats(prevStats => ({
+              ...prevStats,
+              money: (prevStats.money || 0) + 751
+            }));
+            
+            // 3. After 8 seconds, show the custom message from admin
+            setTimeout(() => {
+              setStats((currentStats: any) => {
+                const message = currentStats.adminEasterEggMessage || '¡NETECRAFT HA LLEGADO A LA COCINA! (751 Subs Especial)';
+                setManifestationResult({
+                  name: message,
+                  emoji: '🎉',
+                  isDuplicate: false
+                });
+                setTimeout(() => setManifestationResult(null), 5000);
+                soundService.playSuccess();
+                return currentStats; // Return same reference to avoid re-render
+              });
+            }, 8000);
+
+            return ''; // Clear buffer after trigger
+          }
+          return newBuffer;
+        });
+      }
 
       // 'c' to clear selection
       if (key === 'c') {
@@ -4017,6 +4083,19 @@ Do not say you cannot do it; always provide a recipe.`;
                         onChange={(e) => setAdminCustomTitle(e.target.value)}
                       />
                       <button className="admin-action-btn" onClick={handleAdminSetCustomTitle}>Set</button>
+                    </div>
+                  </div>
+                  
+                  <div className="admin-section">
+                    <h4>Admin: Easter Egg Message</h4>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        className="admin-input flex-1" 
+                        placeholder="Easter Egg Message..." 
+                        value={stats.adminEasterEggMessage || ''}
+                        onChange={(e) => setStats((prev: any) => ({ ...prev, adminEasterEggMessage: e.target.value }))}
+                      />
                     </div>
                   </div>
 
@@ -5830,6 +5909,7 @@ function KitchenAppContainer({ user }: { user: User }) {
     discordBorder: 'border_none',
     purchasedCosmetics: ['banner_discord', 'border_none'] as string[],
     equippedHypeSquad: 'hype_bravery' as string | null,
+    adminEasterEggMessage: '¡NETECRAFT HA LLEGADO A LA COCINA! (751 Subs Especial)',
     dailyChallenges: [
       { id: 'orders_3', title: 'Feed the Crowd', description: 'Complete 3 orders', target: 3, current: 0, reward: 500, type: 'orders', completed: false },
       { id: 'discover_5', title: 'New Flavors', description: 'Discover 5 new items', target: 5, current: 0, reward: 300, type: 'discovery', completed: false },
