@@ -2029,12 +2029,46 @@ function CombinationAgent({
     const q = query(newsRef, orderBy("timestamp", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setNewsItems(items);
+      
+      const defaultInfinityNews = {
+        id: "infinity_ai_collab",
+        title: "Anuncio Especial: Infinity AI",
+        content: "Hola, desde el equipo de KitchenOS y Light Studio.\n\nNos complace anunciar una colaboración con Google Developer Program y Gemini AI. El juego ahora es al 100% creativo; ahora no tienes que seguir pasos, usa tu imaginación para cocinar los pedidos. ¿Tienes que cocinar huevos fritos? ¿Cómo crees que se pueden cocinar? ¡Tú lo sabes! A lo mejor tienes que coger unos huevos y freírlos, o a lo mejor les quieres añadir sal. ¡No importa, Gemini AI analiza tu propuesta y crea lo más cercano a la realidad!\n\nEstas funciones son 100% gratuitas; eso sí, el juego puede llegar a crashear, pero gracias a Google Developer Program estamos perfeccionando nuestra Gemini Chef. La versión final se llamará...\n\nInfinity AI.\n\nDesde Menorca, Robert García",
+        badge: "ANUNCIO",
+        icon: "🔮",
+        urgency: "high",
+        autoOpen: true,
+        date: "2026-08-11",
+        timestamp: 1723400000000
+      };
+
+      const hasInfinityNews = items.some((item: any) => item.id === "infinity_ai_collab" || item.title?.includes("Infinity AI"));
+      if (!hasInfinityNews) {
+        setNewsItems([defaultInfinityNews, ...items]);
+      } else {
+        setNewsItems(items);
+      }
     }, (error) => {
       console.error("Error fetching news:", error);
     });
     return () => unsubscribe();
   }, []);
+
+  // Auto-open newest broadcast that has autoOpen === true
+  useEffect(() => {
+    if (newsItems.length > 0) {
+      const autoOpenItem = newsItems.find(item => item.autoOpen === true);
+      if (autoOpenItem) {
+        const localStorageKey = `autoOpenedNews_${autoOpenItem.id}`;
+        const alreadyOpened = localStorage.getItem(localStorageKey);
+        if (!alreadyOpened) {
+          setShowNewsFeed(true);
+          setActiveNewsId(autoOpenItem.id);
+          localStorage.setItem(localStorageKey, 'true');
+        }
+      }
+    }
+  }, [newsItems]);
 
   // Set config on mount
   useEffect(() => {
@@ -4948,13 +4982,12 @@ Do not say you cannot do it; always provide a recipe.`;
                     </button>
                     <h3 className="text-lg font-bold text-white m-0">Create Broadcast</h3>
                   </div>
-
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Headline</label>
                       <input id="news-title" type="text" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600" placeholder="e.g. SYSTEM UPDATE v2.0" />
                     </div>
-                    
+                                        
                     <div>
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Message Content</label>
                       <textarea id="news-content" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all min-h-[120px] placeholder:text-gray-600 resize-y" placeholder="Write your broadcast message here..."></textarea>
@@ -4970,6 +5003,7 @@ Do not say you cannot do it; always provide a recipe.`;
                         <input id="news-icon" type="text" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-gray-600" placeholder="e.g. ⚠️" defaultValue="📡" />
                       </div>
                     </div>
+
                     <div className="w-full">
                       <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5">Urgency Level</label>
                       <select id="news-urgency" className="w-full bg-[#1a1a24] border border-gray-700 text-white rounded-lg p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all appearance-none cursor-pointer">
@@ -4977,7 +5011,18 @@ Do not say you cannot do it; always provide a recipe.`;
                         <option value="high">High (Urgent / Alert)</option>
                       </select>
                     </div>
-                    
+
+                    <div className="flex items-center gap-3 py-1">
+                      <input 
+                        id="news-auto-open" 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded bg-[#1a1a24] border border-gray-700 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                      />
+                      <label htmlFor="news-auto-open" className="text-xs font-bold text-gray-300 uppercase tracking-wider cursor-pointer select-none">
+                        Abrir automáticamente al entrar (Auto-open on join)
+                      </label>
+                    </div>
+                                        
                     <button 
                       className="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-blue-900/20 transition-all transform hover:scale-[1.01] active:scale-[0.99] uppercase tracking-widest text-sm"
                       onClick={async () => {
@@ -4986,11 +5031,12 @@ Do not say you cannot do it; always provide a recipe.`;
                         const badge = (document.getElementById('news-badge') as HTMLInputElement)?.value;
                         const icon = (document.getElementById('news-icon') as HTMLInputElement)?.value;
                         const urgency = (document.getElementById('news-urgency') as HTMLSelectElement)?.value || 'low';
+                        const autoOpen = (document.getElementById('news-auto-open') as HTMLInputElement)?.checked || false;
                         if (!title || !content) return;
                         
                         try {
                           await setDoc(doc(collection(db, "system_news")), {
-                            title, content, badge, icon, urgency,
+                            title, content, badge, icon, urgency, autoOpen,
                             date: new Date().toISOString().split('T')[0],
                             timestamp: Date.now()
                           });
@@ -5094,6 +5140,9 @@ Do not say you cannot do it; always provide a recipe.`;
                             <div className="flex items-center gap-2">
                               <span className={`text-[10px] font-bold uppercase tracking-wider ${item.urgency === 'high' ? 'text-red-400' : 'text-blue-400'}`}>{item.badge}</span>
                               <span className="text-[10px] text-gray-500 font-medium whitespace-nowrap">{item.date}</span>
+                              {item.autoOpen && (
+                                <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-500 text-[8px] font-extrabold rounded tracking-wide border border-yellow-500/20">📣 AUTO-OPEN</span>
+                              )}
                             </div>
                             <span className={`opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold ${item.urgency === 'high' ? 'text-red-500' : 'text-blue-500'}`}>Read →</span>
                           </div>
