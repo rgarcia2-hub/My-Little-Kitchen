@@ -377,7 +377,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 6,
-    text: "¡Has cocinado tu primer plato! Ahora debes servirlo. Una vez que tienes el plato terminado en tu inventario, selecciónalo y pulsa el botón verde grande 'SERVE' (Servir) abajo del todo.",
+    text: "¡Has cocinado tu primer plato! Ahora debes servirlo. Una vez que tienes el plato terminado en tu inventario, selecciónalo y pulsa el botón verde grande 'SERVE' (Servir) arriba del todo.",
     highlightId: 'serve',
     targetType: 'action',
     targetName: 'serve',
@@ -1811,8 +1811,56 @@ function CombinationAgent({
   const [toolsSearchTerm, setToolsSearchTerm] = useState('');
   
   const [showSkipModal, setShowSkipModal] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'discord' | 'system'>('discord');
-  const [activeDiscordTab, setActiveDiscordTab] = useState<'customize' | 'shop'>('customize');
+  const [activeRecipeTab, setActiveRecipeTab] = useState<'recipes' | 'grimoire'>('recipes');
+  
+  // Chaos Events State
+  const [chaosEvent, setChaosEvent] = useState<'none' | 'gravity' | 'fire' | 'slimes'>('none');
+  const [chaosItems, setChaosItems] = useState<{id: string, x: number, y: number}[]>([]);
+  
+  useEffect(() => {
+    // Randomly trigger chaos events every 45-90 seconds
+    const interval = setInterval(() => {
+      if (Math.random() < 0.3) {
+        const events: ('gravity' | 'fire' | 'slimes')[] = ['gravity', 'fire', 'slimes'];
+        const randomEvent = events[Math.floor(Math.random() * events.length)];
+        setChaosEvent(randomEvent);
+        
+        if (randomEvent === 'slimes') {
+          // Spawn 3-5 slimes
+          const numSlimes = Math.floor(Math.random() * 3) + 3;
+          const newSlimes = Array.from({length: numSlimes}).map((_, i) => ({
+            id: `slime-${Date.now()}-${i}`,
+            x: Math.random() * 80 + 10, // 10% to 90%
+            y: Math.random() * 80 + 10,
+          }));
+          setChaosItems(newSlimes);
+        } else if (randomEvent === 'fire') {
+          // Keep spawning fires over 10 seconds
+          let fireCount = 0;
+          const fireInterval = setInterval(() => {
+            if (fireCount >= 10) {
+              clearInterval(fireInterval);
+              return;
+            }
+            setChaosItems(prev => [...prev, {
+              id: `fire-${Date.now()}-${Math.random()}`,
+              x: Math.random() * 80 + 10,
+              y: Math.random() * 80 + 10,
+            }]);
+            fireCount++;
+          }, 1000);
+        }
+        
+        // Auto clear event after 15 seconds
+        setTimeout(() => {
+          setChaosEvent('none');
+          setChaosItems([]);
+        }, 15000);
+      }
+    }, 45000);
+    return () => clearInterval(interval);
+  }, []);
+  
   const [debugMode, setDebugMode] = useState(false);
   const [skipAmount, setSkipAmount] = useState('1');
   const [skipCompleteOrder, setSkipCompleteOrder] = useState(false);
@@ -2735,9 +2783,24 @@ Do not say you cannot do it; always provide a recipe.`;
       // Update stats for discovered ingredients
       if (!isDuplicate) {
         soundService.playDiscover();
+        
+        let newTitle = stats.alchemistTitle;
+        let newMythic = undefined;
+        if (['mythic', 'divine', 'cosmic', 'nightmare', 'chromatic'].includes(newIngredient.rarity || '')) {
+          newTitle = "Nigromante de la Sartén";
+          newMythic = {
+            name: newIngredient.name,
+            emoji: newIngredient.emoji,
+            rarity: newIngredient.rarity || 'mythic'
+          };
+          addTerminalLog(`[ALQUIMIA] ¡Descubrimiento Mítico! ${newIngredient.name} añadido al Grimorio.`);
+        }
+
         setStats((prev: any) => ({
           ...prev,
           discoveredIngredients: prev.discoveredIngredients + 1,
+          alchemistTitle: newTitle,
+          mythicDiscoveries: newMythic ? [...(prev.mythicDiscoveries || []), newMythic] : prev.mythicDiscoveries,
           dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
             c.type === 'discovery' ? { ...c, current: c.current + 1 } : c
           )
@@ -2996,7 +3059,7 @@ Do not say you cannot do it; always provide a recipe.`;
   // currentFame is defined above in the component body
 
   return (
-    <div className="kitchen-app">
+    <div className={`kitchen-app ${chaosEvent === 'gravity' ? 'animate-[float_3s_ease-in-out_infinite]' : ''}`}>
       {/* Page Title */}
       <div className="kitchen-header">
         <div className="header-content-wrapper max-w-7xl mx-auto px-4">
@@ -3282,44 +3345,96 @@ Do not say you cannot do it; always provide a recipe.`;
 
       {/* Recipe Book Section (Conditional Render) */}
       {isRecipeBookExpanded && (
-        <section className="kitchen-section achievements-section expanded recipe-book-section">
+        <section className="kitchen-section achievements-section expanded recipe-book-section" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
           <div className="section-header">
             <div className="section-header-text">
-              <h2 className="section-title">Recipe Book</h2>
-              <p className="section-subtitle">A collection of your successful culinary creations</p>
+              <h2 className="section-title">
+                {activeRecipeTab === 'recipes' ? 'Recipe Book' : '📖 Grimorio Mítico'}
+              </h2>
+              <p className="section-subtitle">
+                {activeRecipeTab === 'recipes' ? 'A collection of your successful culinary creations' : 'Recetas tan legendarias que desafían la realidad'}
+              </p>
             </div>
             <button className="close-achievements" onClick={() => setIsRecipeBookExpanded(false)}>✕</button>
           </div>
-          <div className="recipes-grid">
-            {completedRecipes.length === 0 ? (
-              <div className="empty-recipes">
-                <p>You haven't completed any orders yet. Cook and serve dishes to fill your recipe book!</p>
-              </div>
-            ) : (
-              completedRecipes.map(recipe => (
-                <div key={recipe.id} className="recipe-card">
-                  <div className="recipe-emoji">{recipe.emoji}</div>
-                  <div className="recipe-info">
-                    <h3 className="recipe-name">{recipe.orderName}</h3>
-                    <p className="recipe-dish">Served as: {recipe.dishName}</p>
-                    {recipe.steps && recipe.steps.length > 0 && (
-                      <div className="recipe-steps-mini">
-                        {recipe.steps.map((step, idx) => (
-                          <div key={idx} className="recipe-step-mini">
-                            <span className="step-tool">{step.tool}</span>
-                            <span className="step-ingredients">({step.ingredients.join(', ')})</span>
-                            <span className="step-arrow">→</span>
-                            <span className="step-result">{step.result}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <p className="recipe-date">{new Date(recipe.timestamp).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))
-            )}
+          
+          <div className="flex gap-2 px-6 mb-4">
+            <button 
+              className={`px-4 py-2 rounded-t-lg font-bold transition-colors ${activeRecipeTab === 'recipes' ? 'bg-[#18181b] text-white border-t border-l border-r border-[#33ff33]' : 'bg-[#18181b]/50 text-gray-400 hover:text-white'}`}
+              onClick={() => setActiveRecipeTab('recipes')}
+            >
+              🍽️ Recetas Completadas
+            </button>
+            <button 
+              className={`px-4 py-2 rounded-t-lg font-bold transition-colors ${activeRecipeTab === 'grimoire' ? 'bg-[#18181b] text-[#a855f7] border-t border-l border-r border-[#a855f7]' : 'bg-[#18181b]/50 text-gray-400 hover:text-white'}`}
+              onClick={() => setActiveRecipeTab('grimoire')}
+            >
+              📖 Grimorio de Alquimia
+            </button>
           </div>
+
+          {activeRecipeTab === 'recipes' ? (
+            <div className="recipes-grid flex-1 overflow-y-auto">
+              {completedRecipes.length === 0 ? (
+                <div className="empty-recipes">
+                  <p>You haven't completed any orders yet. Cook and serve dishes to fill your recipe book!</p>
+                </div>
+              ) : (
+                completedRecipes.map(recipe => (
+                  <div key={recipe.id} className="recipe-card">
+                    <div className="recipe-emoji">{recipe.emoji}</div>
+                    <div className="recipe-info">
+                      <h3 className="recipe-name">{recipe.orderName}</h3>
+                      <p className="recipe-dish">Served as: {recipe.dishName}</p>
+                      {recipe.steps && recipe.steps.length > 0 && (
+                        <div className="recipe-steps-mini">
+                          {recipe.steps.map((step, idx) => (
+                            <div key={idx} className="recipe-step-mini">
+                              <span className="step-tool">{step.tool}</span>
+                              <span className="step-ingredients">({step.ingredients.join(', ')})</span>
+                              <span className="step-arrow">→</span>
+                              <span className="step-result">{step.result}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <p className="recipe-date">{new Date(recipe.timestamp).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="p-6 bg-[#18181b]/80 border border-[#a855f7]/30 rounded-lg flex-1 overflow-y-auto m-6 mt-0 shadow-[inset_0_0_20px_rgba(168,85,247,0.1)]">
+              <div className="text-center mb-8">
+                {stats.alchemistTitle && (
+                  <div className="mt-4 inline-block bg-[#a855f7]/20 border border-[#a855f7] rounded-full px-6 py-2 text-[#d8b4fe] font-bold shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                    Título: {stats.alchemistTitle}
+                  </div>
+                )}
+              </div>
+
+              {(!stats.mythicDiscoveries || stats.mythicDiscoveries.length === 0) ? (
+                <div className="text-center py-12 text-gray-500 italic border-2 border-dashed border-gray-700 rounded-lg">
+                  Aún no has descubierto ninguna receta mítica.<br/>¡Combina los ingredientes más locos para revelar secretos antiguos!
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {stats.mythicDiscoveries.map((mythic, idx) => (
+                    <div key={idx} className="relative group bg-[#18181b] p-4 rounded-xl border border-gray-700 hover:border-[#a855f7] transition-all flex flex-col items-center justify-center text-center shadow-lg hover:shadow-[#a855f7]/20 cursor-default">
+                      <span className="text-5xl mb-2 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]">{mythic.emoji}</span>
+                      <span className="font-bold text-gray-200">{mythic.name}</span>
+                      <span className={`text-[10px] mt-2 uppercase font-extrabold px-2 py-0.5 rounded-full ${
+                        mythic.rarity === 'nightmare' ? 'bg-red-900/50 text-red-400' :
+                        mythic.rarity === 'chromatic' ? 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500 text-white' :
+                        'bg-purple-900/50 text-purple-400'
+                      }`}>{mythic.rarity}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </section>
       )}
 
@@ -3468,351 +3583,6 @@ Do not say you cannot do it; always provide a recipe.`;
               <h3>⚙️ Ajustes y Cuenta</h3>
               <button className="skip-close-btn" onClick={() => setShowSkipModal(false)}>✕</button>
             </div>
-
-            {/* TAB 1: CHEF PROFILE CUSTOMIZER & SHOP (REMOVED) */}
-            {false && (
-              <div className="p-4 bg-[#18181b]/40 border border-[#1a1a1a] rounded-lg">
-                <div className="discord-customizer-grid">
-                  
-                  {/* Left Column: Live Card Preview */}
-                  <div className="discord-profile-preview-card">
-                    {/* Banner Preview */}
-                    <div 
-                      className={`discord-banner-preview ${
-                        stats.discordBanner === 'banner_neon' ? 'preview-banner-neon' :
-                        stats.discordBanner === 'banner_sakura' ? 'preview-banner-sakura' :
-                        stats.discordBanner === 'banner_cosmic' ? 'preview-banner-cosmic' :
-                        stats.discordBanner === 'banner_gold' ? 'preview-banner-gold' :
-                        stats.discordBanner === 'banner_matrix' ? 'preview-banner-matrix' : ''
-                      }`}
-                      style={stats.discordBanner === 'banner_discord' ? { backgroundColor: '#2563eb' } : {}}
-                    />
-                    
-                    {/* Avatar and status dot */}
-                    <div className="discord-avatar-container">
-                      <div className={`discord-avatar-inner ${
-                        stats.discordBorder === 'border_gaming' ? 'border-gaming-chroma' :
-                        stats.discordBorder === 'border_cute' ? 'border-cute-cat' :
-                        stats.discordBorder === 'border_fire' ? 'border-fire-ring' :
-                        stats.discordBorder === 'border_frost' ? 'border-frost-crystals' :
-                        stats.discordBorder === 'border_gold' ? 'border-gold-crown' :
-                        stats.discordBorder === 'border_early' ? 'border-chef-hat' : ''
-                      }`}>
-                        {stats.profileImage || user.photoURL ? (
-                          <img 
-                            src={stats.profileImage || user.photoURL} 
-                            alt="Profile" 
-                            className="discord-avatar-img"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-[#313338] text-white flex items-center justify-center font-bold text-2xl uppercase">
-                            {user.displayName?.[0] || user.email?.[0] || '?'}
-                          </div>
-                        )}
-                      </div>
-                      <div className={`discord-status-dot-badge ${
-                        stats.discordStatus === 'online' ? 'status-online' :
-                        stats.discordStatus === 'idle' ? 'status-idle' :
-                        stats.discordStatus === 'dnd' ? 'status-dnd' : 'status-offline'
-                      }`} />
-                    </div>
-                    
-                    {/* Details */}
-                    <div className="discord-profile-details">
-                      <div className="discord-card-username">
-                        <span>{user.displayName || 'Chef'}</span>
-                        {isSuperAdmin && (
-                          <img 
-                            src={VERIFIED_BADGE_URL} 
-                            alt="Verified" 
-                            style={{ width: '16px', height: '16px' }}
-                            referrerPolicy="no-referrer"
-                          />
-                        )}
-                        {stats.proPlan && (
-                          <span className="text-[9px] bg-[#f97316] text-white px-1.5 py-0.5 font-extrabold uppercase rounded-sm leading-none">Pro Plan</span>
-                        )}
-                      </div>
-                      
-                      {stats.discordStatusText && (
-                        <div className="discord-card-custom-status">
-                          <span>{stats.discordStatusEmoji || '💭'}</span>
-                          <span>{stats.discordStatusText}</span>
-                        </div>
-                      )}
-                      
-                      {/* Badges container */}
-                      <div className="discord-user-badge-container">
-                        {getPlayerBadges().length > 0 ? (
-                          getPlayerBadges().map((badge) => (
-                            <div 
-                              key={badge.id} 
-                              className={`discord-profile-badge ${badge.isDifficult ? 'badge-difficult' : ''}`}
-                            >
-                              <span>{badge.emoji}</span>
-                              <div className="badge-tooltip">
-                                <p className="font-bold border-b border-white/20 pb-1 mb-1">{badge.name}</p>
-                                <p>{badge.desc}</p>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-[10px] text-gray-400 italic px-1">Sin insignias equipo</span>
-                        )}
-                      </div>
-                      
-                      <div className="discord-card-separator" />
-                      
-                      <div className="discord-card-section-title">Sobre Mí</div>
-                      <p className="discord-card-bio mb-4 text-[12px]">{stats.discordBio || 'Este chef no ha escrito una biografía todavía. ¡Presiona Personalizar para agregar una!'}</p>
-                      
-                      {/* Active Activity Frame */}
-                      <div className="discord-activity-card">
-                        <div className="discord-activity-header">Cocinando en Vivo</div>
-                        <div className="discord-activity-body">
-                          <div className="discord-activity-game-icon">🍳</div>
-                          <div className="discord-activity-details">
-                            <p className="discord-activity-game-name">My Little Kitchen</p>
-                            <p className="discord-activity-game-stats">Rango: {stats.title || 'Kitchen Hand'}</p>
-                            <p className="discord-activity-game-stats">Nivel: {stats.level || 1} • XP: {Math.floor(stats.xp || 0)}</p>
-                          </div>
-                        </div>
-                        <button 
-                          type="button" 
-                          onClick={() => { soundService.playClick(); setShowSkipModal(false); }}
-                          className="discord-activity-action-btn"
-                        >
-                          Continuar Cocinando
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Right Column: Customizer inputs & shop sub-tabs */}
-                  <div>
-                    <div className="discord-subtabs-nav">
-                      <button 
-                        type="button"
-                        className={`discord-subtab-btn ${activeDiscordTab === 'customize' ? 'active' : ''}`}
-                        onClick={() => { soundService.playClick(); setActiveDiscordTab('customize'); }}
-                      >
-                        ✏️ Personalizar Perfil
-                      </button>
-                      <button 
-                        type="button"
-                        className={`discord-subtab-btn ${activeDiscordTab === 'shop' ? 'active' : ''}`}
-                        onClick={() => { soundService.playClick(); setActiveDiscordTab('shop'); }}
-                      >
-                        🪙 Tienda de Cosméticos
-                      </button>
-                    </div>
-                    
-                    {/* Tab 1.1: Customize Form */}
-                    {activeDiscordTab === 'customize' && (
-                      <div className="discord-form-panel">
-                        <div className="discord-form-group">
-                          <label>Nombre de Usuario (Apodo de Cocina)</label>
-                          <input 
-                            type="text"
-                            className="discord-input-fancy"
-                            value={user.displayName || 'Chef'}
-                            onChange={(e) => {
-                              const newName = e.target.value;
-                              setStats((prev: any) => ({ ...prev, displayName: newName }));
-                            }}
-                            placeholder="Tu alias culinario..."
-                          />
-                        </div>
-                        
-                        <div className="discord-form-group">
-                          <label>Actividad del Cocinero</label>
-                          <div className="grid grid-cols-4 gap-2">
-                            {[
-                              { id: 'online', name: 'Activo', color: 'bg-[#10b981]' },
-                              { id: 'idle', name: 'Reposo', color: 'bg-[#f59e0b]' },
-                              { id: 'dnd', name: 'Fuego lento', color: 'bg-[#ef4444]' },
-                              { id: 'offline', name: 'Fuera de servicio', color: 'bg-[#6b7280]' },
-                            ].map(st => (
-                              <button
-                                key={st.id}
-                                type="button"
-                                onClick={() => {
-                                  soundService.playClick();
-                                  setStats((prev: any) => ({ ...prev, discordStatus: st.id }));
-                                }}
-                                className={`flex items-center gap-1.5 justify-center p-2 text-[10px] font-bold border-2 rounded-md ${
-                                  stats.discordStatus === st.id ? 'border-[#f97316] bg-[#f97316]/10' : 'border-[#1a1a1a] bg-[#18181b]'
-                                }`}
-                                style={{ color: '#fff' }}
-                              >
-                                <div className={`w-2 h-2 rounded-full ${st.color}`} />
-                                <span>{st.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-12 gap-2 discord-form-group">
-                          <div className="col-span-4 flex flex-col gap-1">
-                            <label>Emoji del Plato</label>
-                            <select 
-                              className="discord-input-fancy text-center p-1"
-                              value={stats.discordStatusEmoji || '💭'}
-                              onChange={(e) => setStats((prev: any) => ({ ...prev, discordStatusEmoji: e.target.value }))}
-                            >
-                              {['💭', '🍳', '🔥', '🔪', '🍔', '🍕', '🍰', '🍣', '💀', '👽', '🎮', '👑', '💸', '✨', '⭐', '🌈', '⚡', '☕'].map(em => (
-                                <option key={em} value={em}>{em}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="col-span-8 flex flex-col gap-1">
-                            <label>Estado de la Comanda</label>
-                            <input 
-                              type="text"
-                              className="discord-input-fancy"
-                              value={stats.discordStatusText || ''}
-                              onChange={(e) => setStats((prev: any) => ({ ...prev, discordStatusText: e.target.value }))}
-                              placeholder="¿Qué estás tramando?"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="discord-form-group">
-                          <label>Biografía Culinaria (Sobre Mí)</label>
-                          <textarea 
-                            className="discord-input-fancy h-16 resize-none"
-                            value={stats.discordBio || ''}
-                            onChange={(e) => setStats((prev: any) => ({ ...prev, discordBio: e.target.value }))}
-                            placeholder="Cuéntale a todos sobre tus mejores descubrimientos culinarios..."
-                          />
-                        </div>
-
-                        <div className="discord-form-group">
-                          <label>Gremio del Sabor (¡Gratis!)</label>
-                          <div className="grid grid-cols-4 gap-2">
-                            {[
-                              { id: null, name: 'Ninguno', emoji: '❌' },
-                              { id: 'hype_bravery', name: 'Gremio del Fuego', emoji: '🔥' },
-                              { id: 'hype_brilliance', name: 'Gremio Dulce', emoji: '🔮' },
-                              { id: 'hype_balance', name: 'Gremio Umami', emoji: '⚖️' }
-                            ].map(hs => (
-                              <button
-                                key={hs.id || 'none'}
-                                type="button"
-                                onClick={() => {
-                                  soundService.playClick();
-                                  setStats((prev: any) => ({ ...prev, equippedHypeSquad: hs.id }));
-                                }}
-                                className={`flex flex-col items-center justify-center p-1.5 border-2 rounded-md transition-all ${
-                                  stats.equippedHypeSquad === hs.id ? 'border-[#f97316] bg-[#f97316]/10 scale-[1.03]' : 'border-[#1a1a1a] bg-[#1e1f22]'
-                                }`}
-                                style={{ color: '#fff' }}
-                              >
-                                <span className="text-lg">{hs.emoji}</span>
-                                <span className="text-[9px] font-extrabold mt-1 text-center">{hs.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 mt-1">
-                          <button 
-                            type="button"
-                            className="settings-tab-btn flex items-center justify-center gap-1 text-[11px]"
-                            onClick={() => {
-                              fileInputRef.current?.click();
-                            }}
-                          >
-                            <Camera size={14} /> Foto de Avatar
-                          </button>
-                          
-                          {stats.profileImage && (
-                            <button 
-                              type="button"
-                              className="settings-tab-btn"
-                              onClick={() => {
-                                soundService.playClick();
-                                setStats((prev: any) => ({ ...prev, profileImage: null }));
-                              }}
-                              style={{ fontSize: '11px', background: '#fee2e2', color: '#ef4444', borderColor: '#ef4444' }}
-                            >
-                              Eliminar Foto
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Tab 1.2: Cosmetic Credits Shop */}
-                    {activeDiscordTab === 'shop' && (
-                      <div>
-                        <div className="discord-cosmetics-balance-row">
-                          <span className="text-xs font-bold text-gray-300">Créditos Culinarios:</span>
-                          <div className="credits-highlight-amount">
-                            <span>🪙</span>
-                            <span>{stats.credits ?? 150} CRED</span>
-                          </div>
-                        </div>
-                        
-                        <div className="discord-shop-showcase-grid custom-scrollbar">
-                          {COSMETICS_LIST.map((item) => {
-                            const isOwned = (stats.purchasedCosmetics || []).includes(item.id);
-                            const isEquipped = item.type === 'banner' 
-                              ? stats.discordBanner === item.id 
-                              : item.type === 'border' 
-                              ? stats.discordBorder === item.id 
-                              : false;
-                            
-                            const canAfford = (stats.credits ?? 150) >= item.price;
-                            
-                            let btnClass = "buy-unacquired";
-                            let btnText = `Comprar (${item.price} 🪙)`;
-                            
-                            if (isOwned) {
-                              if (item.type === 'badge') {
-                                btnClass = "buy-equipped";
-                                btnText = "✓ COMPRADO";
-                              } else if (isEquipped) {
-                                btnClass = "buy-equipped";
-                                btnText = "✓ EQUIPADO";
-                              } else {
-                                btnClass = "buy-unequipped";
-                                btnText = "EQUIPAR";
-                              }
-                            } else if (!canAfford) {
-                              btnClass = "buy-locked";
-                              btnText = "BLOQUEADO";
-                            }
-                            
-                            return (
-                              <div key={item.id} className="discord-shop-item-card">
-                                <div>
-                                  <div className="discord-shop-item-name">
-                                    <span className="text-xs font-bold">{item.name}</span>
-                                    {item.price > 0 && <span className="discord-shop-item-price">🪙 {item.price}</span>}
-                                  </div>
-                                  <p className="discord-shop-item-desc text-[10px]">{item.desc}</p>
-                                </div>
-                                <button
-                                  type="button"
-                                  className={`discord-shop-buy-btn ${btnClass}`}
-                                  disabled={item.price > 0 && !isOwned && !canAfford}
-                                  onClick={() => handleBuyCosmetic(item.id, item.price)}
-                                >
-                                  {btnText}
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              </div>
-            )}
             <div className="skip-modal-body">
               
               <div className="admin-section">
@@ -4147,6 +3917,7 @@ Do not say you cannot do it; always provide a recipe.`;
 
               {skipError && <p className="skip-error">{skipError}</p>}
               </div>
+
             <div className="skip-modal-footer">
               <button className="skip-cancel-btn" onClick={() => setShowSkipModal(false)}>Close Panel</button>
             </div>
@@ -4164,6 +3935,48 @@ Do not say you cannot do it; always provide a recipe.`;
 
       {/* Global Protocol Emergency Banner */}
       <GlobalProtocolBanner protocol={activeProtocol} countdown={protocolCountdown} />
+      
+      {/* Chaos Events Overlay */}
+      {chaosEvent !== 'none' && (
+        <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
+          {chaosEvent === 'gravity' && (
+            <div className="absolute inset-0 bg-blue-900/10 pointer-events-none animate-pulse">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full font-bold uppercase tracking-widest animate-bounce shadow-[0_0_15px_rgba(59,130,246,0.8)]">
+                ⚠️ ¡Fuga de Gravedad!
+              </div>
+            </div>
+          )}
+          {chaosEvent === 'fire' && (
+            <div className="absolute inset-0 bg-orange-900/10 pointer-events-none animate-pulse">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-4 py-1 rounded-full font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.8)]">
+                🔥 ¡Fuego en la Cocina! (Apágalos)
+              </div>
+            </div>
+          )}
+          {chaosEvent === 'slimes' && (
+            <div className="absolute inset-0 bg-green-900/10 pointer-events-none animate-pulse">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(34,197,94,0.8)]">
+                🦠 ¡Invasión de Limos! (Aplastarlos)
+              </div>
+            </div>
+          )}
+
+          {chaosItems.map(item => (
+            <div 
+              key={item.id}
+              className={`absolute pointer-events-auto cursor-crosshair transform transition-transform hover:scale-110 active:scale-90 ${chaosEvent === 'slimes' ? 'animate-bounce' : 'animate-pulse'}`}
+              style={{ left: `${item.x}%`, top: `${item.y}%`, fontSize: '3rem' }}
+              onClick={() => {
+                soundService.playClick();
+                setChaosItems(prev => prev.filter(i => i.id !== item.id));
+                if (chaosEvent !== 'fire' && chaosItems.length <= 1) setChaosEvent('none');
+              }}
+            >
+              {chaosEvent === 'fire' ? '🔥' : '🦠'}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="ingredients-tools-row-lab">
         {/* Left Column: Data Source / Inventory (Always Visible) */}
@@ -5456,9 +5269,23 @@ function CookingAgent({
         // But skip if this ingredient already exists (duplicate check)
         // Update stats for discovered ingredients
         if (!isDuplicateIngredient(newIngredient.name, inventory)) {
+          let newTitle = stats.alchemistTitle;
+          let newMythic = undefined;
+          if (['mythic', 'divine', 'cosmic', 'nightmare', 'chromatic'].includes(newIngredient.rarity || '')) {
+            newTitle = "Nigromante de la Sartén";
+            newMythic = {
+              name: newIngredient.name,
+              emoji: newIngredient.emoji,
+              rarity: newIngredient.rarity || 'mythic'
+            };
+            console.log(`[ALQUIMIA] ¡Descubrimiento Mítico por AutoChef! ${newIngredient.name}`);
+          }
+
           setStats((prev: any) => ({
             ...prev,
-            discoveredIngredients: prev.discoveredIngredients + 1
+            discoveredIngredients: prev.discoveredIngredients + 1,
+            alchemistTitle: newTitle,
+            mythicDiscoveries: newMythic ? [...(prev.mythicDiscoveries || []), newMythic] : prev.mythicDiscoveries,
           }));
         }
 
@@ -5959,6 +5786,8 @@ function KitchenAppContainer({ user }: { user: User }) {
     purchasedCosmetics: ['banner_discord', 'border_none'] as string[],
     equippedHypeSquad: 'hype_bravery' as string | null,
     adminEasterEggMessage: '¡NETECRAFT HA LLEGADO A LA COCINA! (751 Subs Especial)',
+    mythicDiscoveries: [] as {name: string, emoji: string, rarity: string}[],
+    alchemistTitle: null as string | null,
     dailyChallenges: [
       { id: 'orders_3', title: 'Feed the Crowd', description: 'Complete 3 orders', target: 3, current: 0, reward: 500, type: 'orders', completed: false },
       { id: 'discover_5', title: 'New Flavors', description: 'Discover 5 new items', target: 5, current: 0, reward: 300, type: 'discovery', completed: false },
