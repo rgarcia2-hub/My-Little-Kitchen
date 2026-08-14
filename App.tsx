@@ -23,7 +23,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lightbulb, LogOut, Coffee, Heart, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Heart, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock, FlaskConical } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -1000,6 +1000,232 @@ function AddOrderCard({ onAddOrder, isDisabled }: AddOrderCardProps) {
   );
 }
 
+
+// ============================================================================
+// Beta Orders Console Component (UI Beta)
+// ============================================================================
+interface BetaOrdersConsoleProps {
+  orders: Order[];
+  currentOrder: Order | undefined;
+  tutorialStep: number;
+  fetchRecipeSteps: (name: string, difficulty?: string) => void;
+  isCooking: boolean;
+  isFetchingSteps: boolean;
+  onPickUp: (orderId: string) => void;
+  onCookWithGemini: (orderName: string) => void;
+  onOpenVerificationAgent?: () => void;
+  onAddOrder: (orderName: string) => void;
+}
+
+function BetaOrdersConsole({
+  orders,
+  currentOrder,
+  tutorialStep,
+  fetchRecipeSteps,
+  isCooking,
+  isFetchingSteps,
+  onPickUp,
+  onCookWithGemini,
+  onOpenVerificationAgent,
+  onAddOrder,
+}: BetaOrdersConsoleProps) {
+  const [filter, setFilter] = useState<'all' | 'in_progress' | 'pending'>('all');
+  const [newOrderInput, setNewOrderInput] = useState('');
+
+  const hasInProgressOrder = orders.some(o => o.status === 'in_progress');
+
+  const filteredOrders = orders.filter(o => {
+    if (filter === 'in_progress') return o.status === 'in_progress';
+    if (filter === 'pending') return o.status === 'not_started';
+    return true;
+  });
+
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newOrderInput.trim()) {
+      onAddOrder(newOrderInput.trim());
+      setNewOrderInput('');
+    }
+  };
+
+  return (
+    <div className="beta-orders-container bg-[#faf8f5] text-[#1a1a1a] p-4 border-2 border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a] font-sans rounded-none">
+      {/* Header bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b-2 border-dashed border-[#1a1a1a] mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 mr-2">
+            <span className="font-bold text-[15px] text-[#1a1a1a]">Beta</span>
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#f8efff] text-[#c074f5]">
+              <FlaskConical size={14} fill="currentColor" stroke="currentColor" />
+            </span>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold uppercase tracking-tight text-[#1a1a1a] flex items-center gap-1.5 m-0 leading-tight">
+              <span>📋</span> Orders Panel
+            </h2>
+            <p className="text-xs text-gray-500 font-mono m-0 mt-0.5">
+              Kitchen orders control matrix
+            </p>
+          </div>
+        </div>
+
+        {/* Action Controls & Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {currentOrder && (
+            <button
+              id="get-steps"
+              className={`px-3 py-1.5 bg-white text-[#1a1a1a] border-2 border-[#1a1a1a] font-bold text-xs hover:bg-[#1a1a1a] hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#1a1a1a] ${
+                tutorialStep === 3 ? 'tutorial-highlight' : ''
+              }`}
+              onClick={() => fetchRecipeSteps(currentOrder.name, currentOrder.difficulty)}
+              disabled={isCooking || isFetchingSteps}
+              title={`Get steps for ${currentOrder.name}`}
+            >
+              <Lightbulb size={14} />
+              <span>{isFetchingSteps ? 'Thinking...' : 'Get Hint'}</span>
+            </button>
+          )}
+
+          <div className="flex border-2 border-[#1a1a1a] bg-white shadow-[2px_2px_0px_#1a1a1a]">
+            <button
+              className={`px-2.5 py-1 text-xs font-bold font-mono transition-colors ${
+                filter === 'all' ? 'bg-[#1a1a1a] text-white' : 'text-[#1a1a1a] hover:bg-gray-100'
+              }`}
+              onClick={() => setFilter('all')}
+            >
+              All ({orders.length})
+            </button>
+            <button
+              className={`px-2.5 py-1 text-xs font-bold font-mono border-l border-[#1a1a1a] transition-colors ${
+                filter === 'in_progress' ? 'bg-[#1a1a1a] text-white' : 'text-[#1a1a1a] hover:bg-gray-100'
+              }`}
+              onClick={() => setFilter('in_progress')}
+            >
+              Active ({orders.filter(o => o.status === 'in_progress').length})
+            </button>
+            <button
+              className={`px-2.5 py-1 text-xs font-bold font-mono border-l border-[#1a1a1a] transition-colors ${
+                filter === 'pending' ? 'bg-[#1a1a1a] text-white' : 'text-[#1a1a1a] hover:bg-gray-100'
+              }`}
+              onClick={() => setFilter('pending')}
+            >
+              Pending ({orders.filter(o => o.status === 'not_started').length})
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Ticket Grid / Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+        {filteredOrders.map((order, idx) => {
+          const isInProgress = order.status === 'in_progress';
+          const isPending = order.status === 'not_started';
+          const isDisabled = hasInProgressOrder && isPending;
+
+          return (
+            <div
+              key={order.id}
+              className={`relative p-3 border-2 transition-all flex flex-col justify-between rounded-none ${
+                isInProgress
+                  ? 'bg-[#fffde7] border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a]'
+                  : 'bg-white border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:shadow-[3px_3px_0px_#1a1a1a]'
+              } ${isDisabled ? 'opacity-50 grayscale' : ''}`}
+            >
+              {/* Ticket Top Header */}
+              <div>
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-gray-200 pb-1.5 mb-2">
+                  <span className="text-gray-500">Ticket #{String(idx + 1).padStart(3, '0')}</span>
+                  {order.difficulty && (
+                    <span className="bg-[#f0f0f0] border border-[#1a1a1a] px-1.5 py-0.5 text-[#1a1a1a] text-[10px] font-bold uppercase">
+                      {order.difficulty}
+                    </span>
+                  )}
+                </div>
+
+                {/* Ticket Body */}
+                <div className="flex items-center gap-2.5 my-1">
+                  <span className="text-2xl bg-gray-50 p-1.5 border border-gray-300 flex items-center justify-center shrink-0">
+                    {order.emoji || '🍳'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-sm tracking-tight text-[#1a1a1a] truncate m-0">
+                      {order.name}
+                    </h3>
+                    <div className="mt-0.5 flex items-center gap-1">
+                      {isInProgress ? (
+                        <span className="bg-[#1a1a1a] text-white text-[10px] font-mono font-bold px-1.5 py-0.5">
+                          ● In Kitchen
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-[10px] font-mono">
+                          Waiting
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="mt-3 pt-2 border-t border-gray-200">
+                {isPending && (
+                  <button
+                    className="w-full py-1.5 bg-[#1a1a1a] text-white font-bold text-xs hover:bg-gray-800 border border-[#1a1a1a] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed rounded-none transition-colors"
+                    onClick={() => onPickUp(order.id)}
+                    disabled={isDisabled}
+                  >
+                    {isDisabled ? 'Waiting...' : '▶ Start Order'}
+                  </button>
+                )}
+                {isInProgress && (
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      className="w-full py-1.5 bg-[#1a1a1a] text-white font-bold text-xs hover:bg-gray-800 border border-[#1a1a1a] cursor-pointer rounded-none transition-colors"
+                      onClick={() => onCookWithGemini(order.name)}
+                    >
+                      ⚡ Cook with Infinity AI
+                    </button>
+                    {onOpenVerificationAgent && (
+                      <button
+                        className="w-full py-1 bg-white text-[#1a1a1a] font-bold text-[10px] hover:bg-gray-100 border border-[#1a1a1a] cursor-pointer rounded-none transition-colors"
+                        onClick={onOpenVerificationAgent}
+                      >
+                        🔍 Verify Dish
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Terminal Order Input Bar */}
+      <form onSubmit={handleAddSubmit} className="pt-3 border-t-2 border-dashed border-[#1a1a1a] flex items-center gap-2">
+        <span className="text-xs font-bold text-[#1a1a1a] font-mono uppercase whitespace-nowrap">
+          + New Order:
+        </span>
+        <input
+          type="text"
+          value={newOrderInput}
+          onChange={(e) => setNewOrderInput(e.target.value)}
+          placeholder="Dish name (e.g. Pizza, Ramen)..."
+          className="flex-1 bg-white text-[#1a1a1a] border border-[#1a1a1a] px-3 py-1 font-mono text-xs outline-none focus:ring-1 focus:ring-black rounded-none"
+          disabled={hasInProgressOrder}
+        />
+        <button
+          type="submit"
+          disabled={!newOrderInput.trim() || hasInProgressOrder}
+          className="px-3 py-1 bg-[#1a1a1a] text-white font-bold text-xs border border-[#1a1a1a] hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer rounded-none"
+        >
+          Add
+        </button>
+      </form>
+    </div>
+  );
+}
+
 // ============================================================================
 // Achievement Components
 // ============================================================================
@@ -1814,18 +2040,33 @@ function CombinationAgent({
   const [activeRecipeTab, setActiveRecipeTab] = useState<'recipes' | 'grimoire'>('recipes');
   
   // Chaos Events State
-  const [chaosEvent, setChaosEvent] = useState<'none' | 'gravity' | 'fire' | 'slimes'>('none');
+  const [chaosEvent, setChaosEvent] = useState<'none' | 'gravity' | 'fire' | 'virus'>('none');
   const [chaosItems, setChaosItems] = useState<{id: string, x: number, y: number}[]>([]);
   
+  const purchasedUpgradesRef = useRef(stats.purchasedUpgrades || []);
+  useEffect(() => {
+    purchasedUpgradesRef.current = stats.purchasedUpgrades || [];
+  }, [stats.purchasedUpgrades]);
+
   useEffect(() => {
     // Randomly trigger chaos events every 45-90 seconds
     const interval = setInterval(() => {
-      if (Math.random() < 0.3) {
-        const events: ('gravity' | 'fire' | 'slimes')[] = ['gravity', 'fire', 'slimes'];
+      const upgrades = purchasedUpgradesRef.current;
+      if (upgrades.includes('hazard_shield_3')) return; // 100% elimination
+      
+      let baseChance = 0.3;
+      if (upgrades.includes('hazard_shield_2')) {
+        baseChance *= 0.2; // 80% reduction
+      } else if (upgrades.includes('hazard_shield_1')) {
+        baseChance *= 0.5; // 50% reduction
+      }
+      
+      if (Math.random() < baseChance) {
+        const events: ('gravity' | 'fire' | 'virus')[] = ['gravity', 'fire', 'virus'];
         const randomEvent = events[Math.floor(Math.random() * events.length)];
         setChaosEvent(randomEvent);
         
-        if (randomEvent === 'slimes') {
+        if (randomEvent === 'virus') {
           // Spawn 3-5 slimes
           const numSlimes = Math.floor(Math.random() * 3) + 3;
           const newSlimes = Array.from({length: numSlimes}).map((_, i) => ({
@@ -2698,6 +2939,7 @@ Do not say you cannot do it; always provide a recipe.`;
       setUnlockedAchievements([]);
       setStats({
         completedOrders: 0,
+    betaUiOrders: false,
         money: 0,
         discoveredIngredients: STARTING_INGREDIENTS.length,
         usedTools: [],
@@ -3534,7 +3776,23 @@ Do not say you cannot do it; always provide a recipe.`;
 
       {/* Orders Section */}
       <section className={`kitchen-section orders-section ${tutorialStep === 1 ? 'tutorial-highlight' : ''}`}>
-        <div className="section-header">
+        
+        {stats.betaUiOrders ? (
+          <BetaOrdersConsole
+            orders={orders}
+            currentOrder={currentOrder}
+            tutorialStep={tutorialStep}
+            fetchRecipeSteps={fetchRecipeSteps}
+            isCooking={isCooking}
+            isFetchingSteps={isFetchingSteps}
+            onPickUp={onPickUp}
+            onCookWithGemini={onCookWithGemini}
+            onOpenVerificationAgent={onOpenVerificationAgent}
+            onAddOrder={onAddOrder}
+          />
+        ) : (
+          <>
+            <div className="section-header">
           <div className="section-header-text">
             <h2 className="section-title">Orders</h2>
             <p className="section-subtitle">Customer orders to fulfill with function calling</p>
@@ -3573,6 +3831,8 @@ Do not say you cannot do it; always provide a recipe.`;
             );
           })()}
         </div>
+          </>
+        )}
       </section>
 
       {/* Settings & Account Modal */}
@@ -3724,6 +3984,89 @@ Do not say you cannot do it; always provide a recipe.`;
                   </button>
                 </div>
               </div>
+
+              
+              <div className="admin-section">
+                <h4>UI Beta / Experimental Features</h4>
+                <div className="flex flex-col gap-3">
+                  <div className="bg-white border border-gray-300 p-3 flex items-center justify-between gap-3 rounded-none hover:border-gray-400 transition-all">
+                  <div className="flex flex-col pr-2">
+                    <span className="font-sans font-bold text-sm text-[#1a1a1a] flex items-center gap-2">
+                      Beta
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#f8efff] text-[#c074f5]">
+                        <FlaskConical size={12} fill="currentColor" stroke="currentColor" />
+                      </span>
+                      New Orders UI
+                    </span>
+                    <span className="text-xs text-gray-500 font-mono mt-0.5">
+                      Compact alternative layout for the orders dispatch panel
+                    </span>
+                  </div>
+                  
+                  {/* Square Horizontal Switch */}
+                  <button
+                    type="button"
+                    className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-all cursor-pointer select-none p-0.5 flex items-center shrink-0 ${
+                      stats.betaUiOrders ? 'bg-[#1a1a1a]' : 'bg-gray-100'
+                    }`}
+                    onClick={() => {
+                      soundService.playClick();
+                      setStats((prev: any) => ({ ...prev, betaUiOrders: !prev.betaUiOrders }));
+                    }}
+                    title={stats.betaUiOrders ? 'Beta UI: Enabled' : 'Beta UI: Disabled'}
+                  >
+                    <div 
+                      className={`w-5 h-5 flex items-center justify-center font-mono font-bold text-[10px] transition-all transform ${
+                        stats.betaUiOrders 
+                          ? 'translate-x-[26px] bg-white text-[#1a1a1a]' 
+                          : 'translate-x-0 bg-[#1a1a1a] text-white'
+                      }`}
+                    >
+                      {stats.betaUiOrders ? 'ON' : 'OFF'}
+                    </div>
+                  </button>
+                </div>
+
+                {/* Infinity AI Toggle */}
+                <div className="bg-white border border-gray-300 p-3 flex items-center justify-between gap-3 rounded-none hover:border-gray-400 transition-all">
+                  <div className="flex flex-col pr-2">
+                    <span className="font-sans font-bold text-sm text-[#1a1a1a] flex items-center gap-2">
+                      Beta
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#f8efff] text-[#c074f5]">
+                        <FlaskConical size={12} fill="currentColor" stroke="currentColor" />
+                      </span>
+                      Infinity AI Engine
+                    </span>
+                    <span className="text-xs text-gray-500 font-mono mt-0.5">
+                      Enable the new experimental Infinity AI engine (Work in progress)
+                    </span>
+                  </div>
+                  
+                  {/* Square Horizontal Switch */}
+                  <button
+                    type="button"
+                    className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-all cursor-pointer select-none p-0.5 flex items-center shrink-0 ${
+                      stats.betaInfinityAI ? 'bg-[#1a1a1a]' : 'bg-gray-100'
+                    }`}
+                    onClick={() => {
+                      soundService.playClick();
+                      setStats((prev: any) => ({ ...prev, betaInfinityAI: !prev.betaInfinityAI }));
+                    }}
+                    title={stats.betaInfinityAI ? 'Infinity AI: Enabled' : 'Infinity AI: Disabled'}
+                  >
+                    <div 
+                      className={`w-5 h-5 flex items-center justify-center font-mono font-bold text-[10px] transition-all transform ${
+                        stats.betaInfinityAI 
+                          ? 'translate-x-[26px] bg-white text-[#1a1a1a]' 
+                          : 'translate-x-0 bg-[#1a1a1a] text-white'
+                      }`}
+                    >
+                      {stats.betaInfinityAI ? 'ON' : 'OFF'}
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
 
               <div className="admin-section">
                 <h4>Tutorial</h4>
@@ -3942,21 +4285,21 @@ Do not say you cannot do it; always provide a recipe.`;
           {chaosEvent === 'gravity' && (
             <div className="absolute inset-0 bg-blue-900/10 pointer-events-none animate-pulse">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-500 text-white px-4 py-1 rounded-full font-bold uppercase tracking-widest animate-bounce shadow-[0_0_15px_rgba(59,130,246,0.8)]">
-                ⚠️ ¡Fuga de Gravedad!
+                ⚠️ Gravity Leak!
               </div>
             </div>
           )}
           {chaosEvent === 'fire' && (
             <div className="absolute inset-0 bg-orange-900/10 pointer-events-none animate-pulse">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-4 py-1 rounded-full font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(249,115,22,0.8)]">
-                🔥 ¡Fuego en la Cocina! (Apágalos)
+                🔥 Kitchen Fire! (Put it out)
               </div>
             </div>
           )}
-          {chaosEvent === 'slimes' && (
+          {chaosEvent === 'virus' && (
             <div className="absolute inset-0 bg-green-900/10 pointer-events-none animate-pulse">
               <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(34,197,94,0.8)]">
-                🦠 ¡Invasión de Limos! (Aplastarlos)
+                🦠 Viral Outbreak! (Eradicate)
               </div>
             </div>
           )}
@@ -3964,7 +4307,7 @@ Do not say you cannot do it; always provide a recipe.`;
           {chaosItems.map(item => (
             <div 
               key={item.id}
-              className={`absolute pointer-events-auto cursor-crosshair transform transition-transform hover:scale-110 active:scale-90 ${chaosEvent === 'slimes' ? 'animate-bounce' : 'animate-pulse'}`}
+              className={`absolute pointer-events-auto cursor-crosshair transform transition-transform hover:scale-110 active:scale-90 ${chaosEvent === 'virus' ? 'animate-bounce' : 'animate-pulse'}`}
               style={{ left: `${item.x}%`, top: `${item.y}%`, fontSize: '3rem' }}
               onClick={() => {
                 soundService.playClick();
