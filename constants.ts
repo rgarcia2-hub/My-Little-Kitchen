@@ -337,6 +337,54 @@ export const SHOP_ITEMS: ShopItem[] = [
 
 export const UPGRADES: Upgrade[] = [
   {
+    id: 'pin_easy',
+    name: 'Memory Module: Basic',
+    description: 'Allows pinning Easy difficulty recipe instructions to the screen.',
+    emoji: '📍',
+    cost: 500,
+    effect: 'pin_easy'
+  },
+  {
+    id: 'pin_intermediate',
+    name: 'Memory Module: Advanced',
+    description: 'Allows pinning Intermediate difficulty recipes. (Requires Basic)',
+    emoji: '📌',
+    cost: 1500,
+    effect: 'pin_intermediate',
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('pin_easy'),
+    requirementText: 'Requires: Memory Module: Basic'
+  },
+  {
+    id: 'pin_difficult',
+    name: 'Memory Module: Expert',
+    description: 'Allows pinning Difficult difficulty recipes. (Requires Advanced)',
+    emoji: '📎',
+    cost: 4000,
+    effect: 'pin_difficult',
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('pin_intermediate'),
+    requirementText: 'Requires: Memory Module: Advanced'
+  },
+  {
+    id: 'pin_nightmare',
+    name: 'Memory Module: Nightmare',
+    description: 'Allows pinning Nightmare difficulty recipes. (Requires Expert)',
+    emoji: '🧠',
+    cost: 12000,
+    effect: 'pin_nightmare',
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('pin_difficult'),
+    requirementText: 'Requires: Memory Module: Expert'
+  },
+  {
+    id: 'pin_chromatic',
+    name: 'Memory Module: Chromatic',
+    description: 'Allows pinning Chromatic difficulty recipes. (Requires Nightmare)',
+    emoji: '🌌',
+    cost: 30000,
+    effect: 'pin_chromatic',
+    condition: (stats) => (stats.purchasedUpgrades || []).includes('pin_nightmare'),
+    requirementText: 'Requires: Memory Module: Nightmare'
+  },
+  {
     id: 'hazard_shield_1',
     name: 'Hazard Protocol Tier 1',
     description: 'Reduces the probability of disasters (Fire, Gravity, Virus) by 50%.',

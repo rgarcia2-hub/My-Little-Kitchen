@@ -4,6 +4,8 @@
 */
 
 import { MusicPlayer } from './src/components/MusicPlayer';
+import { StandalonePolicyPage, PolicyRoute } from './src/components/StandalonePolicyPage';
+import { RewardedAdModal, RewardType } from './src/components/RewardedAdModal';
 
 /**
  * Copyright 2024 Google LLC
@@ -23,7 +25,7 @@ import { MusicPlayer } from './src/components/MusicPlayer';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Lightbulb, LogOut, Coffee, Heart, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock, FlaskConical } from "lucide-react";
+import { Lightbulb, LogOut, Coffee, Heart, Copy, CheckCircle2, Camera, Upload, Trash2, Edit3, Palette, Target, TrendingUp, Coins, Award, Zap, Activity, Info, Database, RotateCcw, ShoppingBag, Bot, Cpu, Search, Lock, FlaskConical, Pin } from "lucide-react";
 import "./App.css";
 import { GeminiAPIProvider, useGeminiAPIContext } from "./gemini/contexts/GeminiAPIContext";
 import GeminiDebug from "./gemini/components/GeminiDebug";
@@ -764,10 +766,11 @@ function Leaderboard({ data, isLoading, onClose }: LeaderboardProps) {
                       <span className={`row-rank font-bold w-6 text-center ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-gray-600'}`}>
                         #{index + 1}
                       </span>
-                      <div className="row-avatar text-2xl">
+                      <div className="row-avatar text-2xl relative">
                         {u.profileImage ? (
-                          <img src={u.profileImage} alt="avatar" className="w-8 h-8 rounded-full border border-[#333]" />
+                          <img src={u.profileImage} alt="avatar" className="w-8 h-8 rounded-full border border-[#333] object-cover" />
                         ) : '👨‍🍳'}
+                        <StreakFlame streak={u.streak || 0} size={18} className="absolute -bottom-1 -right-1" />
                       </div>
                       <div className="row-info flex flex-col">
                         <span className="row-name font-bold text-gray-200">
@@ -883,19 +886,43 @@ interface OrderCardProps {
   onPickUp: (orderId: string) => void;
   onCookWithGemini: (orderName: string) => void;
   onOpenVerificationAgent?: () => void;
+  onDeleteOrder?: (id: string) => void;
+  canDelete?: boolean;
 }
 
-function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent }: OrderCardProps) {
+function OrderCard({ order, isDisabled, isHighlighted, onPickUp, onCookWithGemini, onOpenVerificationAgent, onDeleteOrder, canDelete }: OrderCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const statusClass = order.status === 'completed' ? 'completed' :
     order.status === 'failed' ? 'failed' :
       order.status === 'in_progress' ? 'in-progress' : 'not-started';
 
   const difficultyClass = order.difficulty ? `difficulty-${order.difficulty}` : '';
-
   const rarityClass = order.rarity ? `rarity-${order.rarity}` : '';
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canDelete || !onDeleteOrder || isDeleting) return;
+    setIsDeleting(true);
+    soundService.playTear();
+    setTimeout(() => {
+      onDeleteOrder(order.id);
+    }, 450);
+  };
+
   return (
-    <div className={`order-card ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass}`}>
+    <div className={`order-card group ${statusClass} ${isDisabled ? 'disabled' : ''} ${isHighlighted ? 'tutorial-highlight' : ''} ${rarityClass} ${isDeleting ? 'animate-paper-tear' : ''}`}>
+      {onDeleteOrder && (
+        <button
+          type="button"
+          className={`order-trash-btn ${!canDelete ? 'disabled' : ''}`}
+          onClick={handleDelete}
+          disabled={!canDelete}
+          title={canDelete ? "Eliminar pedido" : "No se puede eliminar: se requiere un mínimo de 5 pedidos (disponible con 6 o más)"}
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
       {order.difficulty && (
         <div className={`order-difficulty ${difficultyClass}`}>
           {order.difficulty === 'chromatic' || order.rarity === 'chromatic' ? 'Chromatic' : order.difficulty}
@@ -1015,6 +1042,8 @@ interface BetaOrdersConsoleProps {
   onCookWithGemini: (orderName: string) => void;
   onOpenVerificationAgent?: () => void;
   onAddOrder: (orderName: string) => void;
+  onDeleteOrder?: (id: string) => void;
+  canDelete?: boolean;
 }
 
 function BetaOrdersConsole({
@@ -1028,9 +1057,12 @@ function BetaOrdersConsole({
   onCookWithGemini,
   onOpenVerificationAgent,
   onAddOrder,
+  onDeleteOrder,
+  canDelete
 }: BetaOrdersConsoleProps) {
   const [filter, setFilter] = useState<'all' | 'in_progress' | 'pending'>('all');
   const [newOrderInput, setNewOrderInput] = useState('');
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
 
   const hasInProgressOrder = orders.some(o => o.status === 'in_progress');
 
@@ -1039,6 +1071,16 @@ function BetaOrdersConsole({
     if (filter === 'pending') return o.status === 'not_started';
     return true;
   });
+
+  const handleDelete = (orderId: string) => {
+    if (!canDelete || !onDeleteOrder || deletingOrderId) return;
+    setDeletingOrderId(orderId);
+    soundService.playTear();
+    setTimeout(() => {
+      onDeleteOrder(orderId);
+      setDeletingOrderId(null);
+    }, 450);
+  };
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1129,11 +1171,11 @@ function BetaOrdersConsole({
                 isInProgress
                   ? 'bg-[#fffde7] border-[#1a1a1a] shadow-[4px_4px_0px_#1a1a1a]'
                   : 'bg-white border-[#1a1a1a] shadow-[2px_2px_0px_#1a1a1a] hover:shadow-[3px_3px_0px_#1a1a1a]'
-              } ${isDisabled ? 'opacity-50 grayscale' : ''}`}
+              } ${isDisabled ? 'opacity-50 grayscale' : ''} ${deletingOrderId === order.id ? 'animate-paper-tear' : ''}`}
             >
               {/* Ticket Top Header */}
               <div>
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-gray-200 pb-1.5 mb-2">
+                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-gray-200 pb-1.5 mb-2 pr-7">
                   <span className="text-gray-500">Ticket #{String(idx + 1).padStart(3, '0')}</span>
                   {order.difficulty && (
                     <span className="bg-[#f0f0f0] border border-[#1a1a1a] px-1.5 py-0.5 text-[#1a1a1a] text-[10px] font-bold uppercase">
@@ -1141,6 +1183,18 @@ function BetaOrdersConsole({
                     </span>
                   )}
                 </div>
+
+                {onDeleteOrder && (
+                  <button
+                    type="button"
+                    className={`order-trash-btn ${!canDelete ? 'disabled' : ''}`}
+                    onClick={() => handleDelete(order.id)}
+                    disabled={!canDelete}
+                    title={canDelete ? "Eliminar pedido" : "No se puede eliminar: se requiere un mínimo de 5 pedidos (disponible con 6 o más)"}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
 
                 {/* Ticket Body */}
                 <div className="flex items-center gap-2.5 my-1">
@@ -1669,6 +1723,9 @@ interface RecipeStepsDisplayProps {
   adsDisabled?: boolean;
   proPlan?: boolean;
   godTier?: boolean;
+  isPinned?: boolean;
+  onTogglePin?: () => void;
+  canPin?: boolean;
 }
 
 function RecipeStepsDisplay({ 
@@ -1680,7 +1737,10 @@ function RecipeStepsDisplay({
   difficulty, 
   adsDisabled,
   proPlan,
-  godTier
+  godTier,
+  isPinned,
+  onTogglePin,
+  canPin
 }: RecipeStepsDisplayProps) {
   const isProtected = difficulty === 'difficult' || difficulty === 'nightmare';
   const [isBlackedOut, setIsBlackedOut] = useState(false);
@@ -1715,7 +1775,7 @@ function RecipeStepsDisplay({
   }, [isProtected]);
 
   return (
-    <div className={`recipe-steps-overlay ${isProtected ? 'protected-mode' : ''}`}>
+    <div className={`recipe-steps-overlay ${isProtected ? 'protected-mode' : ''} ${isPinned ? 'pinned' : ''}`}>
       <div className={`recipe-steps-modal ${isBlackedOut ? 'blacked-out' : ''}`}>
         {isBlackedOut && isProtected && (
           <div className="blackout-shield">
@@ -1732,7 +1792,12 @@ function RecipeStepsDisplay({
             <h3 className="recipe-steps-title">Cooking Guide: {orderName}</h3>
             <p className="recipe-steps-subtitle">Follow these steps using the tools and ingredients below</p>
           </div>
-          <div className="recipe-steps-header-actions">
+          <div className="recipe-steps-header-actions flex items-center gap-2">
+            {canPin && onTogglePin && (
+              <button onClick={onTogglePin} className={`recipe-steps-close ${isPinned ? 'bg-white text-black' : ''}`} title={isPinned ? "Unpin recipe" : "Pin recipe to screen"}>
+                <Pin size={16} />
+              </button>
+            )}
             <button onClick={onClose} className="recipe-steps-close">✕</button>
           </div>
         </div>
@@ -1828,6 +1893,7 @@ interface CombinationAgentProps {
   onOpenCombinationAgent: () => void;
   onOpenCookingAgent: () => void;
   onOpenVerificationAgent: () => void;
+  onDeleteOrder?: (id: string) => void;
   activeIngredients: Set<string>;
   setActiveIngredients: React.Dispatch<React.SetStateAction<Set<string>>>;
   isCooking: boolean;
@@ -1974,6 +2040,7 @@ function CombinationAgent({
   onOpenCombinationAgent,
   onOpenCookingAgent,
   onOpenVerificationAgent,
+  onDeleteOrder,
   activeIngredients,
   setActiveIngredients,
   isCooking,
@@ -2122,6 +2189,65 @@ function CombinationAgent({
   
   const [showAnnoucement, setShowAnnouncement] = useState(false);
   const [showNewsFeed, setShowNewsFeed] = useState(false);
+  const [showRewardedAdModal, setShowRewardedAdModal] = useState(false);
+
+  // Router functions for mylittlekitchen.fun standalone pages
+  const getRouteFromPath = (path: string): PolicyRoute | 'game' => {
+    const clean = path.toLowerCase().replace(/^\/+|\/+$/g, '');
+    if (['sobre-el-juego', 'about', 'sobre'].includes(clean)) return 'about';
+    if (['como-jugar', 'how-to-play', 'guia', 'manual'].includes(clean)) return 'how-to-play';
+    if (['contacto', 'developer', 'contact', 'desarrollador'].includes(clean)) return 'developer';
+    if (['politica-privacidad', 'privacidad', 'privacy', 'politicas'].includes(clean)) return 'privacy';
+    if (['terminos-y-cookies', 'terminos', 'terms', 'cookies'].includes(clean)) return 'terms-cookies';
+    return 'game';
+  };
+
+  const getPathForRoute = (route: PolicyRoute | 'game'): string => {
+    if (route === 'game') return '/';
+    if (route === 'about') return '/sobre-el-juego';
+    if (route === 'how-to-play') return '/como-jugar';
+    if (route === 'developer') return '/contacto';
+    if (route === 'privacy') return '/politica-privacidad';
+    if (route === 'terms-cookies') return '/terminos-y-cookies';
+    return '/';
+  };
+
+  const [currentRoute, setCurrentRoute] = useState<PolicyRoute | 'game'>(() => {
+    if (typeof window !== 'undefined') {
+      return getRouteFromPath(window.location.pathname);
+    }
+    return 'game';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentRoute(getRouteFromPath(window.location.pathname));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (route: PolicyRoute | 'game') => {
+    soundService.playClick();
+    const path = getPathForRoute(route);
+    if (window.location.pathname !== path) {
+      window.history.pushState(null, '', path);
+    }
+    setCurrentRoute(route);
+  };
+
+  const handleGrantReward = (type: RewardType, amount: number) => {
+    if (type === 'coins') {
+      setStats((prev: any) => ({ ...prev, money: (prev.money || 0) + amount }));
+      addTerminalLog(`[REWARD] +${amount} monedas recibidas por patrocinio opcional.`);
+    } else if (type === 'hint') {
+      setStats((prev: any) => ({ ...prev, recipeHints: (prev.recipeHints || 0) + amount }));
+      addTerminalLog(`[REWARD] +${amount} pista de receta desbloqueada.`);
+    } else if (type === 'xp') {
+      setStats((prev: any) => ({ ...prev, xp: (prev.xp || 0) + amount }));
+      addTerminalLog(`[REWARD] +${amount} XP añadidos a tu nivel.`);
+    }
+  };
   const [activeNewsId, setActiveNewsId] = useState<string | null>(null);
   const [fameDonationAmount, setFameDonationAmount] = useState('1000');
   const [selectedAdminOrderName, setSelectedAdminOrderName] = useState(EXAMPLE_ORDERS[0]?.name || '');
@@ -2371,12 +2497,11 @@ function CombinationAgent({
     });
   }, [setConfig]);
 
-  // Announcement Widget
+  // Compliant Announcement check (no automatic intrusive modal popups on game start)
   useEffect(() => {
-    // Check if announcement was already acknowledged
-    const acknowledged = localStorage.getItem('announcementAck_v1');
-    if (!acknowledged) {
-      setTimeout(() => setShowAnnouncement(true), 1500);
+    // Keep acknowledged state clean
+    if (!localStorage.getItem('announcementAck_v1')) {
+      localStorage.setItem('announcementAck_v1', 'true');
     }
   }, []);
 
@@ -2647,6 +2772,28 @@ Do not say you cannot do it; always provide a recipe.`;
               if (applicableTitle) newTitle = applicableTitle.name;
             }
 
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            let newStreak = prev.streak || 0;
+            const lastActive = prev.lastActiveDay;
+
+            if (lastActive !== todayStr) {
+              if (!lastActive) {
+                newStreak = 1;
+              } else {
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                if (lastActive === yesterdayStr) {
+                  newStreak += 1;
+                } else {
+                  newStreak = 1;
+                }
+              }
+            } else if (newStreak <= 0) {
+              newStreak = 1;
+            }
+
             return {
               ...prev,
               completedOrders: prev.completedOrders + 1,
@@ -2657,6 +2804,8 @@ Do not say you cannot do it; always provide a recipe.`;
               xp: newXP,
               level: newLevel,
               title: newTitle,
+              streak: newStreak,
+              lastActiveDay: todayStr,
               purchasedUpgrades: newPurchasedUpgrades,
               credits: newCredits
             };
@@ -3300,6 +3449,26 @@ Do not say you cannot do it; always provide a recipe.`;
 
   // currentFame is defined above in the component body
 
+  if (currentRoute !== 'game') {
+    return (
+      <div className="app-container">
+        <div className="kitchen-app">
+          <StandalonePolicyPage
+            currentRoute={currentRoute}
+            onNavigate={navigateTo}
+            onOpenRewardedAds={() => setShowRewardedAdModal(true)}
+          />
+          <RewardedAdModal
+            isOpen={showRewardedAdModal}
+            onClose={() => setShowRewardedAdModal(false)}
+            onGrantReward={handleGrantReward}
+          />
+          <MusicPlayer />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`kitchen-app ${chaosEvent === 'gravity' ? 'animate-[float_3s_ease-in-out_infinite]' : ''}`}>
       {/* Page Title */}
@@ -3324,6 +3493,12 @@ Do not say you cannot do it; always provide a recipe.`;
               <div className="money-display-bar" title="In-game cash">
                 <span className="money-icon">💰</span>
                 <span className="money-amount">${stats.money}</span>
+              </div>
+
+              <div className="streak-display-bar" title={`Racha diaria: ${stats.streak || 0} día(s)`}>
+                <span className="streak-icon animate-pulse">🔥</span>
+                <span className="streak-amount">{stats.streak || 0}</span>
+                <span className="streak-label">RACHA</span>
               </div>
               
               <div className="level-status-card">
@@ -3407,13 +3582,36 @@ Do not say you cannot do it; always provide a recipe.`;
               📡
             </button>
 
+            <button
+              className="leaderboard-btn-header flex items-center gap-1 text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border-2 border-[#141414] shadow-[2px_2px_0px_#141414] font-black cursor-pointer"
+              onClick={() => {
+                soundService.playClick();
+                setShowRewardedAdModal(true);
+              }}
+              title="Recompensas Opcionales Patrocinadas (Google Ad Certified)"
+            >
+              <span>🎁</span>
+              <span className="hidden md:inline text-[11px] font-black tracking-tight font-mono">RECOMPENSA</span>
+            </button>
+
+            <button
+              className="leaderboard-btn-header flex items-center gap-1 text-slate-900 bg-amber-100 hover:bg-amber-200 border-2 border-[#141414] shadow-[2px_2px_0px_#141414] font-black cursor-pointer"
+              onClick={() => {
+                navigateTo('about');
+              }}
+              title="Guía de Cocina, Desarrollador, Términos y Privacidad (mylittlekitchen.fun)"
+            >
+              <span>ℹ️</span>
+              <span className="hidden md:inline text-[11px] font-black tracking-tight font-mono">GUÍA/LEGAL</span>
+            </button>
+
             <button 
               className="user-profile-btn-top"
               onClick={() => {
                 setShowSkipModal(true);
               }}
             >
-              <div className="profile-btn-content">
+              <div className="profile-btn-content relative">
                 {stats.profileImage || user.photoURL ? (
                   <img src={stats.profileImage || user.photoURL} alt="Profile" className="user-avatar object-cover" referrerPolicy="no-referrer" />
                 ) : (
@@ -3421,6 +3619,7 @@ Do not say you cannot do it; always provide a recipe.`;
                     {user.displayName?.[0] || user.email?.[0] || '?'}
                   </div>
                 )}
+                <StreakFlame streak={stats.streak || 0} size={14} className="absolute -bottom-1 -right-1" />
               </div>
             </button>
           </div>
@@ -3789,6 +3988,8 @@ Do not say you cannot do it; always provide a recipe.`;
             onCookWithGemini={onCookWithGemini}
             onOpenVerificationAgent={onOpenVerificationAgent}
             onAddOrder={onAddOrder}
+            onDeleteOrder={onDeleteOrder}
+            canDelete={orders.length > 5}
           />
         ) : (
           <>
@@ -3822,6 +4023,8 @@ Do not say you cannot do it; always provide a recipe.`;
                     isDisabled={hasInProgressOrder && order.status === 'not_started'}
                     isHighlighted={tutorialStep === 2 && order.name === 'Fried Eggs'}
                     onPickUp={onPickUp}
+                    onDeleteOrder={onDeleteOrder}
+                    canDelete={orders.length > 5}
                     onCookWithGemini={onCookWithGemini}
                     onOpenVerificationAgent={onOpenVerificationAgent}
                   />
@@ -3866,6 +4069,7 @@ Do not say you cannot do it; always provide a recipe.`;
                             {user.displayName?.[0] || user.email?.[0] || '?'}
                           </div>
                         )}
+                        <StreakFlame streak={stats.streak || 0} size={28} className="absolute -bottom-2 -right-2" />
                         <button 
                           className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white rounded-none border-none cursor-pointer"
                           onClick={() => fileInputRef.current?.click()}
@@ -4067,6 +4271,64 @@ Do not say you cannot do it; always provide a recipe.`;
                 </div>
               </div>
             </div>
+
+              <div className="admin-section">
+                <h4>Guía, Información & Legal (mylittlekitchen.fun)</h4>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button 
+                    className="admin-action-btn flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      setShowSkipModal(false);
+                      navigateTo('about');
+                    }}
+                  >
+                    <span>ℹ️</span>
+                    <span>Sobre el Juego</span>
+                  </button>
+                  <button 
+                    className="admin-action-btn flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      setShowSkipModal(false);
+                      navigateTo('how-to-play');
+                    }}
+                  >
+                    <span>📖</span>
+                    <span>Cómo Jugar</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <button 
+                    className="admin-action-btn flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      setShowSkipModal(false);
+                      navigateTo('privacy');
+                    }}
+                  >
+                    <span>🛡️</span>
+                    <span>Privacidad</span>
+                  </button>
+                  <button 
+                    className="admin-action-btn flex items-center justify-center gap-1.5"
+                    onClick={() => {
+                      setShowSkipModal(false);
+                      navigateTo('terms-cookies');
+                    }}
+                  >
+                    <span>📜</span>
+                    <span>Términos & Cookies</span>
+                  </button>
+                </div>
+                <button 
+                  className="admin-action-btn w-full flex items-center justify-center gap-1.5"
+                  onClick={() => {
+                    setShowSkipModal(false);
+                    navigateTo('developer');
+                  }}
+                >
+                  <span>✉️</span>
+                  <span>Contacto & Desarrollador</span>
+                </button>
+              </div>
 
               <div className="admin-section">
                 <h4>Tutorial</h4>
@@ -4868,6 +5130,16 @@ Do not say you cannot do it; always provide a recipe.`;
           adsDisabled={stats.adsDisabled}
           proPlan={stats.proPlan}
           godTier={stats.godTier}
+          isPinned={isRecipePinned}
+          onTogglePin={() => setIsRecipePinned(!isRecipePinned)}
+          canPin={
+            stats.godTier || 
+            (currentOrder.difficulty === 'easy' && (stats.purchasedUpgrades || []).includes('pin_easy')) ||
+            (currentOrder.difficulty === 'intermediate' && (stats.purchasedUpgrades || []).includes('pin_intermediate')) ||
+            (currentOrder.difficulty === 'difficult' && (stats.purchasedUpgrades || []).includes('pin_difficult')) ||
+            (currentOrder.difficulty === 'nightmare' && (stats.purchasedUpgrades || []).includes('pin_nightmare')) ||
+            (currentOrder.difficulty === 'chromatic' && (stats.purchasedUpgrades || []).includes('pin_chromatic'))
+          }
         />
       )}
 
@@ -5373,6 +5645,86 @@ Do not say you cannot do it; always provide a recipe.`;
           </div>
         </div>
       )}
+
+      {/* Global Footer (KitchenOS / mylittlekitchen.fun Hub) */}
+      <footer className="autochef-global-footer">
+        <div className="autochef-footer-container">
+          <div className="autochef-footer-top">
+            <div className="autochef-footer-brand">
+              <span className="autochef-footer-logo">🍳</span>
+              <div>
+                <div className="autochef-footer-title">My Little Kitchen</div>
+                <div className="autochef-footer-desc">KITCHEN_OS // Simulador Gastronómico con IA Gemini & Alquimia Culinaria</div>
+              </div>
+            </div>
+
+            <nav className="autochef-footer-nav" aria-label="Enlaces informativos del juego">
+              <button 
+                type="button"
+                className="autochef-footer-link"
+                onClick={() => navigateTo('about')}
+              >
+                ℹ️ Sobre el Juego
+              </button>
+              <button 
+                type="button"
+                className="autochef-footer-link"
+                onClick={() => navigateTo('how-to-play')}
+              >
+                📖 Cómo Jugar
+              </button>
+              <button 
+                type="button"
+                className="autochef-footer-link"
+                onClick={() => navigateTo('developer')}
+              >
+                ✉️ Desarrollador & Contacto
+              </button>
+              <button 
+                type="button"
+                className="autochef-footer-link"
+                onClick={() => navigateTo('privacy')}
+              >
+                🛡️ Política de Privacidad
+              </button>
+              <button 
+                type="button"
+                className="autochef-footer-link"
+                onClick={() => navigateTo('terms-cookies')}
+              >
+                📜 Términos & Cookies
+              </button>
+              <button 
+                type="button"
+                className="autochef-footer-link reward-link"
+                onClick={() => {
+                  soundService.playClick();
+                  setShowRewardedAdModal(true);
+                }}
+              >
+                🎁 Recompensas Opcionales
+              </button>
+            </nav>
+          </div>
+
+          <div className="autochef-footer-bottom">
+            <div>
+              © 2026 My Little Kitchen (mylittlekitchen.fun) • KitchenOS Interactive Labs. Todos los derechos reservados.
+            </div>
+            <div className="google-policy-badge">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span>Google Ad Policies Verified • Sin Anuncios Invasivos</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {/* Rewarded Ads Modal */}
+      <RewardedAdModal
+        isOpen={showRewardedAdModal}
+        onClose={() => setShowRewardedAdModal(false)}
+        onGrantReward={handleGrantReward}
+      />
     </div>
   );
 }
@@ -5621,7 +5973,7 @@ function CookingAgent({
               emoji: newIngredient.emoji,
               rarity: newIngredient.rarity || 'mythic'
             };
-            console.log(`[ALQUIMIA] ¡Descubrimiento Mítico por AutoChef! ${newIngredient.name}`);
+            console.log(`[ALQUIMIA] ¡Descubrimiento Mítico en KitchenOS! ${newIngredient.name}`);
           }
 
           setStats((prev: any) => ({
@@ -5912,6 +6264,28 @@ function VerificationAgent({
                 }
               }
 
+              const now = new Date();
+              const todayStr = now.toISOString().split('T')[0];
+              let newStreak = prev.streak || 0;
+              const lastActive = prev.lastActiveDay;
+
+              if (lastActive !== todayStr) {
+                if (!lastActive) {
+                  newStreak = 1;
+                } else {
+                  const yesterday = new Date(now);
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  const yesterdayStr = yesterday.toISOString().split('T')[0];
+                  if (lastActive === yesterdayStr) {
+                    newStreak += 1;
+                  } else {
+                    newStreak = 1;
+                  }
+                }
+              } else if (newStreak <= 0) {
+                newStreak = 1;
+              }
+
               return {
                 ...prev,
                 completedOrders: prev.completedOrders + 1,
@@ -5922,6 +6296,8 @@ function VerificationAgent({
                 xp: newXP,
                 level: newLevel,
                 title: newTitle,
+                streak: newStreak,
+                lastActiveDay: todayStr,
                 purchasedUpgrades: newPurchasedUpgrades,
                 maxConfidence: Math.max(prev.maxConfidence || 0, finalConfidence),
                 completedDishes: prev.completedDishes?.includes(order.name) 
@@ -6095,6 +6471,8 @@ function KitchenAppContainer({ user }: { user: User }) {
   const [stats, setStats] = useState({
     completedOrders: 0,
     money: 0,
+    streak: 0,
+    lastActiveDay: null as string | null,
     discoveredIngredients: STARTING_INGREDIENTS.length,
     usedToolsCount: 0,
     usedTools: [] as string[],
@@ -6225,7 +6603,14 @@ function KitchenAppContainer({ user }: { user: User }) {
           const localSaved = localStorage.getItem(storageKey);
           if (localSaved) {
             const data = JSON.parse(localSaved);
-            if (data.stats) setStats(prev => ({ ...prev, ...data.stats }));
+            if (data.stats) {
+              const restoredStats = { ...data.stats };
+              if ((restoredStats.completedOrders || 0) > 0 && (!restoredStats.streak || restoredStats.streak <= 0)) {
+                restoredStats.streak = 1;
+                restoredStats.lastActiveDay = new Date().toISOString().split('T')[0];
+              }
+              setStats(prev => ({ ...prev, ...restoredStats }));
+            }
             if (data.unlockedAchievements) setUnlockedAchievements(data.unlockedAchievements);
             if (data.completedRecipes) setCompletedRecipes(data.completedRecipes);
             if (data.tutorialStep !== undefined) setTutorialStep(data.tutorialStep);
@@ -6249,6 +6634,10 @@ function KitchenAppContainer({ user }: { user: User }) {
           if (docSnap && docSnap.exists()) {
             const data = docSnap.data();
             const loadedStats = { ...stats, ...(data.stats || {}) };
+            if ((loadedStats.completedOrders || 0) > 0 && (!loadedStats.streak || loadedStats.streak <= 0)) {
+              loadedStats.streak = 1;
+              loadedStats.lastActiveDay = new Date().toISOString().split('T')[0];
+            }
             
             if (isAdminUser) {
               setStats({ ...loadedStats, proPlan: true, godTier: true, musicPass: true });
@@ -6457,15 +6846,43 @@ function KitchenAppContainer({ user }: { user: User }) {
       
       if (result) {
         soundService.playSuccess();
+        
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+
         // Update stats and challenges
-        setStats((prev: any) => ({
-          ...prev,
-          money: prev.money + 50, // Base reward for success
-          dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
-            c.type === 'orders' ? { ...c, current: c.current + 1 } :
-            c.type === 'money' ? { ...c, current: c.current + 50 } : c
-          )
-        }));
+        setStats((prev: any) => {
+          let newStreak = prev.streak || 0;
+          let lastActive = prev.lastActiveDay;
+
+          if (lastActive !== todayStr) {
+            if (!lastActive) {
+              newStreak = 1;
+            } else {
+              const lastActiveDate = new Date(lastActive);
+              const yesterday = new Date(now);
+              yesterday.setDate(yesterday.getDate() - 1);
+              const yesterdayStr = yesterday.toISOString().split('T')[0];
+              
+              if (lastActive === yesterdayStr) {
+                newStreak += 1;
+              } else {
+                newStreak = 1; // Skipped a day
+              }
+            }
+          }
+
+          return {
+            ...prev,
+            money: prev.money + 50, // Base reward for success
+            streak: newStreak,
+            lastActiveDay: todayStr,
+            dailyChallenges: (prev.dailyChallenges || []).map((c: any) => 
+              c.type === 'orders' ? { ...c, current: c.current + 1 } :
+              c.type === 'money' ? { ...c, current: c.current + 50 } : c
+            )
+          };
+        });
       } else {
         soundService.playError();
       }
@@ -6476,6 +6893,10 @@ function KitchenAppContainer({ user }: { user: User }) {
     setIsCooking(false);
     return false;
   }, [setInventory, setStats]);
+
+  const handleDeleteOrder = useCallback((orderId: string) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+  }, []);
 
   // Callback for adding a new custom order
   const handleAddOrder = useCallback((orderName: string) => {
@@ -6644,6 +7065,7 @@ function KitchenAppContainer({ user }: { user: User }) {
       {/* Combination Agent (Layer 1) - for manual cooking */}
       <GeminiAPIProvider>
         <CombinationAgent
+          onDeleteOrder={handleDeleteOrder}
           inventory={inventory}
           setInventory={setInventory}
           selectedIngredients={selectedIngredients}
@@ -6895,6 +7317,7 @@ function KitchenAppContainer({ user }: { user: User }) {
                     selectedChefForProfile.discordStatus === 'idle' ? 'status-idle' :
                     selectedChefForProfile.discordStatus === 'dnd' ? 'status-dnd' : 'status-offline'
                   }`} />
+                  <StreakFlame streak={selectedChefForProfile.streak || 0} size={28} className="absolute -bottom-2 -left-2" />
                 </div>
                 
                 {/* Details */}
@@ -7085,6 +7508,21 @@ function KitchenAppContainer({ user }: { user: User }) {
           window.open(`https://buy.stripe.com/fZu7sM2oB6x206tgQ3f3a00?client_reference_id=${user.uid}`, '_blank');
         }} 
       />
+    </div>
+  );
+}
+
+
+function StreakFlame({ streak, size = 20, className = "" }: { streak: number, size?: number, className?: string }) {
+  if (!streak || streak <= 0) return null;
+  return (
+    <div className={`relative flex items-center justify-center ${className}`} style={{ width: size, height: size }}>
+      <div className="absolute inset-0 text-[#ff4444] flex items-center justify-center animate-[pulse_2s_ease-in-out_infinite]" style={{ filter: 'drop-shadow(0 0 4px rgba(255, 68, 68, 0.8))' }}>
+        <svg viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor">
+          <path d="M17.66 11.2C17.43 10.9 17.15 10.64 16.89 10.38C16.22 9.78 15.46 9.35 14.82 8.72C13.33 7.26 12.81 5.04 13.56 3.11C13.62 2.95 13.65 2.77 13.59 2.62C13.52 2.47 13.38 2.37 13.23 2.34C13.06 2.31 12.89 2.35 12.76 2.44C10.15 4.3 8.87 7.42 9.4 10.5C9.44 10.74 9.35 10.99 9.17 11.14C8.98 11.29 8.71 11.33 8.49 11.21C7.8 10.82 7.21 10.23 6.78 9.54C6.67 9.37 6.47 9.27 6.27 9.29C6.07 9.31 5.9 9.44 5.81 9.61C4.44 12.18 4.7 15.34 6.44 17.66C7.62 19.24 9.51 20.31 11.58 20.57C11.96 20.62 12.35 20.65 12.75 20.65C15.04 20.65 17.2 19.64 18.66 17.91C20.25 16.03 20.61 13.4 19.62 11.13C19.52 10.92 19.33 10.79 19.1 10.79C18.88 10.79 18.67 10.92 18.57 11.12C18.33 11.55 18.02 11.94 17.66 11.2Z" />
+        </svg>
+      </div>
+      <span className="absolute z-10 font-black text-white" style={{ fontSize: size * 0.45, marginTop: size * 0.15 }}>{streak > 99 ? '99+' : streak}</span>
     </div>
   );
 }

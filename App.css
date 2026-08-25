@@ -2915,8 +2915,8 @@ input:-webkit-autofill:active {
 }
 
 .recipe-steps-modal {
-  background: var(--bg-primary);
-  border: 4px solid var(--border-color);
+  background: var(--os-bg);
+  border: 4px solid var(--os-border);
   width: 100%;
   max-width: 600px;
   max-height: 85vh;
@@ -2933,6 +2933,7 @@ input:-webkit-autofill:active {
   max-height: 60vh;
   box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.2);
   opacity: 0.95;
+  pointer-events: auto;
 }
 
 .recipe-steps-overlay.pinned .recipe-steps-modal:hover {
@@ -2942,8 +2943,8 @@ input:-webkit-autofill:active {
 
 .recipe-steps-header {
   padding: 20px;
-  border-bottom: 4px solid var(--border-color);
-  background: var(--accent-color);
+  border-bottom: 4px solid var(--os-border);
+  background: var(--os-primary);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -2974,7 +2975,7 @@ input:-webkit-autofill:active {
 
 .recipe-steps-pin.active {
   background: white;
-  color: var(--accent-color);
+  color: var(--os-primary);
 }
 
 /* ============================================================================
@@ -3227,7 +3228,7 @@ input:-webkit-autofill:active {
   display: flex;
   gap: 15px;
   background: white;
-  border: 2px solid var(--border-color);
+  border: 2px solid var(--os-border);
   padding: 15px;
   position: relative;
 }
@@ -3239,7 +3240,7 @@ input:-webkit-autofill:active {
   left: 30px;
   width: 2px;
   height: 10px;
-  background: var(--border-color);
+  background: var(--os-border);
 }
 
 .recipe-step-item:last-child::after {
@@ -3286,7 +3287,7 @@ input:-webkit-autofill:active {
 }
 
 .step-arrow {
-  color: var(--accent-color);
+  color: var(--os-primary);
   font-weight: bold;
 }
 
@@ -3309,17 +3310,17 @@ input:-webkit-autofill:active {
 }
 
 .final-step {
-  border-color: var(--accent-color);
+  border-color: var(--os-primary);
   background: #fff8f0;
 }
 
 .final-step .step-number {
-  background: var(--accent-color);
+  background: var(--os-primary);
 }
 
 .recipe-steps-footer {
   padding: 15px 20px;
-  border-top: 4px solid var(--border-color);
+  border-top: 4px solid var(--os-border);
   display: flex;
   justify-content: flex-end;
 }
@@ -3336,7 +3337,7 @@ input:-webkit-autofill:active {
 }
 
 .recipe-steps-done:hover {
-  background: var(--accent-color);
+  background: var(--os-primary);
   transform: translate(-2px, -2px);
   box-shadow: 4px 4px 0 black;
 }
@@ -8536,3 +8537,245 @@ input:checked + .os-slider:before {
   border-color: rgba(255, 255, 255, 0.4) !important;
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.2) inset !important;
 }
+
+.recipe-steps-overlay.pinned .recipe-steps-header {
+  padding: 12px;
+}
+.recipe-steps-overlay.pinned .recipe-steps-header-text {
+  flex: 1;
+  min-width: 0;
+  margin-right: 12px;
+}
+.recipe-steps-overlay.pinned .recipe-steps-title {
+  font-size: 1.1rem;
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.2;
+}
+.recipe-steps-overlay.pinned .recipe-steps-subtitle {
+  display: none;
+}
+
+@keyframes paperTear {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+  20% {
+    transform: scale(1.03) rotate(-3deg) translateY(-2px);
+    opacity: 0.95;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,0.25));
+  }
+  45% {
+    transform: scale(0.95) rotate(5deg) translateY(25px) skewX(8deg);
+    opacity: 0.75;
+    clip-path: polygon(0% 0%, 100% 0%, 96% 85%, 82% 100%, 65% 88%, 45% 100%, 25% 90%, 0% 100%);
+  }
+  100% {
+    transform: scale(0.55) translateY(120px) rotate(-18deg) skewX(15deg);
+    opacity: 0;
+    filter: drop-shadow(0 20px 15px rgba(0,0,0,0.35));
+  }
+}
+
+.animate-paper-tear {
+  animation: paperTear 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+  pointer-events: none !important;
+  z-index: 50 !important;
+}
+
+.order-trash-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  border: 1.5px solid #1a1a1a;
+  color: #555555;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 25;
+  transition: all 0.15s ease;
+  box-shadow: 1px 1px 0px #1a1a1a;
+  padding: 0;
+}
+
+.order-trash-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #dc2626;
+  box-shadow: 2px 2px 0px #dc2626;
+  transform: translateY(-1px);
+}
+
+.order-trash-btn:disabled,
+.order-trash-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: #f0f0f0;
+  color: #aaaaaa;
+  border-color: #cccccc;
+  box-shadow: none;
+}
+
+.streak-display-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 2px solid #1a1a1a;
+  box-shadow: 2px 2px 0px #1a1a1a;
+  padding: 4px 10px;
+  height: 38px;
+  border-radius: 0px;
+}
+
+.streak-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.streak-amount {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ff3b30;
+  font-family: monospace;
+}
+
+.streak-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #666666;
+  letter-spacing: 0.5px;
+}
+
+/* KitchenOS Global Footer & Policy Navigation */
+.autochef-global-footer {
+  margin-top: 40px;
+  padding: 20px;
+  background: #ffffff;
+  border: 2px solid #141414;
+  color: #141414;
+  font-family: inherit;
+  box-shadow: 4px 4px 0px #141414;
+}
+
+.autochef-footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.autochef-footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #141414;
+}
+
+.autochef-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.autochef-footer-logo {
+  font-size: 28px;
+}
+
+.autochef-footer-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #141414;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-family: monospace, sans-serif;
+}
+
+.autochef-footer-desc {
+  font-size: 11px;
+  color: #555555;
+  font-weight: 600;
+}
+
+.autochef-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.autochef-footer-link {
+  background: #ffffff;
+  border: 2px solid #141414;
+  color: #141414;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #141414;
+  transition: all 0.1s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.autochef-footer-link:hover {
+  color: #000000;
+  background: #fef08a;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px #141414;
+}
+
+.autochef-footer-link:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0px #141414;
+}
+
+.autochef-footer-link.reward-link {
+  background: #d1fae5;
+  border: 2px solid #141414;
+  color: #065f46;
+}
+
+.autochef-footer-link.reward-link:hover {
+  background: #a7f3d0;
+  color: #042f2e;
+}
+
+.autochef-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: #555555;
+  font-family: monospace;
+}
+
+.google-policy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #f0fdf4;
+  border: 2px solid #141414;
+  color: #166534;
+  font-weight: 800;
+  font-size: 10px;
+  box-shadow: 2px 2px 0px #141414;
+}
+

@@ -4,12 +4,17 @@ class SoundService {
   private synth: Tone.PolySynth;
   private clickSynth: Tone.MembraneSynth;
   private successSynth: Tone.PolySynth;
+  private noiseSynth: Tone.NoiseSynth;
   private isInitialized: boolean = false;
 
   constructor() {
     this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
     this.clickSynth = new Tone.MembraneSynth().toDestination();
     this.successSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+    this.noiseSynth = new Tone.NoiseSynth({
+      noise: { type: 'pink' },
+      envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.2 }
+    }).toDestination();
     
     // Set some retro characteristics
     this.synth.set({
@@ -64,6 +69,14 @@ class SoundService {
     });
   }
   
+  public async playTear() {
+    await this.initialize();
+    this.noiseSynth.triggerAttackRelease('8n');
+    const now = Tone.now();
+    this.synth.triggerAttackRelease('E2', '32n', now, 0.15);
+    this.synth.triggerAttackRelease('G2', '32n', now + 0.04, 0.15);
+  }
+
   public async playDiscover() {
     await this.initialize();
     const now = Tone.now();
