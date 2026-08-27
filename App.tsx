@@ -85,105 +85,105 @@ const COSMETICS_LIST = [
   {
     id: 'banner_discord',
     type: 'banner',
-    name: 'Clásico Culinario',
+    name: 'Culinary Classic',
     price: 0,
-    desc: 'El color azul representativo de nuestra propia cocina.',
+    desc: 'The representative blue color of our own kitchen.',
     style: { bg: '#2563eb' }
   },
   {
     id: 'banner_neon',
     type: 'banner',
-    name: 'Luces de Neón',
+    name: 'Neon Lights',
     price: 80,
-    desc: 'Un gradiente cibernético animado con destellos.',
+    desc: 'An animated cybernetic gradient with sparkles.',
     style: { bg: 'linear-gradient(135deg, #ff007f, #7f00ff, #00f0ff)' }
   },
   {
     id: 'banner_sakura',
     type: 'banner',
-    name: 'Pétalos de Sakura',
+    name: 'Sakura Petals',
     price: 100,
-    desc: 'Suaves tonos pastel rosados estilo cerezo en flor.',
+    desc: 'Soft pink pastel tones cherry blossom style.',
     style: { bg: 'linear-gradient(120deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%)' }
   },
   {
     id: 'banner_cosmic',
     type: 'banner',
-    name: 'Nebulosa Cósmica',
+    name: 'Cosmic Nebula',
     price: 150,
-    desc: 'Fondo espacial profundo con estrellas brillantes.',
+    desc: 'Deep space background with bright stars.',
     style: { bg: 'linear-gradient(220deg, #0d1b2a, #1b263b, #415a77)' }
   },
   {
     id: 'banner_gold',
     type: 'banner',
-    name: 'Resplandor Dorado',
+    name: 'Golden Glow',
     price: 200,
-    desc: 'Prestigio dorado de lujo para chefs consolidados.',
+    desc: 'Luxury gold prestige for established chefs.',
     style: { bg: 'linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7)' }
   },
   {
     id: 'banner_matrix',
     type: 'banner',
-    name: 'Código Hacker Matrix',
+    name: 'Matrix Hacker Code',
     price: 180,
-    desc: 'Líneas cayendo en cascada en tu terminal de cocina.',
+    desc: 'Cascading green lines in your kitchen terminal.',
     style: { bg: 'linear-gradient(180deg, #0f0c20, #001a00, #050d05)' }
   },
   {
     id: 'border_none',
     type: 'border',
-    name: 'Sin Decoración',
+    name: 'No Decoration',
     price: 0,
-    desc: 'Borde limpio, estilo clásico.',
+    desc: 'Clean border, classic style.',
     className: ''
   },
   {
     id: 'border_gaming',
     type: 'border',
-    name: 'Chroma Gamer RGB',
+    name: 'RGB Gaming Chroma',
     price: 120,
-    desc: 'Un aro con luces RGB rotatorias súper fluidas.',
+    desc: 'A ring with super fluid rotating RGB lights.',
     className: 'border-gaming-chroma'
   },
   {
     id: 'border_cute',
     type: 'border',
-    name: 'Orejas de Gato Pink',
+    name: 'Pink Cat Ears',
     price: 100,
-    desc: 'Adorables orejitas de gato rosadas colocadas sobre tu avatar.',
+    desc: 'Adorable pink cat ears placed over your avatar.',
     className: 'border-cute-cat'
   },
   {
     id: 'border_fire',
     type: 'border',
-    name: 'Corona de Fuego Brutal',
+    name: 'Brutal Fire Crown',
     price: 150,
-    desc: 'Aro envuelto en llamas intensas animadas.',
+    desc: 'Ring wrapped in animated intense flames.',
     className: 'border-fire-ring'
   },
   {
     id: 'border_frost',
     type: 'border',
-    name: 'Cristal de Escarcha',
+    name: 'Frost Crystal',
     price: 150,
-    desc: 'Un helado marco de hielo ártico resplandeciente.',
+    desc: 'A glowing arctic ice frame.',
     className: 'border-frost-crystals'
   },
   {
     id: 'border_gold',
     type: 'border',
-    name: 'Corona Real de Oro',
+    name: 'Royal Gold Crown',
     price: 220,
-    desc: 'Borde áureo enjoyado con la máxima suntuosidad.',
+    desc: 'Jeweled golden border with maximum sumptuousness.',
     className: 'border-gold-crown'
   },
   {
     id: 'border_early',
     type: 'border',
-    name: 'Gorra de Cocinero',
+    name: 'Chef Hat',
     price: 80,
-    desc: 'Una preciosa gorrita de cocinero decorativa.',
+    desc: 'A beautiful decorative chef hat.',
     className: 'border-chef-hat'
   },
   {
@@ -191,7 +191,7 @@ const COSMETICS_LIST = [
     type: 'badge',
     name: 'Chef Booster VIP',
     price: 100,
-    desc: 'La codiciada insignia del rayo rosa por tu pasión en la cocina (suscripción ficticia para tu perfil).',
+    desc: 'The coveted pink lightning badge for your passion in the kitchen.',
     className: ''
   }
 ];
@@ -339,7 +339,7 @@ interface TutorialStep {
 const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 1,
-    text: "¡Bienvenido a My Little Kitchen! El objetivo del juego es gestionar tu cocina y servir deliciosos platos usando Inteligencia Artificial. Aquí arriba tienes el panel de 'ACTIVE REQUESTS' (Pedidos Activos).",
+    text: "Welcome to My Little Kitchen! The goal of the game is to manage your kitchen and serve delicious dishes using Artificial Intelligence. Above you have the 'ActiveRequests' panel.",
     highlightId: 'orders-panel',
     targetType: 'other',
     targetName: 'orders-panel',
@@ -347,7 +347,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 2,
-    text: "Empecemos aceptando el pedido más sencillo para ganar tus primeras monedas. Haz clic en el botón 'Start' en el pedido de 'Fried Eggs' (Huevos fritos).",
+    text: "Let's start by accepting the simplest order to earn your first coins. Click the 'Start' button on the 'Fried Eggs' order.",
     highlightId: 'order-1',
     targetType: 'order',
     targetName: 'Fried Eggs',
@@ -355,7 +355,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 3,
-    text: "¡Genial! Ahora tienes un pedido en curso. Si alguna vez no sabes cómo se hace una receta, pregúntale a la IA de Gemini. Haz clic en 'Get Steps' (el icono amarillo de la bombilla).",
+    text: "Great! Now you have an order in progress. If you ever don't know how a recipe is made, ask the Gemini AI. Click 'GetSteps' (the yellow bulb icon).",
     highlightId: 'get-steps',
     targetType: 'other',
     targetName: 'get-steps',
@@ -363,7 +363,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 4,
-    text: "La IA te ha dado las instrucciones (míralas arriba). Este es tu 'INVENTORY' (Inventario). Aquí guardas tus ingredientes. Selecciona los ingredientes que la IA te ha dicho haciendo clic sobre ellos.",
+    text: "The AI has given you the instructions (look at them above). This is your 'Inventory'. Here you store your ingredients. Select the ingredients the AI told you by clicking on them.",
     highlightId: 'inventory',
     targetType: 'other',
     targetName: 'inventory',
@@ -371,7 +371,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 5,
-    text: "A la derecha del inventario están las 'PROCESSING ACTIONS' (Acciones). Una vez seleccionados los ingredientes correctos, haz clic en la acción correspondiente (Cook, Prep, etc.) para crear el plato 'Fried Eggs'.",
+    text: "To the right of the inventory are the 'ProcessingActions'. Once the correct ingredients are selected, click the corresponding action (Cook, Prep, etc.) to create the 'Fried Eggs' dish.",
     highlightId: 'actions-panel',
     targetType: 'other',
     targetName: 'actions-panel',
@@ -379,7 +379,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 6,
-    text: "¡Has cocinado tu primer plato! Ahora debes servirlo. Una vez que tienes el plato terminado en tu inventario, selecciónalo y pulsa el botón verde grande 'SERVE' (Servir) arriba del todo.",
+    text: "You've cooked your first dish! Now you must serve it. Once you have the finished dish in your inventory, select it and press the big green 'SERVE' button at the top.",
     highlightId: 'serve',
     targetType: 'action',
     targetName: 'serve',
@@ -387,7 +387,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 7,
-    text: "¡Excelente! Has completado el pedido, ganando monedas y experiencia. Finalmente, abajo del todo tienes 'KITCHEN_OS_SYSTEM_CONTROL'. Son los módulos del juego (IA, Mejoras, Retos y Mercado).",
+    text: "Excellent! You've completed the order, earning coins and experience. Finally, at the very bottom you have 'KitchenControl'. These are the game modules (LogicCore, SkillChips, Protocols, and Marketplace).",
     highlightId: 'system-control',
     targetType: 'other',
     targetName: 'system-control',
@@ -395,7 +395,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 8,
-    text: "En el MARKETPLACE comprarás nuevos ingredientes básicos, y en SKILL_CHIPS podrás mejorar tu nivel de cocina. ¡Ya estás listo! Descubre recetas con la IA y conviértete en el mejor chef.",
+    text: "In Marketplace you will buy new basic ingredients, and in SkillChips you can improve your cooking level. You're ready! Discover recipes with the AI and become the best chef.",
     highlightId: 'system-control',
     targetType: 'other',
     targetName: 'system-control',
@@ -458,12 +458,12 @@ function DailyChallenges({
       <div className="challenges-header">
         <div className="header-left">
           <Award size={18} className="text-[#1a1a1a]" />
-          <h3 className="header-title">DAILY_PROTOCOLS</h3>
+          <h3 className="header-title">DailyProtocols</h3>
         </div>
         <div className="header-actions">
           <div className="header-status mr-4">
             <span className="live-dot"></span>
-            ACTIVE_SESSION
+            ActiveSession
           </div>
           <button 
             className="os-btn-mini" 
@@ -507,16 +507,16 @@ function DailyChallenges({
                     {challenge.completed ? (
                       <span className="status-badge completed">
                         <CheckCircle2 size={10} />
-                        SYNC_SUCCESS
+                        SyncSuccess
                       </span>
                     ) : isReady ? (
                       <span className="status-badge ready">
                         <TrendingUp size={10} />
-                        READY_FOR_EXTRACTION
+                        ReadyForExtraction
                       </span>
                     ) : (
                       <span className="status-badge pending">
-                        PROCESSING_{Math.floor(progress)}%
+                        Processing{Math.floor(progress)}%
                       </span>
                     )}
                   </div>
@@ -555,7 +555,7 @@ function DailyChallenges({
                       onClick={() => onClaim(challenge.id, challenge.reward)}
                     >
                       <Zap size={14} className="mr-2" />
-                      <span>INITIALIZE_REWARD_TRANSFER</span>
+                      <span>InitializeRewardTransfer</span>
                     </motion.button>
                   )}
                 </div>
@@ -2194,21 +2194,21 @@ function CombinationAgent({
   // Router functions for mylittlekitchen.fun standalone pages
   const getRouteFromPath = (path: string): PolicyRoute | 'game' => {
     const clean = path.toLowerCase().replace(/^\/+|\/+$/g, '');
-    if (['sobre-el-juego', 'about', 'sobre'].includes(clean)) return 'about';
-    if (['como-jugar', 'how-to-play', 'guia', 'manual'].includes(clean)) return 'how-to-play';
-    if (['contacto', 'developer', 'contact', 'desarrollador'].includes(clean)) return 'developer';
-    if (['politica-privacidad', 'privacidad', 'privacy', 'politicas'].includes(clean)) return 'privacy';
-    if (['terminos-y-cookies', 'terminos', 'terms', 'cookies'].includes(clean)) return 'terms-cookies';
+    if (['aboutsystem', 'about', 'sobre', 'sobre-el-juego'].includes(clean)) return 'about';
+    if (['howtoplay', 'how-to-play', 'guia', 'manual', 'como-jugar'].includes(clean)) return 'how-to-play';
+    if (['contactdev', 'developer', 'contact', 'desarrollador', 'contacto'].includes(clean)) return 'developer';
+    if (['privacypolicy', 'privacidad', 'privacy', 'politicas', 'politica-privacidad'].includes(clean)) return 'privacy';
+    if (['termscookies', 'terminos', 'terms', 'cookies', 'terminos-y-cookies'].includes(clean)) return 'terms-cookies';
     return 'game';
   };
 
   const getPathForRoute = (route: PolicyRoute | 'game'): string => {
     if (route === 'game') return '/';
-    if (route === 'about') return '/sobre-el-juego';
-    if (route === 'how-to-play') return '/como-jugar';
-    if (route === 'developer') return '/contacto';
-    if (route === 'privacy') return '/politica-privacidad';
-    if (route === 'terms-cookies') return '/terminos-y-cookies';
+    if (route === 'about') return '/aboutSystem';
+    if (route === 'how-to-play') return '/howToPlay';
+    if (route === 'developer') return '/contactDev';
+    if (route === 'privacy') return '/privacyPolicy';
+    if (route === 'terms-cookies') return '/termsCookies';
     return '/';
   };
 
@@ -3471,9 +3471,10 @@ Do not say you cannot do it; always provide a recipe.`;
 
   return (
     <div className={`kitchen-app ${chaosEvent === 'gravity' ? 'animate-[float_3s_ease-in-out_infinite]' : ''}`}>
-      {/* Page Title */}
+      {/* KitchenOS Header */}
       <div className="kitchen-header">
-        <div className="header-content-wrapper max-w-7xl mx-auto px-4">
+        <div className="header-content-wrapper">
+          {/* Brand Identity */}
           <div className="header-left">
             {isSuperAdmin && debugMode ? (
               <h1 className="kitchen-title" style={{ color: '#ff4444', textShadow: '0 0 10px rgba(255, 68, 68, 0.5)' }}>Debug Mode</h1>
@@ -3488,20 +3489,15 @@ Do not say you cannot do it; always provide a recipe.`;
             )}
           </div>
           
+          {/* Stats & Progress */}
           <div className="header-center">
             <div className="stats-group">
-              <div className="money-display-bar" title="In-game cash">
+              <div className="money-display-bar" title="Dinero en caja">
                 <span className="money-icon">💰</span>
                 <span className="money-amount">${stats.money}</span>
               </div>
-
-              <div className="streak-display-bar" title={`Racha diaria: ${stats.streak || 0} día(s)`}>
-                <span className="streak-icon animate-pulse">🔥</span>
-                <span className="streak-amount">{stats.streak || 0}</span>
-                <span className="streak-label">RACHA</span>
-              </div>
               
-              <div className="level-status-card">
+              <div className="level-status-card" title={`Nivel ${stats.level || 1} • ${Math.floor(stats.xp || 0)} / ${nextLevelXP} XP`}>
                 <div className="level-badge-mini">
                   <span className="level-mini-label">LVL</span>
                   <span className="level-val">{stats.level || 1}</span>
@@ -3524,35 +3520,40 @@ Do not say you cannot do it; always provide a recipe.`;
             </div>
           </div>
 
+          {/* Action Quickbar */}
           <div className="header-right">
             <button 
               className="leaderboard-btn-header"
               onClick={() => {
+                if ((user as any).isGuest) {
+                  soundService.playError();
+                  alert("GUEST_ACCESS_DENIED: Ranking is restricted to registered chefs.");
+                  return;
+                }
                 const currentLevel = stats.level || 1;
                 if (currentLevel < 5) {
+                  soundService.playError();
                   setShowLevelError(true);
                 } else if (!stats.leaderboardOptIn) {
+                  soundService.playModalOpen();
                   setShowLeaderboardOptIn(true);
                 } else {
+                  soundService.playModalOpen();
                   fetchLeaderboard();
                   setIsLeaderboardOpen(true);
                 }
               }}
-              title="View Leaderboard"
+              title="Chef Ranking (Level 5+)"
             >
               🏆
             </button>
 
-            <button 
-              className={`leaderboard-btn-header fame-btn ${(stats.level >= 80 || (stats.fameDonated || 0) > 0) ? 'fame-unlocked' : 'fame-locked'}`}
-              onClick={() => {
-                if (stats.level < 80 && (stats.fameDonated || 0) <= 0) {
-                  soundService.playError();
-                  setShowFameLevelError(true);
-                } else {
-                  soundService.playClick();
+            {(stats.level >= 80 || (stats.fameDonated || 0) > 0) && (
+              <button 
+                className="leaderboard-btn-header fame-btn fame-unlocked bg-amber-100"
+                onClick={() => {
+                  soundService.playModalOpen();
                   setIsFameTerminalOpen(true);
-                  // Initialize boot sequence
                   setTerminalLogs([]);
                   const bootLogs = [
                     "> INITIALIZING FAME_PROTOCOL_V2...",
@@ -3567,49 +3568,53 @@ Do not say you cannot do it; always provide a recipe.`;
                       soundService.playType();
                     }, (i + 1) * 400);
                   });
-                }
-              }}
-              title={(stats.level >= 80 || (stats.fameDonated || 0) > 0) ? "Fame Terminal" : "Level 80 Required"}
-            >
-              ✨
-            </button>
+                }}
+                title="Terminal de Fama"
+              >
+                ✨
+              </button>
+            )}
 
             <button 
               className="leaderboard-btn-header news-btn-archive"
-              onClick={() => setShowNewsFeed(true)}
-              title="System News"
+              onClick={() => {
+                soundService.playModalOpen();
+                setShowNewsFeed(true);
+              }}
+              title="Kitchen News & Updates"
             >
               📡
             </button>
 
             <button
-              className="leaderboard-btn-header flex items-center gap-1 text-emerald-800 bg-emerald-100 hover:bg-emerald-200 border-2 border-[#141414] shadow-[2px_2px_0px_#141414] font-black cursor-pointer"
+              className="leaderboard-btn-header bg-[#d1fae5] hover:bg-[#a7f3d0] text-emerald-900 border-2 border-[#141414] shadow-[2px_2px_0px_#141414] font-black cursor-pointer"
               onClick={() => {
-                soundService.playClick();
+                soundService.playModalOpen();
                 setShowRewardedAdModal(true);
               }}
-              title="Recompensas Opcionales Patrocinadas (Google Ad Certified)"
+              title="Free Rewards (Coins, Hints, XP)"
             >
-              <span>🎁</span>
-              <span className="hidden md:inline text-[11px] font-black tracking-tight font-mono">RECOMPENSA</span>
+              🎁
             </button>
 
             <button
-              className="leaderboard-btn-header flex items-center gap-1 text-slate-900 bg-amber-100 hover:bg-amber-200 border-2 border-[#141414] shadow-[2px_2px_0px_#141414] font-black cursor-pointer"
+              className="leaderboard-btn-header bg-[#fef9c3] hover:bg-[#fef08a] text-black border-2 border-[#141414] shadow-[2px_2px_0px_#141414] font-black cursor-pointer"
               onClick={() => {
+                soundService.playTabSwitch();
                 navigateTo('about');
               }}
-              title="Guía de Cocina, Desarrollador, Términos y Privacidad (mylittlekitchen.fun)"
+              title="Cooking Guide, Developer, Terms & Privacy"
             >
-              <span>ℹ️</span>
-              <span className="hidden md:inline text-[11px] font-black tracking-tight font-mono">GUÍA/LEGAL</span>
+              📜
             </button>
 
             <button 
               className="user-profile-btn-top"
               onClick={() => {
+                soundService.playModalOpen();
                 setShowSkipModal(true);
               }}
+              title={`Perfil de Chef • Racha: ${stats.streak || 0} días`}
             >
               <div className="profile-btn-content relative">
                 {stats.profileImage || user.photoURL ? (
@@ -4798,31 +4803,43 @@ Do not say you cannot do it; always provide a recipe.`;
           <div className="console-tabs">
             <button 
               className={`console-tab ${activeTab === 'ai' ? 'active' : ''}`}
-              onClick={() => setActiveTab('ai')}
+              onClick={() => {
+                if (activeTab !== 'ai') soundService.playTabSwitch();
+                setActiveTab('ai');
+              }}
             >
               <Bot size={12} />
-              <span>LOGIC_CORE</span>
+              <span>LogicCore</span>
             </button>
             <button 
               className={`console-tab ${activeTab === 'chips' ? 'active' : ''}`}
-              onClick={() => setActiveTab('chips')}
+              onClick={() => {
+                if (activeTab !== 'chips') soundService.playTabSwitch();
+                setActiveTab('chips');
+              }}
             >
               <Cpu size={12} />
-              <span>SKILL_CHIPS</span>
+              <span>SkillChips</span>
             </button>
             <button 
               className={`console-tab ${activeTab === 'protocols' ? 'active' : ''}`}
-              onClick={() => setActiveTab('protocols')}
+              onClick={() => {
+                if (activeTab !== 'protocols') soundService.playTabSwitch();
+                setActiveTab('protocols');
+              }}
             >
               <Zap size={12} />
-              <span>PROTOCOLS</span>
+              <span>Protocols</span>
             </button>
             <button 
               className={`console-tab ${activeTab === 'market' ? 'active' : ''}`}
-              onClick={() => setActiveTab('market')}
+              onClick={() => {
+                if (activeTab !== 'market') soundService.playTabSwitch();
+                setActiveTab('market');
+              }}
             >
               <ShoppingBag size={12} />
-              <span>MARKETPLACE</span>
+              <span>Marketplace</span>
             </button>
           </div>
         </div>
@@ -5646,79 +5663,6 @@ Do not say you cannot do it; always provide a recipe.`;
         </div>
       )}
 
-      {/* Global Footer (KitchenOS / mylittlekitchen.fun Hub) */}
-      <footer className="autochef-global-footer">
-        <div className="autochef-footer-container">
-          <div className="autochef-footer-top">
-            <div className="autochef-footer-brand">
-              <span className="autochef-footer-logo">🍳</span>
-              <div>
-                <div className="autochef-footer-title">My Little Kitchen</div>
-                <div className="autochef-footer-desc">KITCHEN_OS // Simulador Gastronómico con IA Gemini & Alquimia Culinaria</div>
-              </div>
-            </div>
-
-            <nav className="autochef-footer-nav" aria-label="Enlaces informativos del juego">
-              <button 
-                type="button"
-                className="autochef-footer-link"
-                onClick={() => navigateTo('about')}
-              >
-                ℹ️ Sobre el Juego
-              </button>
-              <button 
-                type="button"
-                className="autochef-footer-link"
-                onClick={() => navigateTo('how-to-play')}
-              >
-                📖 Cómo Jugar
-              </button>
-              <button 
-                type="button"
-                className="autochef-footer-link"
-                onClick={() => navigateTo('developer')}
-              >
-                ✉️ Desarrollador & Contacto
-              </button>
-              <button 
-                type="button"
-                className="autochef-footer-link"
-                onClick={() => navigateTo('privacy')}
-              >
-                🛡️ Política de Privacidad
-              </button>
-              <button 
-                type="button"
-                className="autochef-footer-link"
-                onClick={() => navigateTo('terms-cookies')}
-              >
-                📜 Términos & Cookies
-              </button>
-              <button 
-                type="button"
-                className="autochef-footer-link reward-link"
-                onClick={() => {
-                  soundService.playClick();
-                  setShowRewardedAdModal(true);
-                }}
-              >
-                🎁 Recompensas Opcionales
-              </button>
-            </nav>
-          </div>
-
-          <div className="autochef-footer-bottom">
-            <div>
-              © 2026 My Little Kitchen (mylittlekitchen.fun) • KitchenOS Interactive Labs. Todos los derechos reservados.
-            </div>
-            <div className="google-policy-badge">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-              <span>Google Ad Policies Verified • Sin Anuncios Invasivos</span>
-            </div>
-          </div>
-        </div>
-      </footer>
-
       {/* Rewarded Ads Modal */}
       <RewardedAdModal
         isOpen={showRewardedAdModal}
@@ -6067,6 +6011,7 @@ interface VerificationAgentProps {
   setCurrentOrderSteps: React.Dispatch<React.SetStateAction<{tool: string, ingredients: string[], result: string}[]>>;
   generateDivineImage: (dishName: string) => Promise<void>;
   setChromaticMinigameOrder: React.Dispatch<React.SetStateAction<{order: Order, servedEmoji: string, reward: number} | null>>;
+  user: any;
 }
 
 function VerificationAgent({
@@ -6081,6 +6026,7 @@ function VerificationAgent({
   setCurrentOrderSteps,
   generateDivineImage,
   setChromaticMinigameOrder,
+  user,
 }: VerificationAgentProps) {
   const { generateContent, setConfig } = useGeminiAPIContext();
 
@@ -6232,7 +6178,7 @@ function VerificationAgent({
             setStats((prev: any) => {
               const gainedXP = XP_PER_DIFFICULTY[order.difficulty] || 20;
               const newXP = (prev.xp || 0) + gainedXP;
-              const newLevel = getLevelFromXP(newXP);
+              let newLevel = getLevelFromXP(newXP);
               const leveledUp = newLevel > (prev.level || 1);
               
               let newMoney = (prev.money || 0) + reward;
@@ -6247,7 +6193,13 @@ function VerificationAgent({
               };
               const orderCredits = difficultyToCredits[order.difficulty] || 20;
               const lvlUpCredits = leveledUp ? (newLevel * 25) : 0;
-              const newCredits = (prev.credits || 0) + orderCredits + lvlUpCredits;
+              let newCredits = (prev.credits || 0) + orderCredits + lvlUpCredits;
+
+              if ((user as any)?.isGuest) {
+                newLevel = Math.min(newLevel, 3);
+                newMoney = Math.min(newMoney, 500);
+                newCredits = Math.min(newCredits, 100);
+              }
 
               if (leveledUp) {
                 newMoney += newLevel * 100;
@@ -7203,6 +7155,7 @@ function KitchenAppContainer({ user }: { user: User }) {
           setCurrentOrderSteps={setCurrentOrderSteps}
           generateDivineImage={generateDivineImage}
           setChromaticMinigameOrder={setChromaticMinigameOrder}
+          user={user}
         />
         <GeminiDebug
           agentName="Judge Agent"
@@ -7532,12 +7485,14 @@ function StreakFlame({ streak, size = 20, className = "" }: { streak: number, si
 // ============================================================================
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+      if (user) {
+        setUser(user);
+      }
       setLoading(false);
     });
     return unsubscribe;
@@ -7552,7 +7507,7 @@ function App() {
   }
 
   if (!user) {
-    return <AuthScreen />;
+    return <AuthScreen onAuthSuccess={setUser} />;
   }
 
   return (

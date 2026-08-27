@@ -25,6 +25,7 @@ import {
   FileText
 } from 'lucide-react';
 import { soundService } from '../services/soundService';
+import { GoogleAdSenseSlot } from './GoogleAdSenseSlot';
 
 export type PolicyRoute = 'about' | 'how-to-play' | 'developer' | 'privacy' | 'terms-cookies';
 
@@ -60,11 +61,11 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
 
   const getUrlPath = (route: PolicyRoute) => {
     switch (route) {
-      case 'about': return 'mylittlekitchen.fun/sobre-el-juego';
-      case 'how-to-play': return 'mylittlekitchen.fun/como-jugar';
-      case 'developer': return 'mylittlekitchen.fun/contacto';
-      case 'privacy': return 'mylittlekitchen.fun/politica-privacidad';
-      case 'terms-cookies': return 'mylittlekitchen.fun/terminos-y-cookies';
+      case 'about': return 'mylittlekitchen.fun/aboutSystem';
+      case 'how-to-play': return 'mylittlekitchen.fun/howToPlay';
+      case 'developer': return 'mylittlekitchen.fun/contactDev';
+      case 'privacy': return 'mylittlekitchen.fun/privacyPolicy';
+      case 'terms-cookies': return 'mylittlekitchen.fun/termsCookies';
     }
   };
 
@@ -157,7 +158,7 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
 
           <button
             onClick={() => {
-              soundService.playClick();
+              soundService.playTabSwitch();
               onNavigate('about');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase border-2 transition-all cursor-pointer ${
@@ -172,7 +173,7 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
 
           <button
             onClick={() => {
-              soundService.playClick();
+              soundService.playTabSwitch();
               onNavigate('how-to-play');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase border-2 transition-all cursor-pointer ${
@@ -187,7 +188,7 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
 
           <button
             onClick={() => {
-              soundService.playClick();
+              soundService.playTabSwitch();
               onNavigate('developer');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase border-2 transition-all cursor-pointer ${
@@ -202,7 +203,7 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
 
           <button
             onClick={() => {
-              soundService.playClick();
+              soundService.playTabSwitch();
               onNavigate('privacy');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase border-2 transition-all cursor-pointer ${
@@ -217,7 +218,7 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
 
           <button
             onClick={() => {
-              soundService.playClick();
+              soundService.playTabSwitch();
               onNavigate('terms-cookies');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black uppercase border-2 transition-all cursor-pointer ${
@@ -233,7 +234,7 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
       </div>
 
       {/* 3. MAIN CONTENT CONTAINER */}
-      <div className="space-y-6">
+      <div key={currentRoute} className="space-y-6 animate-[tabSwitchFade_0.18s_cubic-bezier(0.16,1,0.3,1)]">
 
         {/* ======================================================== */}
         {/* ROUTE 1: SOBRE EL JUEGO (mylittlekitchen.fun/sobre-el-juego) */}
@@ -915,6 +916,19 @@ export function StandalonePolicyPage({ currentRoute, onNavigate, onOpenRewardedA
           </div>
         )}
 
+      </div>
+
+      {/* Google AdSense Slot Container */}
+      <div className="mt-8 bg-white border-2 border-[#141414] shadow-[4px_4px_0px_#141414] p-4 overflow-hidden">
+        <div className="text-[10px] font-mono font-bold text-gray-500 uppercase tracking-wider mb-2">
+          ESPACIO PUBLICITARIO // GOOGLE ADSENSE
+        </div>
+        <GoogleAdSenseSlot 
+          id="google-adsense-policy-bottom"
+          adSlot="7391663215396578"
+          height={120}
+          title="Google AdSense Banner Slot"
+        />
       </div>
 
       {/* 4. FOOTER (KitchenOS Console Footer) */}

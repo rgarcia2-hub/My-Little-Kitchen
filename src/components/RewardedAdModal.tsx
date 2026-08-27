@@ -15,6 +15,7 @@ import {
   ChefHat
 } from 'lucide-react';
 import { soundService } from '../services/soundService';
+import { GoogleAdSenseSlot } from './GoogleAdSenseSlot';
 
 export type RewardType = 'coins' | 'hint' | 'xp';
 
@@ -29,6 +30,12 @@ export function RewardedAdModal({ isOpen, onClose, onGrantReward }: RewardedAdMo
   const [isPlayingAd, setIsPlayingAd] = useState(false);
   const [adCountdown, setAdCountdown] = useState(5);
   const [adCompleted, setAdCompleted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      soundService.playModalOpen();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -71,11 +78,14 @@ export function RewardedAdModal({ isOpen, onClose, onGrantReward }: RewardedAdMo
 
   return (
     <div 
-      className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px] animate-fade-in"
-      onClick={onClose}
+      className="fixed inset-0 z-[20000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-[2px] transition-all animate-[kitchenOverlayFade_0.16s_ease-out]"
+      onClick={() => {
+        soundService.playModalClose();
+        onClose();
+      }}
     >
       <div 
-        className="relative w-full max-w-lg bg-white border-2 border-[#141414] text-[#141414] shadow-[8px_8px_0px_#141414] overflow-hidden font-mono"
+        className="relative w-full max-w-lg bg-white border-2 border-[#141414] text-[#141414] shadow-[8px_8px_0px_#141414] overflow-hidden font-mono animate-[kitchenModalPop_0.18s_cubic-bezier(0.16,1,0.3,1)]"
         onClick={e => e.stopPropagation()}
       >
         {/* KitchenOS Terminal Header */}
@@ -90,11 +100,11 @@ export function RewardedAdModal({ isOpen, onClose, onGrantReward }: RewardedAdMo
           </div>
           <button
             onClick={() => {
-              soundService.playClick();
+              soundService.playModalClose();
               handleReset();
               onClose();
             }}
-            className="w-6 h-6 bg-white hover:bg-red-500 hover:text-white text-black font-black text-xs border border-black flex items-center justify-center transition-all cursor-pointer"
+            className="w-6 h-6 bg-white hover:bg-red-500 hover:text-white text-black font-black text-xs border border-black flex items-center justify-center transition-all cursor-pointer active:scale-95"
           >
             ✕
           </button>
@@ -121,39 +131,39 @@ export function RewardedAdModal({ isOpen, onClose, onGrantReward }: RewardedAdMo
         {/* Content Body */}
         <div className="p-6 bg-white">
           {isPlayingAd ? (
-            /* AD PLAYER SCREEN (5s Compliant Retro Player) */
-            <div className="space-y-4 text-center py-2 animate-fade-in">
-              <div className="relative w-full h-48 bg-[#141414] border-2 border-[#141414] flex flex-col items-center justify-center p-6 text-white shadow-inner overflow-hidden">
-                
-                <div className="absolute top-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 bg-[#222] border border-gray-700 text-[10px] text-emerald-400 font-mono">
-                  <ShieldCheck size={12} className="text-emerald-400" />
-                  <span>Google Ads Partner Verified</span>
+            /* AD PLAYER SCREEN (Google AdSense Slot Container) */
+            <div className="space-y-4 text-center py-1 animate-fade-in">
+              <div className="flex items-center justify-between px-1 text-xs font-mono">
+                <div className="flex items-center gap-1 text-[11px] text-gray-700 font-bold">
+                  <ShieldCheck size={14} className="text-emerald-600" />
+                  <span>Google AdSense Slot</span>
                 </div>
-
-                <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 bg-[#fef08a] text-black border border-black text-xs font-black font-mono">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[#fef08a] text-black border border-black text-xs font-black font-mono shadow-[1px_1px_0px_#000]">
                   <Clock size={12} strokeWidth={3} />
                   <span>0:0{adCountdown}s</span>
                 </div>
-
-                <div className="text-4xl mb-2 animate-bounce">📺</div>
-                <div className="text-sm font-black tracking-wider uppercase text-white">
-                  Reproduciendo Anuncio Patrocinado
-                </div>
-                <div className="text-[11px] text-gray-400 mt-1 max-w-xs">
-                  Tu recompensa se acreditará automáticamente al finalizar la cuenta atrás.
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full max-w-xs bg-gray-800 h-3 border border-gray-600 mt-4 overflow-hidden">
-                  <div 
-                    className="bg-[#00ff66] h-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${((5 - adCountdown) / 5) * 100}%` }}
-                  />
-                </div>
               </div>
 
-              <p className="text-[11px] text-gray-600">
-                ⚠️ Por favor mantén esta ventana abierta durante los 5 segundos para recibir la bonificación.
+              {/* El Cuadrado de Google AdSense */}
+              <div className="relative w-full border-2 border-[#141414] bg-[#f9f9f9] shadow-[4px_4px_0px_#141414] overflow-hidden">
+                <GoogleAdSenseSlot 
+                  id="google-adsense-rewarded-active"
+                  adSlot="7391663215396578"
+                  height={250}
+                  title="Google AdSense Video / Display Slot"
+                />
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-gray-200 h-2.5 border border-[#141414] overflow-hidden">
+                <div 
+                  className="bg-[#00ff66] h-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${((5 - adCountdown) / 5) * 100}%` }}
+                />
+              </div>
+
+              <p className="text-[11px] font-mono text-gray-600">
+                La bonificación se acreditará al terminar la cuenta atrás del anuncio.
               </p>
             </div>
           ) : adCompleted ? (

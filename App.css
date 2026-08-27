@@ -1056,53 +1056,91 @@ input:-webkit-autofill:active {
   line-height: 1.3;
 }
 
-/* Page Title */
+/* Page Title & KitchenOS Header */
+.kitchen-header {
+  padding: 12px 18px;
+  border: 2px solid #141414;
+  margin-bottom: 24px;
+  background: #ffffff;
+  box-shadow: 4px 4px 0px #141414;
+}
+
 .header-content-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  gap: 20px;
+  gap: 16px;
 }
 
 .header-left {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kitchen-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #141414;
+  margin: 0;
+  font-family: inherit;
+  letter-spacing: -0.5px;
+  text-transform: none;
 }
 
 .header-center {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 .header-right {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stats-group {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
+}
+
+.money-display-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff9c4;
+  border: 2px solid #141414;
+  padding: 5px 12px;
+  font-weight: 900;
+  font-size: 14px;
+  box-shadow: 3px 3px 0px #141414;
+}
+
+.money-icon {
+  font-size: 16px;
 }
 
 .level-status-card {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
+  background: #ffffff;
   border: 2px solid #141414;
   padding: 3px 8px 3px 3px;
-  box-shadow: 2px 2px 0px #141414;
+  box-shadow: 3px 3px 0px #141414;
 }
 
 .level-badge-mini {
   background: #141414;
-  color: #fff;
-  width: 28px;
-  height: 28px;
+  color: #ffffff;
+  width: 30px;
+  height: 30px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1111,33 +1149,32 @@ input:-webkit-autofill:active {
 }
 
 .level-mini-label {
-  font-size: 6px;
+  font-size: 7px;
   line-height: 1;
   opacity: 0.8;
-  margin-bottom: -1px;
 }
 
 .level-val {
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1;
 }
 
 .status-details {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .title-row {
   display: flex;
   align-items: center;
-  height: 16px;
+  height: 14px;
 }
 
 .xp-bar-wrapper {
-  width: 150px;
-  height: 16px;
-  background: #eee;
+  width: 110px;
+  height: 10px;
+  background: #f1f1f1;
   border: 1px solid #141414;
   position: relative;
   overflow: hidden;
@@ -1145,38 +1182,47 @@ input:-webkit-autofill:active {
 
 .xp-bar-fill-new {
   height: 100%;
-  background: #00ff00;
+  background: #00ff66;
   transition: width 0.5s ease-out;
 }
 
-/* Old classes removed */
-
 .standard-title {
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   color: #141414;
+  line-height: 1;
 }
 
 .leaderboard-btn-header {
-  background: white;
+  background: #ffffff;
   border: 2px solid #141414;
-  padding: 6px 10px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   box-shadow: 3px 3px 0px #141414;
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
 }
 
 .leaderboard-btn-header:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 5px 5px 0px #141414;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #141414;
+}
+
+.leaderboard-btn-header:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #141414;
 }
 
 .profile-btn-content {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
 }
 
 .settings-gear {
@@ -1184,45 +1230,36 @@ input:-webkit-autofill:active {
   opacity: 0.6;
 }
 
-.kitchen-header {
-  padding: 16px 0;
-  border-bottom: 2px solid #1a1a1a;
-  margin-bottom: 24px;
-  background: white;
-}
-
 /* User Profile Button Top Right */
 .user-profile-btn-top {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: white;
-  border: 2px solid #1a1a1a;
-  padding: 6px 12px;
+  justify-content: center;
+  background: #ffffff;
+  border: 2px solid #141414;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 4px 4px 0px #1a1a1a;
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: bold;
-  font-size: 13px;
-  text-transform: uppercase;
+  transition: all 0.1s ease;
+  box-shadow: 3px 3px 0px #141414;
+  flex-shrink: 0;
 }
 
 .user-profile-btn-top:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px #1a1a1a;
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #141414;
 }
 
 .user-profile-btn-top:active {
   transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px #1a1a1a;
+  box-shadow: 0px 0px 0px #141414;
 }
 
 .user-avatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 1px solid #1a1a1a;
+  border: 1px solid #141414;
   object-fit: cover;
 }
 
@@ -2347,18 +2384,51 @@ input:-webkit-autofill:active {
   box-shadow: 2px 2px 0px #000;
 }
 
+/* Short & Smooth UI Animations (Modals, Overlays, Tabs) */
+@keyframes kitchenModalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes kitchenOverlayFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes tabSwitchFade {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .skip-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
   backdrop-filter: blur(4px);
+  animation: kitchenOverlayFade 0.16s ease-out forwards;
 }
 
 .skip-modal {
@@ -2369,14 +2439,14 @@ input:-webkit-autofill:active {
   max-width: 450px;
   padding: 24px;
   box-shadow: 12px 12px 0px rgba(0, 0, 0, 0.2);
-  animation: modalIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: kitchenModalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   max-height: 90vh;
   overflow-y: auto;
 }
 
 @keyframes modalIn {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.96) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .skip-modal-title {
@@ -4950,6 +5020,7 @@ input:-webkit-autofill:active {
   justify-content: center;
   z-index: 6000;
   backdrop-filter: blur(4px);
+  animation: kitchenOverlayFade 0.16s ease-out forwards;
 }
 
 .os-modal-overlay {
@@ -4961,6 +5032,7 @@ input:-webkit-autofill:active {
   justify-content: center;
   z-index: 9999;
   backdrop-filter: blur(8px);
+  animation: kitchenOverlayFade 0.16s ease-out forwards;
 }
 
 .os-modal-card {
@@ -4970,12 +5042,12 @@ input:-webkit-autofill:active {
   max-width: 400px;
   box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
   font-family: 'JetBrains Mono', monospace;
-  animation: osModalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: kitchenModalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes osModalIn {
-  from { transform: translateY(20px) scale(0.95); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  from { transform: scale(0.96) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .os-modal-header-red {
@@ -5358,12 +5430,12 @@ input:checked + .os-slider:before {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: kitchenModalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes modalPop {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.96) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .leaderboard-header {
@@ -6413,6 +6485,7 @@ input:checked + .os-slider:before {
   z-index: 2000;
   padding: 20px;
   backdrop-filter: blur(4px);
+  animation: kitchenOverlayFade 0.16s ease-out forwards;
 }
 
 .recipe-book-modal {
@@ -6421,6 +6494,7 @@ input:checked + .os-slider:before {
   height: 85vh;
   display: flex;
   flex-direction: column;
+  animation: kitchenModalPop 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .recipe-book-header {
@@ -6950,7 +7024,7 @@ input:checked + .os-slider:before {
   font-size: 9px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .console-tab:hover {
@@ -6969,6 +7043,7 @@ input:checked + .os-slider:before {
   min-height: 250px;
   max-height: 400px;
   overflow-y: auto;
+  animation: tabSwitchFade 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .operation-table-surface {

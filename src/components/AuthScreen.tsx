@@ -12,6 +12,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import { AntigravityBackground } from './AntigravityBackground';
+import { soundService } from '../services/soundService';
 
 interface AuthScreenProps {
   onAuthSuccess?: (user: any) => void;
@@ -25,6 +26,18 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps = {}) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const handleGuestLogin = () => {
+    soundService.playSuccess();
+    const guestUser = {
+      uid: 'guest_' + Math.random().toString(36).substring(2, 9),
+      email: 'guest@kitchen.local',
+      displayName: 'Guest Chef',
+      isGuest: true,
+      isLocal: true
+    };
+    onAuthSuccess?.(guestUser);
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -311,6 +324,20 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps = {}) {
                   </svg>
                 </div>
                 GOOGLE_SIGN_IN
+              </button>
+
+              <div className="auth-divider">
+                <span>OR_ANONYMOUS</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGuestLogin}
+                className="brutalist-btn guest-btn"
+                style={{ background: '#f8f8f8', color: '#141414', borderStyle: 'dashed' }}
+                disabled={loading}
+              >
+                CONTINUE_AS_GUEST
               </button>
             </form>
 
