@@ -160,25 +160,45 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps = {}) {
     setError(null);
     setLoading(true);
     const provider = new GoogleAuthProvider();
+    
+    // Set a safety timeout to clear loading state if it hangs
+    const timeoutId = setTimeout(() => {
+      setLoading(false);
+      setError("AUTHENTICATION_TIMEOUT. PLEASE_TRY_AGAIN_OR_USE_EMAIL.");
+    }, 60000); // 60 seconds
+
     try {
+      console.log('Initiating Google Sign In...');
       const result = await signInWithPopup(auth, provider);
+      clearTimeout(timeoutId);
       
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid)).catch(err => handleFirestoreError(err, OperationType.GET, `users/${result.user.uid}`));
+      console.log('Google Auth success:', result.user.uid);
       
-      await setDoc(doc(db, 'users', result.user.uid), {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName,
-        photoURL: result.user.photoURL,
-        lastLoginAt: serverTimestamp(),
-        loginMethod: 'google',
-        role: 'user',
-        password: 'N/A (Google Authentication)'
-      }, { merge: true }).catch(err => handleFirestoreError(err, OperationType.WRITE, `users/${result.user.uid}`));
-      
+      // Transition immediately to the app to improve perceived speed
+      // The Firestore update will happen in the background or be handled by the main app
       onAuthSuccess?.(result.user);
+
+      // Background Firestore update
+      try {
+        await setDoc(doc(db, 'users', result.user.uid), {
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL,
+          lastLoginAt: serverTimestamp(),
+          loginMethod: 'google',
+          role: 'user',
+          password: 'N/A (Google Authentication)'
+        }, { merge: true });
+      } catch (dbErr) {
+        console.error('Background Firestore update failed:', dbErr);
+        handleFirestoreError(dbErr, OperationType.WRITE, `users/${result.user.uid}`);
+      }
+      
     } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('Google Auth error:', err);
+      
       if (
         err.code === 'auth/permission-denied' || 
         err.message?.includes('permission-denied') || 
@@ -199,12 +219,17 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps = {}) {
 
       let message = err.message;
       if (err.code === 'auth/operation-not-allowed') {
-        message = 'GOOGLE_AUTH_NOT_CONFIGURED_IN_FIREBASE. ACTIVATE_GOOGLE_PROVIDER_IN_CONSOLE.';
+        message = 'GOOGLE_PROVIDER_DISABLED. PLEASE_ENABLE_IN_FIREBASE_CONSOLE.';
       } else if (err.code === 'auth/invalid-credential') {
-        message = 'INVALID_GOOGLE_CREDENTIALS. CHECK_FIREBASE_CONSOLE.';
+        message = 'INVALID_GOOGLE_CREDENTIALS.';
       } else if (err.code === 'auth/popup-closed-by-user') {
-        message = 'AUTH_POPUP_CLOSED. TRY_AGAIN.';
+        message = 'POPUP_CLOSED_BY_OPERATOR. RE-INITIALIZE_AUTH.';
+      } else if (err.code === 'auth/network-request-failed') {
+        message = 'NETWORK_ERROR. CHECK_CONNECTION.';
+      } else if (err.code === 'auth/internal-error') {
+        message = 'INTERNAL_AUTH_ERROR. TRY_REFRESHING_PAGE.';
       }
+      
       setError(message);
     } finally {
       setLoading(false);
@@ -241,15 +266,30 @@ export function AuthScreen({ onAuthSuccess }: AuthScreenProps = {}) {
               <div className="auth-error-box">
                 <span className="error-prefix">ERROR:</span>
                 {error}
-                {error.includes('TRY_LOGIN_INSTEAD') && (
+                <div className="error-actions mt-2 flex gap-2">
+                  {error.includes('TRY_LOGIN_INSTEAD') && (
+                    <button 
+                      type="button" 
+                      className="error-action-btn"
+                      onClick={() => setIsLogin(true)}
+                    >
+                      SWITCH_TO_LOGIN
+                    </button>
+                  )}
                   <button 
                     type="button" 
                     className="error-action-btn"
-                    onClick={() => setIsLogin(true)}
+                    onClick={() => {
+                      if (auth.currentUser) {
+                        onAuthSuccess?.(auth.currentUser);
+                      } else {
+                        setError("NO_ACTIVE_SESSION_DETECTED. TRY_ANOTHER_METHOD.");
+                      }
+                    }}
                   >
-                    SWITCH_TO_LOGIN_MODE
+                    VERIFY_SESSION
                   </button>
-                )}
+                </div>
               </div>
             )}
 

@@ -2023,6 +2023,157 @@ function UpgradeItem({ upgrade, isPurchased, canAfford, meetsRequirement, onBuy 
   );
 }
 
+// ============================================================================
+// System UI Components (Sidebars & Widgets)
+// ============================================================================
+
+function SystemSidebars({ children, terminalLogs, stats }: { children: React.ReactNode, terminalLogs: string[], stats: any }) {
+  const [cpuUsage, setCpuUsage] = useState(42);
+  const [memUsage, setMemUsage] = useState(68);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCpuUsage(Math.floor(20 + Math.random() * 60));
+      setMemUsage(Math.floor(40 + Math.random() * 40));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex w-full h-full min-h-screen bg-[#f4f4f4] dark:bg-[#0a0a0f] transition-colors duration-500 overflow-hidden relative">
+      {/* Checkered side accents - Fixed position for total stability and original 10px scale */}
+      <div className="fixed left-0 top-0 bottom-0 w-4 opacity-100 pointer-events-none z-[100]" 
+           style={{ backgroundImage: 'conic-gradient(#000 0.25turn, #fff 0.25turn 0.5turn, #000 0.5turn 0.75turn, #fff 0.75turn)', backgroundSize: '16px 16px' }}></div>
+      <div className="fixed right-0 top-0 bottom-0 w-4 opacity-100 pointer-events-none z-[100]" 
+           style={{ backgroundImage: 'conic-gradient(#000 0.25turn, #fff 0.25turn 0.5turn, #000 0.5turn 0.75turn, #fff 0.75turn)', backgroundSize: '16px 16px' }}></div>
+
+      {/* Left Sidebar: Status Monitor (Visible on almost all screens except very small mobile) */}
+      <aside className="hidden sm:flex flex-col w-56 lg:w-64 bg-white dark:bg-[#0d0d12] border-r border-gray-200 dark:border-gray-800 p-6 shrink-0 overflow-y-auto relative z-10">
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Core_Monitor</h4>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="bg-gray-50 dark:bg-[#15151e] p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+              <div className="flex justify-between text-[10px] text-gray-400 mb-2 uppercase font-bold">
+                <span>CPU_LOAD</span>
+                <span className={cpuUsage > 80 ? 'text-red-500' : 'text-green-500'}>{cpuUsage}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-200 dark:bg-gray-900 rounded-full overflow-hidden">
+                <motion.div 
+                  className={`h-full ${cpuUsage > 80 ? 'bg-red-500' : 'bg-green-500'}`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${cpuUsage}%` }}
+                  transition={{ duration: 1 }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-gray-50 dark:bg-[#15151e] p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
+              <div className="flex justify-between text-[10px] text-gray-400 mb-2 uppercase font-bold">
+                <span>MEM_ALLOC</span>
+                <span>{memUsage}%</span>
+              </div>
+              <div className="h-1.5 bg-gray-200 dark:bg-gray-900 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-blue-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${memUsage}%` }}
+                  transition={{ duration: 1 }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-10">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">Active_Chef</h4>
+          </div>
+          
+          <div className="bg-gray-50 dark:bg-[#15151e] p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex flex-col items-center">
+            <div className="relative mb-4">
+              <div className="text-4xl">👨‍🍳</div>
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white dark:border-[#15151e] rounded-full"></div>
+            </div>
+            <div className="text-sm font-black text-gray-800 dark:text-white uppercase text-center truncate w-full tracking-tighter">
+              {stats.title || 'Kitchen Hand'}
+            </div>
+            <div className="text-[10px] font-bold text-blue-500 mt-2 bg-blue-500/10 px-2 py-0.5 rounded">
+              LVL {stats.level}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto space-y-4">
+          <div className="p-4 bg-gray-100/50 dark:bg-[#1a1a24] rounded-lg border border-gray-200 dark:border-gray-800">
+            <div className="text-[9px] text-gray-400 uppercase mb-1 font-bold">Network_Status</div>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+              <span className="text-[10px] text-gray-600 dark:text-gray-300 font-mono">ENCRYPTED_LINK_UP</span>
+            </div>
+          </div>
+          
+          <div className="text-[9px] text-gray-400 font-mono italic px-1">
+            &gt; KitchenOS v2.5.0-STABLE<br/>
+            &gt; Kernel: Antigravity-Core-X
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 h-full overflow-y-auto relative scroll-smooth bg-white dark:bg-[#0a0a0f] app-container">
+        {children}
+      </main>
+
+      {/* Right Sidebar: Archive Logs (Visible on large screens and up) */}
+      <aside className="hidden lg:flex flex-col w-80 bg-white dark:bg-[#0d0d12] border-l border-gray-200 dark:border-gray-800 shrink-0 overflow-hidden relative z-10">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-[#0d0d12]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <h4 className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">System_Archive</h4>
+            </div>
+            <span className="text-[9px] font-mono text-gray-400">LOG_v4.2</span>
+          </div>
+        </div>
+        
+        <div className="flex-1 p-6 font-mono text-[10px] overflow-y-auto space-y-4 scrollbar-hide dark:bg-[#0a0a0f]/50">
+          {terminalLogs.slice().reverse().map((log, i) => (
+            <motion.div 
+              key={i} 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-gray-700 dark:text-green-500/80 leading-relaxed border-l-2 border-gray-200 dark:border-green-900/30 pl-3 py-1"
+            >
+              <span className="text-gray-400 dark:text-green-900 mr-2">[{new Date().toLocaleTimeString([], { hour12: false })}]</span>
+              <span className="break-words">{log}</span>
+            </motion.div>
+          ))}
+          {terminalLogs.length === 0 && (
+            <div className="text-gray-400 italic text-center py-10">
+              No active logs detected in current session...
+            </div>
+          )}
+        </div>
+        
+        <div className="p-5 bg-gray-50 dark:bg-[#0d0d12] border-t border-gray-200 dark:border-gray-800">
+           <div className="flex items-center justify-between text-[9px] text-gray-500 dark:text-gray-400 uppercase font-bold">
+             <div className="flex items-center gap-2">
+               <span className="animate-pulse">_</span>
+               <span>Awaiting_Input</span>
+             </div>
+             <span>SECURE_SHELL</span>
+           </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 function CombinationAgent({
   inventory,
   setInventory,
@@ -3470,7 +3621,8 @@ Do not say you cannot do it; always provide a recipe.`;
   }
 
   return (
-    <div className={`kitchen-app ${chaosEvent === 'gravity' ? 'animate-[float_3s_ease-in-out_infinite]' : ''}`}>
+    <SystemSidebars terminalLogs={terminalLogs} stats={stats}>
+      <div className={`kitchen-app ${chaosEvent === 'gravity' ? 'animate-[float_3s_ease-in-out_infinite]' : ''}`}>
       {/* KitchenOS Header */}
       <div className="kitchen-header">
         <div className="header-content-wrapper">
@@ -5669,7 +5821,8 @@ Do not say you cannot do it; always provide a recipe.`;
         onClose={() => setShowRewardedAdModal(false)}
         onGrantReward={handleGrantReward}
       />
-    </div>
+      </div>
+    </SystemSidebars>
   );
 }
 
@@ -7507,7 +7660,11 @@ function App() {
   }
 
   if (!user) {
-    return <AuthScreen onAuthSuccess={setUser} />;
+    return (
+      <SystemSidebars terminalLogs={[]} stats={{ title: 'GUEST_TERMINAL', level: 0 }}>
+        <AuthScreen onAuthSuccess={setUser} />
+      </SystemSidebars>
+    );
   }
 
   return (
